@@ -2,7 +2,7 @@
 #define __JPOD_ZFS__
 
 namespace zfs {
-    
+
 };
 
 #endif // __JPOD_ZFS__

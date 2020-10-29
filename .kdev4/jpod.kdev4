@@ -1,2 +1,62 @@
+[Buildset]
+BuildItems=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x01\x00\x00\x00\x08\x00j\x00p\x00o\x00d)
+
+[CMake]
+Build Directory Count=1
+Current Build Directory Index-Host System=0
+
+[CMake][CMake Build Directory 0]
+Build Directory Path=/usr/home/william/Projects/Hope/paas-projects/fold/jpod/build
+Build Type=Debug
+CMake Binary=/usr/local/bin/cmake
+CMake Executable=/usr/local/bin/cmake
+Environment Profile=
+Extra Arguments=
+Install Directory=/usr/local
+Runtime=Host System
+
+[Launch]
+Launch Configurations=Launch Configuration 0,Launch Configuration 1
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=test-jpod
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x03\x00\x00\x00\x08\x00j\x00p\x00o\x00d\x00\x00\x00\n\x00t\x00e\x00s\x00t\x00s\x00\x00\x00\x12\x00t\x00e\x00s\x00t\x00-\x00j\x00p\x00o\x00d)
+Dependency Action=Build
+Project Target=jpod,tests,test-jpod
+
+[Launch][Launch Configuration 1]
+Configured Launch Modes=execute,debug
+Configured Launchers=nativeAppLauncher,lldb
+Name=jpod
+Type=Native Application
+
+[Launch][Launch Configuration 1][Data]
+Arguments=
+Break on Start=false
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x00)
+Dependency Action=Nothing
+EnvironmentGroup=
+Executable=file:///usr/home/william/Projects/Hope/paas-projects/fold/jpod/build/bin/jpod
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+Kill Before Executing Again=4194304
+LLDB Arguments=
+LLDB Config Script=
+LLDB Environment=
+LLDB Executable=file:///usr/local/bin/lldb-mi90
+LLDB Inherit System Env=true
+LLDB Remote Debugging=false
+LLDB Remote Path=
+LLDB Remote Server=
+Project Target=jpod,src,jpod
+Start With=ApplicationOutput
+Use External Terminal=false
+Working Directory=
+isExecutable=true
+
 [Project]
 VersionControlSupport=kdevgit
