@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(jpod)
+project(jpod-engine)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -Wall -Wextra")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -11,12 +11,11 @@ set(CMAKE_PROJECT_VERSION_MAJOR 1)
 set(CMAKE_PROJECT_VERSION_MINOR 0)
 set(CMAKE_PROJECT_VERSION_PATCH 0)
 
-option(BUILD_TESTS "Build Unit tests" ON)
+option(BUILD_TESTS "Build Unit tests" OFF)
 include_directories(SYSTEM /usr/local/include)
 link_directories(/usr/local/lib)
 list(APPEND CMAKE_REQUIRED_INCLUDES /usr/local/include)
 
-find_package(zfs)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(Boost "1.64.0")
 find_package(OpenSSL REQUIRED)
@@ -42,13 +41,6 @@ if(OpenSSL_FOUND)
   set(OPENSSL_USE_STATIC_LIBS ON)
 else()
   message(WARNING "Failed to find OpenSSL")
-endif()
-
-if(ZFS_FOUND)
-  message(STATUS "Found ZFS")
-  add_definitions(-DHAVE_IOCTL_IN_SYS_IOCTL_H)
-else()
-  message(WARNING "ZFS was not found on your system")
 endif()
 
 if(SQLite3_FOUND)

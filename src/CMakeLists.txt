@@ -15,15 +15,12 @@ add_library(JSON INTERFACE)
 target_include_directories(JSON INTERFACE ${NLOHMANN_JSON_FOLDER})
 
 add_executable(${PROJECT_NAME}
+                core/containers/manager.cc
                 main.cc
-                jails/jail_handler.cc
-                storage/migrations.cc
-                storage/sql_jail_repository.cc
                 )
 target_link_libraries(${PROJECT_NAME}
                        JSON
                        PSTREAMS
-                       ${ZFS_LIBRARIES}
                        spdlog::spdlog
                        jail
                        SQLite::SQLite3
@@ -31,7 +28,6 @@ target_link_libraries(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME}
                             PUBLIC
                             ${PROJECT_HDRS_FOLDER}
-                            ${ZFS_INCLUDE_DIR}
                             ${SQLite3_INCLUDE_DIRS}
                             )
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
