@@ -13,14 +13,13 @@ TEST_CASE("Container Builder test case") {
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
     composition.ip_v6_address = "";
-    composition.identifier = "bsd";
     composition.snapshot_path = FREEBSD_BASE_SNAPSHOT;
 
     ContainerManager manager;
     ContainerReport report = manager.create(BaseOS::FREE_BSD, composition);
     REQUIRE(report.isCreated() == true);
     // How to check if the actual jail exists is if a system call is made with the jail ID
-    std::system(fmt::format("jail -r {}", report.getJailId()).c_str());
+    std::system(fmt::format("jail -r {}", report.getIdentifier()).c_str());
   }
 
   SECTION("will construct jail given valid parameters and a correct debian-base snapshot, a valid debian linux jail", "[ROOT][OTHER-BSD]") {
@@ -29,13 +28,12 @@ TEST_CASE("Container Builder test case") {
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
     composition.ip_v6_address = "";
-    composition.identifier = "linux";
     composition.snapshot_path = ALPINE_LINUX_SNAPSHOT;
 
     ContainerManager manager;
     ContainerReport report = manager.create(BaseOS::LINUX, composition);
     REQUIRE(report.isCreated() == true);
-    std::system(fmt::format("jail -r {}", report.getJailId()).c_str());
+    std::system(fmt::format("jail -r {}", report.getIdentifier()).c_str());
   }
 
   SECTION("will construct jail given valid parameters a base jail [environment] will be created", "[ROOT][ANY-BSD]") {
@@ -44,12 +42,11 @@ TEST_CASE("Container Builder test case") {
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
     composition.ip_v6_address = "";
-    composition.identifier = "base";
 
     ContainerManager manager;
     ContainerReport report = manager.create(BaseOS::FREE_BSD, composition);
     REQUIRE(report.isCreated() == true);
-    std::system(fmt::format("jail -r {}", report.getJailId()).c_str());
+    std::system(fmt::format("jail -r {}", report.getIdentifier()).c_str());
   }
 
   SECTION("will fail to construct jail given no parameters", "[ROOT]") {
@@ -67,7 +64,6 @@ TEST_CASE("Container Builder test case") {
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
     composition.ip_v6_address = "";
-    composition.identifier = "linux";
     composition.snapshot_path = ALPINE_LINUX_SNAPSHOT;
 
     ContainerManager manager;
@@ -80,7 +76,7 @@ TEST_CASE("Container Builder test case") {
     composition2.snapshot_path = ALPINE_LINUX_SNAPSHOT;
     ContainerReport report2 = manager.create(BaseOS::LINUX, composition2);
     REQUIRE_FALSE(report2.isCreated());
-    std::system(fmt::format("jail -r {}", report.getJailId()).c_str());
+    std::system(fmt::format("jail -r {}", report.getIdentifier()).c_str());
   }
 
   SECTION("will be able to stop an existing container that is running", "[ROOT]") {
@@ -89,12 +85,11 @@ TEST_CASE("Container Builder test case") {
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
     composition.ip_v6_address = "";
-    composition.identifier = "linux";
     composition.snapshot_path = ALPINE_LINUX_SNAPSHOT;
 
     ContainerManager manager;
     ContainerReport report = manager.create(BaseOS::LINUX, composition);
-    report = manager.stop(composition.identifier);
+    report = manager.stop(report.getIdentifier());
     REQUIRE(report.isStopped());
   }
 
@@ -103,7 +98,6 @@ TEST_CASE("Container Builder test case") {
     Composition composition;
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
-    composition.identifier = "linux";
     composition.snapshot_path = ALPINE_LINUX_SNAPSHOT;
     ContainerManager manager;
     manager.create(BaseOS::LINUX, composition);
@@ -116,7 +110,6 @@ TEST_CASE("Container Builder test case") {
     Composition composition;
     composition.hostname = "free";
     composition.ip_v4_address = "127.0.0.1";
-    composition.identifier = "linux";
     composition.snapshot_path = ALPINE_LINUX_SNAPSHOT;
     ContainerManager manager;
     manager.create(BaseOS::LINUX, composition);

@@ -98,7 +98,7 @@ namespace containers {
     }
 
     if (jailparam_import(&parameter, value.c_str()) != 0) {
-      logger->error("FAILED TO ADD KEY:{} VALUE:{}", key, value);
+      logger->error("FAILED TO ADD KEY:{} VALUE:{} ERR:{}", key, value, jail_errmsg);
       return;
     }
 
