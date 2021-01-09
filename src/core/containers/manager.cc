@@ -3,10 +3,13 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <core/containers/manager.h>
 #include <definitions.h>
+#include <filesystem>
+#include <fstream>
 #include <spdlog/spdlog.h>
 #include <sys/jail.h>
 #include <sys/param.h>
 #include <unistd.h>
+namespace fs = std::filesystem;
 
 namespace containers {
   ContainerReport ContainerManager::create(BaseOS baseOS, const Composition &composition) {
@@ -52,22 +55,64 @@ namespace containers {
     return identifier;
   }
 
-  ContainerReport ContainerManager::updateEnvironment(const std::string &identifier, UpdateType updateType, const std::string &variable) {
-    int jail_id = jail_getid(identifier.c_str());
-    spdlog::get(LOGGER)->info("UPDATE TO JID : {}", jail_id);
-    return ContainerReport(ContainerState::UPDATED, identifier, "");
+  ContainerReport ContainerManager::writeToProfile(const std::string &identifier, const std::string &path, const std::string &variable) {
+    if (!fs::exists(fs::path(path))) {
+      return ContainerReport{ContainerState::STOPPED, identifier, "Environment profile file not found"};
+    }
+    std::ofstream target_file;
+    target_file.open(path, std::ios_base::app);
+    target_file << std::endl
+                << fmt::format("export {}", variable);
+    target_file.close();
+    return ContainerReport{ContainerState::STOPPED, identifier, "Environment profile file updated"};
+  }
+
+  ContainerReport ContainerManager::makeDirectory(const std::string &identifier, const std::string &path) {
+    if (!fs::exists(fs::path(path))) {
+      if (fs::create_directories(path)) {
+        return ContainerReport{ContainerState::STOPPED, identifier, "Directory created"};
+      } else {
+        return ContainerReport{ContainerState::STOPPED, identifier, "Directory creation failed"};
+      }
+    }
+    return ContainerReport{ContainerState::STOPPED, identifier, "Directory already exists"};
+  }
+
+  ContainerReport ContainerManager::copyIn(const std::string &identifier, const std::string &from, const std::string &to) {
+    if (!fs::exists(fs::path(from))) {
+      return ContainerReport{ContainerState::STOPPED, identifier, fmt::format("{} does not exist", from)};
+    }
+    if (!fs::exists(fs::path(to))) {
+      return ContainerReport{ContainerState::STOPPED, identifier, fmt::format("{} does not exist", to)};
+    }
+    std::error_code error_code;
+    if (fs::is_directory(fs::path(from))) {
+      fs::copy(fs::path(from), fs::path(to), fs::copy_options::recursive, error_code);
+      if (error_code) {
+        return ContainerReport{ContainerState::STOPPED, identifier, fmt::format("Copy failed {}:{}", error_code.value(), error_code.message())};
+      }
+    } else {
+      fs::copy(fs::path(from), fs::path(to), error_code);
+      if (error_code) {
+        return ContainerReport{ContainerState::STOPPED, identifier, fmt::format("Copy failed {}:{}", error_code.value(), error_code.message())};
+      }
+    }
+    return ContainerReport{ContainerState::STOPPED, identifier, fmt::format("Copied {} to {}", from, to)};
   }
 
   ContainerReport ContainerManager::stop(const std::string &identifier) {
-  }
-
-  ContainerReport ContainerManager::start(const std::string &identifier) {
+    int jail_id = jail_getid(identifier.c_str());
+    if (jail_id < 0) {
+      return ContainerReport(ContainerState::STOPPED, identifier, fmt::format("Could not find matching jail for {}", identifier));
+    }
+    if (fork() == 0) {
+      spdlog::get(LOGGER)->info("SHUTTING DOWN JAIL ID {} ALIAS {}", jail_id, identifier);
+      jail_remove(jail_id);
+    }
+    return ContainerReport{ContainerState::STOPPED, identifier, fmt::format("container {} has been stopped", identifier)};
   }
 
   ContainerInformation ContainerManager::fetchInformationByIdentifier(const std::string &identifier) {
-  }
-
-  std::vector<ContainerInformation> ContainerManager::fetchInformation() {
   }
 
   std::vector<ContainerInformation> ContainerManager::fetch_container_details(std::vector<jailparam> &parameters) {

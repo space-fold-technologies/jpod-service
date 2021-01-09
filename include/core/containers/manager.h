@@ -8,12 +8,12 @@ namespace containers {
   class ContainerManager {
   public:
     ContainerReport create(BaseOS baseOS, const Composition &composition);
-    ContainerReport updateEnvironment(const std::string &identifier, UpdateType updateType, const std::string &variable);
+    ContainerReport writeToProfile(const std::string &identifier, const std::string &path, const std::string &variable);
+    ContainerReport makeDirectory(const std::string &identifier, const std::string &path);
+    ContainerReport copyIn(const std::string &identifier, const std::string &from, const std::string &to);
     ContainerReport startProcess(const std::string &identifier, const std::string &executeCommand);
     ContainerReport stop(const std::string &identifier);
-    ContainerReport start(const std::string &identifier);
     ContainerInformation fetchInformationByIdentifier(const std::string &identifier);
-    std::vector<ContainerInformation> fetchInformation();
 
   private:
     void add_parameter(std::vector<jailparam> &parameters, const std::string &key, const std::string &value);

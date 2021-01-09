@@ -7,3 +7,6 @@
 [submodule "third_party/Lyra"]
 	path = third_party/Lyra
 	url = https://github.com/bfgroup/Lyra.git
+[submodule "third_party/websocketpp"]
+	path = third_party/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git	

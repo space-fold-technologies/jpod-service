@@ -70,6 +70,5 @@ namespace zfs {
     return Ok(std::string(outcome.begin(), outcome.end()));
   }
 
-  handler::~handler() {
-  }
+  handler::~handler() {}
 }; // namespace zfs

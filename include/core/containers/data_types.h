@@ -32,8 +32,8 @@ namespace containers {
   };
 
   enum class UpdateType {
-    PRE,
-    POST
+    ADD,
+    REMOVE
   };
 
   enum class ContainerState {
