@@ -1,2 +1,6 @@
 .kdev
 .kdev4
+*.db
+*.sqlite
+build/
+
