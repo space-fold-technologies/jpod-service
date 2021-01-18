@@ -36,6 +36,7 @@ add_executable(${PROJECT_NAME}
                 main.cc
                 ${SERVICE_PROTO_SRCS}
                 )
+
 target_link_libraries(${PROJECT_NAME}
                        JSON
                        PSTREAMS
@@ -46,10 +47,14 @@ target_link_libraries(${PROJECT_NAME}
                        util
                        ${_PROTOBUF_LIBPROTOBUF}
                        )
+
 target_include_directories(${PROJECT_NAME}
                             PUBLIC
                             ${PROJECT_HDRS_FOLDER}
                             ${SQLite3_INCLUDE_DIRS}
                             ${WEBSOCKETPP_INCLUDE_DIR}
                             )
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

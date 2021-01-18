@@ -1,4 +1,5 @@
 //#include <core/containers/manager.h>
+#include <core/networking/routing/rules.h>
 #include <core/shell/terminal.h>
 #include <definitions.h>
 #include <iostream>
@@ -30,7 +31,10 @@ auto main(int argc, char *argv[]) -> int {
     console->info("GOT ACTIVATED");
     terminal.run();
   }
+  using namespace networking::routing;
+  //auto rule = RuleBuilder::builder().action(Action::NAT).direction(Direction::IN).build();
 
+  //networking::routing::RuleBuilder::builder().action()
   // char buffer[1024];
   // Popen popen = subprocess::RunBuilder({"bash", "-i"})
   //                   .cout(PipeOption::pipe)
