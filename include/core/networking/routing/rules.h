@@ -1,13 +1,19 @@
 #ifndef __JPOD__NETWORKING_ROUTING__
 #define __JPOD__NETWORKING_ROUTING__
 #include <array>
-#include <core/networking/routing/address.h>
 #include <net/if.h>
 #include <net/pfvar.h>
 #include <string>
 #include <vector>
 
 namespace networking::routing {
+
+  enum class AddressFamily {
+    ANY = 0,
+    IP_V4 = AF_INET,
+    IP_V6 = AF_INET6
+  };
+
   enum class Protocol {
     TCP = IPPROTO_TCP,
     UDP = IPPROTO_UDP,
@@ -66,7 +72,7 @@ namespace networking::routing {
     bool quick() const { return _rule.rule.quick == 1 ? true : false; };
 
   private:
-    Rule(pfioc_rule _rule);
+    Rule(pfioc_rule _rule) : _rule(_rule) {}
     pfioc_rule _rule;
   };
 
@@ -189,26 +195,27 @@ namespace networking::routing {
     auto add_interface(struct pf_rule_addr &address_rule, const std::string &name) -> void {
       std::memcpy(address_rule.addr.v.ifname, name.data(), IFNAMSIZ);
     }
-    auto add_address(struct pf_rule_addr &address_rule, const std::string &address) -> void {
-      //address_rule.addr.v.a.addr.pfa.addr32
 
-      // How to set up the address family and the address mask
-      //_address_wrap.v.a.addr
-      //_address_wrap.v.a.addr.pfa.addr32
-      //_address_wrap.v.a.addr.pfa.addr16
-      //_address_wrap.v.a.addr.pfa.addr8
-      //_address_wrap.v.a.mask
-      /*
-       if ipv4 := ipn.IP.To4(); ipv4 != nil {
-       		copy(a.wrap.v[0:4], ipv4)
-       		copy(a.wrap.v[16:20], ipn.Mask)
-       		a.af = C.AF_INET
-       	} else {
-       		copy(a.wrap.v[0:16], ipn.IP)
-       		copy(a.wrap.v[16:32], ipn.Mask)
-       		a.af = C.AF_INET6
-       	}
-       * */
+    auto convert_address(const std::string &ip_address) -> u_int32_t {
+      int a, b, c, d;
+
+      sscanf(ip_address.c_str(), "%i.%i.%i.%i", &a, &b, &c, &d);
+      return htonl(a << 24 | b << 16 | c << 8 | d);
+    }
+
+    auto add_address(struct pf_rule_addr &address_rule, const std::string &ip_address) -> void {
+      add_address(address_rule, ip_address, "255.255.255.0");
+    }
+
+    auto add_address(struct pf_rule_addr &address_rule, const std::string &ip_address, const std::string &netmask) -> void {
+      if (ip_address.find(":") > 0) {
+        // We don't know how to support IPv6
+        // address_rule.addr.v.a.addr.v6.in6_ad
+      } else {
+        address_rule.addr.v.a.addr.v4.s_addr = convert_address(ip_address);
+        address_rule.addr.v.a.mask.v4.s_addr = convert_address(netmask);
+      }
+
       address_rule.addr.type = PF_ADDR_ADDRMASK;
     }
     pfioc_rule _rule;
