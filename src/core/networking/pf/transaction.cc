@@ -1,10 +1,10 @@
-#include <core/networking/routing/rule_set.h>
-#include <core/networking/routing/transaction.h>
+#include <core/networking/pf/rule_set.h>
+#include <core/networking/pf/transaction.h>
 #include <definitions.h>
 #include <spdlog/spdlog.h>
 #include <stdio.h>
 
-namespace networking::routing {
+namespace networking::pf {
   Transaction::Transaction(int file_descriptor, int elements)
       : _file_descriptor(file_descriptor), elements(elements) {
     initialize_transaction(&this->tx, elements);
@@ -52,7 +52,7 @@ namespace networking::routing {
     return &tx->array[index];
   }
 
-  void networking::routing::Transaction::free_transaction(struct pfioc_trans *tx) {
+  void Transaction::free_transaction(struct pfioc_trans *tx) {
     if (tx->array != NULL) {
       free(tx->array);
     }
@@ -60,6 +60,6 @@ namespace networking::routing {
     tx->esize = 0;
   }
 
-  networking::routing::Transaction::~Transaction() {
+  Transaction::~Transaction() {
   }
-} // namespace networking::routing
+} // namespace networking::pf

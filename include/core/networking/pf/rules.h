@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace networking::routing {
+namespace networking::pf {
 
   enum class AddressFamily {
     ANY = 0,
@@ -232,5 +232,5 @@ namespace networking::routing {
   };
   // We will create a rule using the builder pattern
 
-} // namespace networking::routing
+} // namespace networking::pf
 #endif // __JPOD__NETWORKING_ROUTING__

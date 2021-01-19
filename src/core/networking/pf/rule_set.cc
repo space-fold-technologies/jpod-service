@@ -1,11 +1,11 @@
-#include <core/networking/routing/rule_set.h>
-#include <core/networking/routing/rules.h>
-#include <core/networking/routing/transaction.h>
+#include <core/networking/pf/rule_set.h>
+#include <core/networking/pf/rules.h>
+#include <core/networking/pf/transaction.h>
 #include <definitions.h>
 #include <spdlog/spdlog.h>
 #include <sys/ioctl.h>
 
-namespace networking::routing {
+namespace networking::pf {
   RuleSet::RuleSet(Transaction *transaction, pfioc_trans::pfioc_trans_e *element) noexcept
       : transaction(transaction),
         element(element) {}
@@ -25,4 +25,4 @@ namespace networking::routing {
     return static_cast<RuleSetType>(this->element->rs_num);
   }
   RuleSet::~RuleSet() {}
-} // namespace networking::routing
+} // namespace networking::pf

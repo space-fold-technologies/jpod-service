@@ -5,7 +5,7 @@
 #include <net/pfvar.h>
 #include <string>
 
-namespace networking::routing {
+namespace networking::pf {
 
   enum class RuleSetType {
     SCRUB = PF_RULESET_SCRUB,
@@ -33,5 +33,5 @@ namespace networking::routing {
     Transaction *transaction;
     pfioc_trans::pfioc_trans_e *element;
   };
-} // namespace networking::routing
+} // namespace networking::pf
 #endif // __JPOD_NETWORKING_ROUTING_RULESET__

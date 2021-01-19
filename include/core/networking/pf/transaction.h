@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/ioctl.h>
 
-namespace networking::routing {
+namespace networking::pf {
   class RuleSet;
   class Transaction {
   public:
@@ -26,5 +26,5 @@ namespace networking::routing {
     int _file_descriptor;
     int elements;
   };
-};     // namespace networking::routing
+};     // namespace networking::pf
 #endif // __JPOD_NETWORKING_PF_IOCTL_TRANSACTION__

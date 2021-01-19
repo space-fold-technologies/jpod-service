@@ -1,5 +1,5 @@
 //#include <core/containers/manager.h>
-#include <core/networking/routing/rules.h>
+#include <core/networking/pf/rules.h>
 #include <definitions.h>
 #include <iostream>
 #include <spdlog/fmt/fmt.h>
@@ -9,7 +9,8 @@
 auto main(int argc, char *argv[]) -> int {
   auto console = spdlog::stdout_color_mt(LOGGER);
   console->info("JPOD VERSION : {}", 1.0);
-  using namespace networking::routing;
+  using namespace networking::pf;
+
   auto rule = RuleBuilder::builder()
                   .action(Action::NAT)
                   .address_family(AddressFamily::IP_V4)
