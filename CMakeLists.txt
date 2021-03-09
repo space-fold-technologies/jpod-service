@@ -11,7 +11,7 @@ set(CMAKE_PROJECT_VERSION_MAJOR 1)
 set(CMAKE_PROJECT_VERSION_MINOR 0)
 set(CMAKE_PROJECT_VERSION_PATCH 0)
 
-option(BUILD_TESTS "Build Unit tests" OFF)
+option(BUILD_TESTS "Build Unit tests" ON)
 include_directories(SYSTEM /usr/local/include)
 link_directories(/usr/local/lib)
 list(APPEND CMAKE_REQUIRED_INCLUDES /usr/local/include)
