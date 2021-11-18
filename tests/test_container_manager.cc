@@ -6,7 +6,7 @@
 TEST_CASE("Container Builder test case") {
   const std::string ALPINE_LINUX_SNAPSHOT = "";
   const std::string FREEBSD_BASE_SNAPSHOT = "";
-
+  /*
   SECTION("will construct jail given valid parameters and a correct freebsd-base snapshot, a valid freebsd jail", "[ROOT][FREE-BSD]") {
     using namespace containers;
     Composition composition;
@@ -57,7 +57,7 @@ TEST_CASE("Container Builder test case") {
     ContainerReport report = manager.create(BaseOS::FREE_BSD, composition);
     REQUIRE(report.isCreated() == false);
   }
-
+  
   SECTION("will fail to construct jail if a jail with an existing name exists", "[ROOT]") {
     using namespace containers;
     Composition composition;
@@ -116,7 +116,7 @@ TEST_CASE("Container Builder test case") {
     ContainerReport report = manager.update(composition.identifier, {CommandType::ENV, "FOO=BAR"});
     REQUIRE(report.isUpdated() == true);
   }
-
+  */
   SECTION("will fail to update a container that does not exist", "[ROOT]") {
   }
 }

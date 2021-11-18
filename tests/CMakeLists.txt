@@ -17,7 +17,9 @@ target_include_directories(FakeIt INTERFACE ${FAKEIT_FOLDER_PATH})
 add_executable(test-jpod
                test_main.cc
                test_container_manager.cc
+               test_address_manager.cc
                ${PROJECT_SRC_FOLDER}/core/containers/manager.cc
+               ${PROJECT_SRC_FOLDER}/core/networking/addresses/manager.cc
                )
 
 target_link_libraries(test-jpod

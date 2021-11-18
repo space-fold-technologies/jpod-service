@@ -1,7 +1,6 @@
 #ifndef __JPOD__TERMINAL__
 #define __JPOD__TERMINAL__
 
-#include <boost/asio.hpp>
 #include <fcntl.h>
 #include <functional>
 #include <string>

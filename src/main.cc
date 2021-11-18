@@ -1,46 +1,23 @@
 //#include <core/containers/manager.h>
-#include <core/shell/terminal.h>
+#include <core/networking/pf/rules.h>
 #include <definitions.h>
 #include <iostream>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-// #include <thread>
-// #include <utilities/subprocess/basic_types.h>
-// #include <utilities/subprocess/environ.h>
-// #include <utilities/subprocess/pipe.h>
-// #include <utilities/subprocess/process_builder.h>
-// #include <utilities/subprocess/shell_utils.h>
-// using subprocess::CompletedProcess;
-// using subprocess::PipeOption;
-// using subprocess::Popen;
-// using subprocess::RunBuilder;
-
 auto main(int argc, char *argv[]) -> int {
   auto console = spdlog::stdout_color_mt(LOGGER);
   console->info("JPOD VERSION : {}", 1.0);
-  shell::Terminal terminal;
-  terminal.on_update([](const std::string &output) {
-    fmt::print("GOT OUT PUT");
-    fmt::print(output);
-  });
+  using namespace networking::pf;
 
-  if (terminal.initialize("bash")) {
-    console->info("GOT ACTIVATED");
-    terminal.run();
-  }
-
-  // char buffer[1024];
-  // Popen popen = subprocess::RunBuilder({"bash", "-i"})
-  //                   .cout(PipeOption::pipe)
-  //                   .popen();
-  // while (subprocess::pipe_read(popen.cout, buffer, 1024)) {
-  //   console->info("result :{}", buffer);
-  //   subprocess::pipe_write(popen.cin, "hello world\n", std::strlen("hello world\n"));
-  //   popen.close_cin();
-  // }
-  // popen.close();
+  auto rule = RuleBuilder::builder()
+                  .action(Action::NAT)
+                  .address_family(AddressFamily::IP_V4)
+                  .direction(Direction::IN_OUT)
+                  .source("192.168.40.236", 8500)
+                  .destination("172.16.24.23", 8500)
+                  .build();
 
   // using namespace containers;
   // Composition composition;
