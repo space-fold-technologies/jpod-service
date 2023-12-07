@@ -1,0 +1,36 @@
+cmake_minimum_required(VERSION 3.15...3.23)
+
+include_directories(${PROJECT_HDRS_FOLDER})
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+find_package(Catch2 CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(asio REQUIRED)
+find_package(fakeit REQUIRED)
+
+include(Catch)
+
+add_library(catch_main OBJECT catch_main.cc)
+target_link_libraries(catch_main PUBLIC spdlog::spdlog Catch2::Catch2)
+
+add_executable(address-tests 
+               test_address_manager.cc
+               ${PROJECT_SRC_FOLDER}/core/networking/addresses/manager.cc)
+target_link_libraries(address-tests PRIVATE SQLite::SQLite3 asio::asio catch_main fakeit::fakeit)
+
+# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
+# to whatever you want, or use different for different binaries
+catch_discover_tests(
+    address-tests
+  TEST_PREFIX
+  "unittests."
+  REPORTER
+  xml
+  OUTPUT_DIR
+  .
+  OUTPUT_PREFIX
+  "unittests."
+  OUTPUT_SUFFIX
+  .xml)

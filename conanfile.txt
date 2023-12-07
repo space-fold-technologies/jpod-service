@@ -1,0 +1,19 @@
+# Docs at https://docs.conan.io/en/latest/reference/conanfile_txt.html
+
+[requires]
+spdlog/1.12.0
+asio/1.28.1
+tl-expected/20190710
+fakeit/2.4.0
+openssl/3.1.2
+catch2/2.13.9
+sole/1.0.2
+fakeit/2.4.0
+sqlite3/3.42.0
+range-v3/0.12.0
+
+[generators]
+cmake_find_package_multi
+
+[options]
+spdlog:header_only=True

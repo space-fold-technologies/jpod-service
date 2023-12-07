@@ -1,37 +1,16 @@
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+cmake_minimum_required(VERSION 3.15...3.23)
 
 include_directories(${PROJECT_HDRS_FOLDER})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
+find_package(Catch2 CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
-add_library(Catch2 INTERFACE)
-target_include_directories(Catch2 INTERFACE ${CATCH2_FOLDER_PATH})
-add_library(FakeIt INTERFACE)
-target_include_directories(FakeIt INTERFACE ${FAKEIT_FOLDER_PATH})
+include(Catch)
 
-add_executable(test-jpod
-               test_main.cc
-               test_container_manager.cc
-               test_address_manager.cc
-               ${PROJECT_SRC_FOLDER}/core/containers/manager.cc
-               ${PROJECT_SRC_FOLDER}/core/networking/addresses/manager.cc
-               )
+add_library(catch_main OBJECT catch_main.cc)
+target_link_libraries(catch_main PUBLIC spdlog::spdlog Catch2::Catch2)
 
-target_link_libraries(test-jpod
-                      PRIVATE
-                      spdlog::spdlog
-                      PUBLIC
-                      Catch2
-                      FakeIt
-                      jail
-                      JSON
-                      SQLite::SQLite3
-                      )
-
-target_include_directories(test-jpod PRIVATE ${PROJECT_HDRS_FOLDER})
-install(TARGETS test-jpod DESTINATION bin)
+# image tests 
+add_subdirectory(images)

@@ -1,60 +1,80 @@
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+find_package(fmt CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(tl-expected REQUIRED CONFIG)
+find_package(asio REQUIRED)
+find_package(OpenSSL REQUIRED CONFIG)
+find_package(sole REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(range-v3 REQUIRED)
+# Generic test that uses conan libs
 
-# Generated sources
-set(SERVICE_PROTO_SRCS "${CMAKE_CURRENT_BINARY_DIR}/protocols.pb.cc")
-set(SERVICE_PROTO_HDRS "${CMAKE_CURRENT_BINARY_DIR}/protocols.pb.h")
-
-add_custom_command(
-      OUTPUT "${SERVICE_PROTO_SRCS}" "${SERVICE_PROTO_HDRS}"
-      COMMAND ${_PROTOBUF_PROTOC}
-      ARGS --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-        -I "${SERVICE_PROTOS_PATH}"
-        "${SERVICE_PROTOS}"
-      DEPENDS "${SERVICE_PROTOS}")
-
-# Include generated *.pb.h files
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${PROJECT_HDRS_FOLDER}/include)
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
-
-add_library(PSTREAMS INTERFACE)
-target_include_directories(PSTREAMS INTERFACE ${PSTREAMS_FOLDER_PATH})
-
-add_library(JSON INTERFACE)
-target_include_directories(JSON INTERFACE ${NLOHMANN_JSON_FOLDER})
-
-add_executable(${PROJECT_NAME}
-                core/shell/terminal.cc
-                core/shell/service.cc
-                core/shell/session.cc
+add_executable(jpod-service
                 main.cc
-                ${SERVICE_PROTO_SRCS}
+                ops/application.cc
+                shell/terminal.cc 
+                shell/session.cc
+                core/connections/ipc/domain_connection.cc
+                core/connections/ipc/domain_connection_acceptor.cc
+                core/connections/ws/ws_connection.cc
+                core/connections/ws/ws_connection_acceptor.cc
+                core/connections/ws/crypto.cc
+                core/filesystems/zfs_handler.cc
+                # core/networks/interfaces/virtual_network_handler.cc
+                # core/networks/pf/query.cc 
+                # core/networks/pf/rule_set.cc 
+                # core/networks/pf/transaction.cc
+                # core/networks/addresses/provider.cc 
+                # core/networks/addresses/sql_repository.cc
+
+                # http related stuff
+                core/networks/http/request.cc 
+                core/networks/http/asio_client.cc
+                core/networks/http/connection.cc
+                core/networks/http/request_builder.cc
+                core/networks/http/file_destination.cc
+                # now we add the container related stuff
+                images/run_instruction.cc
+                images/copy_instruction.cc
+                images/from_instruction.cc
+                images/work_dir_instruction.cc
+                images/image_service.cc
+                images/sql_image_repository.cc
+                core/databases/connection.cc 
+                core/databases/data_source.cc 
+                core/databases/migrations.cc 
+                core/databases/transaction.cc
+                core/databases/result_set.cc 
+                core/databases/statement.cc 
+                ops/session.cc
+                containers/container.cc
+                containers/container_runtime.cc
+                containers/container_controller.cc
+                containers/container_service.cc
+                containers/sql_container_repository.cc
+                # containers/container_builder.cc
                 )
 
-target_link_libraries(${PROJECT_NAME}
-                       JSON
-                       PSTREAMS
-                       spdlog::spdlog
+target_link_libraries(jpod-service
+                       PRIVATE
+                       fmt::fmt 
+                       spdlog::spdlog_header_only
+                       asio::asio
                        jail
-                       SQLite::SQLite3
                        dl
                        util
-                       ${_PROTOBUF_LIBPROTOBUF}
+                       Msgpack::Msgpack
+                       SQLite::SQLite3
+                       tl::expected
+                       sole::sole
+                       range-v3::range-v3
+                       subprocess::subprocess
                        )
 
-target_include_directories(${PROJECT_NAME}
+target_link_libraries(jpod-service PUBLIC OpenSSL::Crypto)                       
+
+target_include_directories(jpod-service
                             PUBLIC
                             ${PROJECT_HDRS_FOLDER}
-                            ${SQLite3_INCLUDE_DIRS}
-                            ${WEBSOCKETPP_INCLUDE_DIR}
+                            PRIVATE "${CMAKE_BINARY_DIR}"
                             )
-
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS jpod-service DESTINATION bin)

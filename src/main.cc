@@ -1,34 +1,46 @@
-//#include <core/containers/manager.h>
-#include <core/networking/pf/rules.h>
-#include <definitions.h>
-#include <iostream>
-#include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-
-auto main(int argc, char *argv[]) -> int {
-  auto console = spdlog::stdout_color_mt(LOGGER);
-  console->info("JPOD VERSION : {}", 1.0);
-  using namespace networking::pf;
-
-  auto rule = RuleBuilder::builder()
-                  .action(Action::NAT)
-                  .address_family(AddressFamily::IP_V4)
-                  .direction(Direction::IN_OUT)
-                  .source("192.168.40.236", 8500)
-                  .destination("172.16.24.23", 8500)
-                  .build();
-
-  // using namespace containers;
-  // Composition composition;
-  // composition.hostname = "developer";
-  // composition.ip_v4_address = "127.0.0.1";
-  // composition.snapshot_path = "/home/william/jpod/containers/alo";
-  // ContainerManager manager;
-  // auto report = manager.create(BaseOS::LINUX, composition);
-
-  // console->info("OUT COME {}", report.getLog());
-  // console->info("JAIL IDENTIFIER {}", report.getIdentifier());
+#include <asio/io_context.hpp>
+#include <asio/signal_set.hpp>
+#include <memory>
+#include <core/databases/data_source.h>
+#include <containers/container_runtime.h>
+#include <containers/sql_container_repository.h>
+#include <images/sql_image_repository.h>
+#include <ops/application.h>
+#if defined __has_include
+#if __has_include("spdlog/fmt/bundled/core.h")
+#error "bundled fmt within spdlog should not be present"
+#endif
+#endif
+using namespace containers;
+using namespace images;
+auto main(int argc, char *argv[]) -> int
+{
+  auto console = spdlog::stdout_color_mt("jpod");
+  asio::io_context context;
+  bool running = true;
+  auto runtime = std::make_shared<ContainerRuntime>(context);
+  auto data_source = std::make_shared<DataSource>("metadata.db", 5);
+  std::shared_ptr<ContainerRepository> container_repository = std::make_shared<SQLContainerRepository>(data_source);
+  std::shared_ptr<ImageRepository> image_repository = std::make_shared<SQLImageRepository>(data_source);
+  auto app = std::make_unique<operations::Application>(context, runtime, container_repository, image_repository);
+  asio::signal_set signal(context, SIGINT, SIGTERM);
+  signal.async_wait(
+      [&console, &app, &running](const asio::error_code &error, int signal_number)
+      {
+        if (error || signal_number == SIGTERM || signal_number == SIGKILL)
+        {
+          console->info("signal to shutdown received");
+          app->stop();
+          running = false;
+        }
+      });
+  app->start();
+  while (running)
+  {
+    context.run();
+  }
 
   return EXIT_SUCCESS;
 }
