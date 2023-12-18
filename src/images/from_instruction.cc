@@ -17,15 +17,14 @@ namespace fs = std::filesystem;
 
 namespace images
 {
-    FromInstruction::FromInstruction(asio::io_context &context,
+    FromInstruction::FromInstruction(
                                      const std::string &id,
                                      const std::string &image_identifier,
                                      const std::string &source,
                                      std::shared_ptr<core::networks::http::Client> client,
                                      std::shared_ptr<ImageRepository> repository,
                                      std::shared_ptr<FileSystemHandler> handler,
-                                     InstructionListener &listener) : context(context),
-                                                                      id(id),
+                                     InstructionListener &listener) : id(id),
                                                                       image_identifier(image_identifier),
                                                                       source(source),
                                                                       client(client),

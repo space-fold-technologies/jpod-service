@@ -33,6 +33,7 @@ add_executable(jpod-service
                 core/networks/http/request_builder.cc
                 core/networks/http/file_destination.cc
                 # now we add the container related stuff
+                images/stage.cc
                 images/run_instruction.cc
                 images/copy_instruction.cc
                 images/from_instruction.cc

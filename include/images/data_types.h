@@ -9,12 +9,12 @@
 
 namespace images
 {
-    enum class StepType
+    enum class StepType:int
     {
-        FROM,
-        RUN,
-        WORKDIR,
-        COPY
+        FROM=0,
+        RUN=1,
+        WORKDIR=2,
+        COPY=3
     };
 
     struct MountPoint
@@ -25,12 +25,12 @@ namespace images
         uint64_t flags;
     };
 
-    struct Stage
+    struct StageDetails
     {
         std::string image_name;
         std::string image_version;
         std::vector<std::string> labels;
-        std::map<std::string, std::string> instructions;
+        std::map<std::string, StepType> instructions;
     };
 
     struct ConstructionDetails
@@ -38,7 +38,7 @@ namespace images
         std::string name;
         std::string tag;
         std::string current_directory;
-        std::vector<Stage> stages;
+        std::vector<StageDetails> stages;
         std::map<std::string, std::string> env_vars;
         std::string entry_point;
     };

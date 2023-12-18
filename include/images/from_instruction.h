@@ -31,7 +31,7 @@ namespace images
     class FromInstruction : public Instruction, public Destination, public std::enable_shared_from_this<FromInstruction>
     {
     public:
-        explicit FromInstruction(asio::io_context &context,
+        explicit FromInstruction(
                         const std::string &id,
                         const std::string &image_identifier,
                         const std::string &source,
@@ -51,7 +51,6 @@ namespace images
         void download_image_filesystem(const AccessDetails &details, const ImageMetaData &metadata);
 
     private:
-        asio::io_context &context;
         const std::string &id;
         const std::string &image_identifier;
         const std::string &source;
