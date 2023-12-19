@@ -39,22 +39,14 @@ namespace images
             return make_error_code(error_code::invalid_destination);
         }
         auto parts = order | ranges::view::split(' ') | ranges::to<std::vector<std::string>>();
-        if (parts.size() != 2)
+        if (parts.size() < 2)
         {
             return make_error_code(error_code::invalid_copy_instruction);
         }
         // handle from parts
+        err = parts.size() == 3 ? setup_stage_copy_origin(parts) : setup_local_copy_origin(parts);
 
-        if (auto path = sanitize_route(local_folder, parts.at(0)); !fs::exists(path, err))
-        {
-            return err ? err : make_error_code(error_code::invalid_origin);
-        }
-        else
-        {
-            this->from = path;
-        }
-
-        if (auto path = sanitize_route(destination_folder, parts.at(1)); !fs::exists(path, err))
+        if (auto path = sanitize_route(destination_folder, parts.size() == 3 ? parts.at(2) : parts.at(1)); !fs::exists(path, err))
         {
             return err ? err : make_error_code(error_code::invalid_destination);
         }
@@ -77,6 +69,38 @@ namespace images
         }
 
         return fs::path(fs::path(path) / fs::path(target)).string();
+    }
+    std::error_code CopyInstruction::setup_local_copy_origin(const std::vector<std::string> &order)
+    {
+        std::error_code err;
+        if (auto path = sanitize_route(local_folder, order.at(0)); !fs::exists(path, err))
+        {
+            return err ? err : make_error_code(error_code::invalid_origin);
+        }
+        else
+        {
+            this->from = path;
+            return err;
+        }
+    }
+    std::error_code CopyInstruction::setup_stage_copy_origin(const std::vector<std::string> &order)
+    {
+        std::error_code err;
+        if (auto position = order.at(0).find("--from="); position != std::string::npos)
+        {
+            // then append the part of the string to local folder path
+            auto image_folder_path = fs::path(local_folder) / fs::path(order.at(0).substr(position + 1));
+            if (auto path = sanitize_route(local_folder, order.at(0)); !fs::exists(path, err))
+            {
+                return err ? err : make_error_code(error_code::invalid_origin);
+            }
+            else
+            {
+                this->from = path;
+
+            }
+        }
+        return err;
     }
     void CopyInstruction::execute()
     {

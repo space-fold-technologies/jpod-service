@@ -76,4 +76,46 @@ TEST_CASE("copy instruction case")
             }
         }
     }
+    GIVEN("an existing external image folder") 
+    {
+        std::string id = sole::uuid4().str();
+        std::string previous_stage_path = create_folder("previous-stage-folder");
+        create_file_in_folder(previous_stage_path, "crimes-20-1.txt");
+        create_file_in_folder(previous_stage_path, "crimes-20-2.txt");
+        create_file_in_folder(previous_stage_path, "crimes-20-3.txt");
+        WHEN("a file exists on another image stage")
+        {
+            THEN("a file can be copied to the current image stage by number")
+            {
+                std::string order("--from=0 ./crimes-20-1.txt .");
+                CopyInstruction instruction(id, order, previous_stage_path, destination_path, mock.get());
+                auto err = instruction.parse();
+                REQUIRE(!err);
+                instruction.execute();
+                Verify(Method(mock, on_instruction_runner_initialized).Using(id)).Once();
+                Verify(Method(mock, on_instruction_runner_completion).Using(id, _)).Once();
+            }
+            THEN("a file can be copied to the current image stage by alias")
+            {
+                std::string order("--from=BASE ./crimes-20-1.txt .");
+                CopyInstruction instruction(id, order, previous_stage_path, destination_path, mock.get());
+                auto err = instruction.parse();
+                REQUIRE(!err);
+                instruction.execute();
+                Verify(Method(mock, on_instruction_runner_initialized).Using(id)).Once();
+                Verify(Method(mock, on_instruction_runner_completion).Using(id, _)).Once();
+            }
+        }
+        WHEN("a file does not exist on another image stage")
+        {
+            THEN("copying the target will result in an error")
+            {
+                std::string order("--from=0 ./crimes-unknown.txt .");
+                CopyInstruction instruction(id, order, previous_stage_path, destination_path, mock.get());
+                auto err = instruction.parse();
+                REQUIRE(err);
+                VerifyNoOtherInvocations(mock);
+            }
+        }
+    }
 }

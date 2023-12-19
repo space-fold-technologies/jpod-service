@@ -5,7 +5,9 @@
 #include <memory>
 #include <deque>
 #include <optional>
-
+#include <functional>
+#include <tl/expected.hpp>
+#include <system_error>
 namespace asio
 {
     class io_context;
@@ -33,6 +35,7 @@ namespace images
     class Instruction;
     class ImageRepository;
     struct StageDetails;
+    typedef std::function<tl::expected<std::string, std::error_code>(const std::string&)> image_stage_resolver;
     class Stage : public InstructionListener
     {
     public:
@@ -43,7 +46,7 @@ namespace images
             std::shared_ptr<Client> client,
             std::shared_ptr<ImageRepository> repository,
             std::shared_ptr<FileSystemHandler> handler,
-            std::optional<Stage> previous_stage);
+            image_stage_resolver resolver);
         void run();
         void on_instruction_runner_initialized(std::string id) override;
         void on_instruction_runner_data_received(std::string id, const std::vector<uint8_t> &content) override;
@@ -57,7 +60,7 @@ namespace images
             std::shared_ptr<ImageRepository> repository,
             std::shared_ptr<FileSystemHandler> handler);
         std::shared_ptr<Instruction> run_instruction(const std::string &order);
-        std::shared_ptr<Instruction> copy_instruction(std::optional<Stage> previous_stage, const std::string &order);
+        std::shared_ptr<Instruction> copy_instruction(const std::string &order, image_stage_resolver resolver);
         std::shared_ptr<Instruction> work_dir_instruction(const std::string &order);
 
     private:

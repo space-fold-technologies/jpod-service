@@ -23,6 +23,8 @@ namespace images
 
         private:
         std::string sanitize_route(const std::string& path, const std::string& target);
+        std::error_code setup_local_copy_origin(const std::vector<std::string>& order);
+        std::error_code setup_stage_copy_origin(const std::vector<std::string>& order);
 
     private:
         const std::string &id;
