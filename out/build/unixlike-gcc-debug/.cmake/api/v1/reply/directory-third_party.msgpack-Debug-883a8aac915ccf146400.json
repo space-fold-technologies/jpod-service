@@ -1,0 +1,87 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"third_party/msgpack/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 24,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 28,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 44,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "include",
+			"paths" : 
+			[
+				{
+					"from" : "third_party/msgpack/include",
+					"to" : "."
+				}
+			],
+			"type" : "directory"
+		},
+		{
+			"backtrace" : 2,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/Msgpack",
+			"exportName" : "MsgpackTargets",
+			"exportTargets" : 
+			[
+				{
+					"id" : "Msgpack::@895a25f5387cf1abdee3",
+					"index" : 0
+				}
+			],
+			"paths" : 
+			[
+				"third_party/msgpack/CMakeFiles/Export/08c71f1247181a3e40311dc6aa0cfec8/MsgpackTargets.cmake"
+			],
+			"type" : "export"
+		},
+		{
+			"backtrace" : 3,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/Msgpack",
+			"paths" : 
+			[
+				"out/build/unixlike-gcc-debug/third_party/msgpack/MsgpackConfig.cmake",
+				"out/build/unixlike-gcc-debug/third_party/msgpack/MsgpackConfigVersion.cmake"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "third_party/msgpack",
+		"source" : "third_party/msgpack"
+	}
+}

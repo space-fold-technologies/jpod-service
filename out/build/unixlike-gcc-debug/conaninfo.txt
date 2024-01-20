@@ -1,0 +1,172 @@
+[settings]
+    arch=x86_64
+    build_type=Debug
+    compiler=gcc
+    compiler.cppstd=17
+    compiler.libcxx=libstdc++11
+    compiler.version=12
+    os=FreeBSD
+
+[requires]
+    asio/1.Y.Z
+    catch2/2.Y.Z
+    fakeit/2.Y.Z
+    libzip/1.Y.Z
+    openssl/3.Y.Z
+    range-v3/0.12.0
+    sole/1.Y.Z
+    spdlog/1.Y.Z
+    sqlite3/3.Y.Z
+    tl-expected/20190710.Y.Z
+    zstd/1.Y.Z
+
+[options]
+
+
+[full_settings]
+    arch=x86_64
+    arch_build=x86_64
+    build_type=Debug
+    compiler=gcc
+    compiler.cppstd=17
+    compiler.libcxx=libstdc++11
+    compiler.version=12
+    os=FreeBSD
+    os_build=FreeBSD
+
+[full_requires]
+    asio/1.29.0:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+    bzip2/1.0.8:c94da3b50d318eead1089667864c1e9ca276409a
+    catch2/2.13.9:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+    fakeit/2.4.0:86d587422df2c31448edbb2a26fabf141995dc78
+    libzip/1.10.1:c8c0ee893f9f362cf4d1f09245d8594d9ac6626f
+    openssl/3.2.0:3530ef56e44fc294e784f5bf2e62a9dafb7fbbc5
+    range-v3/0.12.0:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+    sole/1.0.2:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+    spdlog/1.12.0:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+    sqlite3/3.42.0:357c5db193a2be44ea517b01e7557735b098639a
+    tl-expected/20190710:5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9
+    xz_utils/5.4.5:4ff90a381eedd28e01423b1f8744e2217c746aba
+    zlib/1.2.13:4ff90a381eedd28e01423b1f8744e2217c746aba
+    zstd/1.5.5:b99e1b5e11cad06467d6262fb1caf52a2d97b018
+
+[full_options]
+    bzip2:build_executable=True
+    bzip2:fPIC=True
+    bzip2:shared=False
+    catch2:default_reporter=None
+    catch2:with_main=False
+    catch2:with_prefix=False
+    fakeit:integration=standalone
+    libzip:crypto=openssl
+    libzip:fPIC=True
+    libzip:shared=False
+    libzip:tools=True
+    libzip:with_bzip2=True
+    libzip:with_lzma=True
+    libzip:with_zstd=True
+    openssl:386=False
+    openssl:enable_weak_ssl_ciphers=False
+    openssl:fPIC=True
+    openssl:no_aria=False
+    openssl:no_asm=False
+    openssl:no_async=False
+    openssl:no_autoload_config=False
+    openssl:no_bf=False
+    openssl:no_blake2=False
+    openssl:no_camellia=False
+    openssl:no_cast=False
+    openssl:no_chacha=False
+    openssl:no_cms=False
+    openssl:no_comp=False
+    openssl:no_ct=False
+    openssl:no_deprecated=False
+    openssl:no_des=False
+    openssl:no_dgram=False
+    openssl:no_dh=False
+    openssl:no_dsa=False
+    openssl:no_dso=False
+    openssl:no_ec=False
+    openssl:no_ecdh=False
+    openssl:no_ecdsa=False
+    openssl:no_engine=False
+    openssl:no_filenames=False
+    openssl:no_fips=False
+    openssl:no_gost=False
+    openssl:no_idea=False
+    openssl:no_legacy=False
+    openssl:no_md2=True
+    openssl:no_md4=False
+    openssl:no_mdc2=False
+    openssl:no_module=False
+    openssl:no_ocsp=False
+    openssl:no_pinshared=False
+    openssl:no_rc2=False
+    openssl:no_rc4=False
+    openssl:no_rc5=False
+    openssl:no_rfc3779=False
+    openssl:no_rmd160=False
+    openssl:no_seed=False
+    openssl:no_sm2=False
+    openssl:no_sm3=False
+    openssl:no_sm4=False
+    openssl:no_sock=False
+    openssl:no_srp=False
+    openssl:no_srtp=False
+    openssl:no_sse2=False
+    openssl:no_ssl=False
+    openssl:no_ssl3=False
+    openssl:no_stdio=False
+    openssl:no_threads=False
+    openssl:no_tls1=False
+    openssl:no_ts=False
+    openssl:no_whirlpool=False
+    openssl:no_zlib=False
+    openssl:openssldir=None
+    openssl:shared=False
+    spdlog:header_only=True
+    spdlog:no_exceptions=False
+    spdlog:wchar_filenames=False
+    spdlog:wchar_support=False
+    sqlite3:build_executable=True
+    sqlite3:disable_gethostuuid=False
+    sqlite3:enable_column_metadata=True
+    sqlite3:enable_dbpage_vtab=False
+    sqlite3:enable_dbstat_vtab=False
+    sqlite3:enable_default_secure_delete=False
+    sqlite3:enable_default_vfs=True
+    sqlite3:enable_explain_comments=False
+    sqlite3:enable_fts3=False
+    sqlite3:enable_fts3_parenthesis=False
+    sqlite3:enable_fts4=False
+    sqlite3:enable_fts5=False
+    sqlite3:enable_json1=False
+    sqlite3:enable_math_functions=True
+    sqlite3:enable_preupdate_hook=False
+    sqlite3:enable_rtree=True
+    sqlite3:enable_soundex=False
+    sqlite3:enable_unlock_notify=True
+    sqlite3:fPIC=True
+    sqlite3:max_blob_size=None
+    sqlite3:max_column=None
+    sqlite3:max_variable_number=None
+    sqlite3:omit_deprecated=False
+    sqlite3:omit_load_extension=False
+    sqlite3:shared=False
+    sqlite3:threadsafe=1
+    sqlite3:use_alloca=False
+    xz_utils:fPIC=True
+    xz_utils:shared=False
+    zlib:fPIC=True
+    zlib:shared=False
+    zstd:build_programs=True
+    zstd:fPIC=True
+    zstd:shared=False
+    zstd:threading=True
+
+[recipe_hash]
+
+
+[env]
+    CC=/usr/local/bin/gcc
+    CXX=/usr/local/bin/g++

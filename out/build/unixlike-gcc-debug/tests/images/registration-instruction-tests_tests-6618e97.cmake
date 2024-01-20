@@ -1,0 +1,3 @@
+add_test( [==[unittests.registration instruction case]==] /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/registration-instruction-tests [==[registration instruction case]==] [==[--reporter xml]==] [==[--out /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/./unittests.registration_instruction_case.xml]==])
+set_tests_properties( [==[unittests.registration instruction case]==] PROPERTIES WORKING_DIRECTORY /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images)
+set( registration-instruction-tests_TESTS [==[unittests.registration instruction case]==])

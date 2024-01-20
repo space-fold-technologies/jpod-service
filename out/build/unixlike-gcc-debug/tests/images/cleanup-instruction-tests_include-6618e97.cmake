@@ -1,0 +1,5 @@
+if(EXISTS "/home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/cleanup-instruction-tests_tests-6618e97.cmake")
+  include("/home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/cleanup-instruction-tests_tests-6618e97.cmake")
+else()
+  add_test(cleanup-instruction-tests_NOT_BUILT-6618e97 cleanup-instruction-tests_NOT_BUILT-6618e97)
+endif()

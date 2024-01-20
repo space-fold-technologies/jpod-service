@@ -1,0 +1,219 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.3"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "third_party/msgpack",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-third_party.msgpack-Debug-883a8aac915ccf146400.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.9"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "third_party/msgpack"
+				},
+				{
+					"build" : "src",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-src-Debug-e88838c21baf2af83312.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.3"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src",
+					"targetIndexes" : 
+					[
+						4
+					]
+				},
+				{
+					"build" : "tests",
+					"childIndexes" : 
+					[
+						4
+					],
+					"jsonFile" : "directory-tests-Debug-b01f6abb0ab61427ef3b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "tests",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "tests/images",
+					"jsonFile" : "directory-tests.images-Debug-14903f030a1508cc74b8.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.15"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 0,
+					"source" : "tests/images",
+					"targetIndexes" : 
+					[
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1
+					],
+					"directoryIndexes" : 
+					[
+						0,
+						2,
+						3,
+						4
+					],
+					"name" : "daemon",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "Msgpack",
+					"parentIndex" : 0
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 3,
+					"id" : "catch_main::@a44f0ac069e85531cdee",
+					"jsonFile" : "target-catch_main-Debug-c7239596ae5436adafce.json",
+					"name" : "catch_main",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "cleanup-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-cleanup-instruction-tests-Debug-c156f19671695842d8ed.json",
+					"name" : "cleanup-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "compression-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-compression-instruction-tests-Debug-95297412050523c4cc17.json",
+					"name" : "compression-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "copy-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-copy-instruction-tests-Debug-e9811b7478f8da9926a7.json",
+					"name" : "copy-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "daemon::@145eef247bfb46b6828c",
+					"jsonFile" : "target-daemon-Debug-272e298d5881a809eec4.json",
+					"name" : "daemon",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "download-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-download-instruction-tests-Debug-2af77fcdb3bd6337c279.json",
+					"name" : "download-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "mount-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-mount-instruction-tests-Debug-7f3ba29c10042ba743ab.json",
+					"name" : "mount-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "registration-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-registration-instruction-tests-Debug-d8896c925d260b209ac7.json",
+					"name" : "registration-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "unmount-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-unmount-instruction-tests-Debug-639cd854f9bee0770a7d.json",
+					"name" : "unmount-instruction-tests",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "work-dir-instruction-tests::@bd0a887d39ee18b64928",
+					"jsonFile" : "target-work-dir-instruction-tests-Debug-6198e1536e87bad02105.json",
+					"name" : "work-dir-instruction-tests",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug",
+		"source" : "/home/william/Projects/demonstration/jpod-service"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 5
+	}
+}

@@ -1,0 +1,3 @@
+add_test( [==[unittests.compression instruction case]==] /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/compression-instruction-tests [==[compression instruction case]==] [==[--reporter xml]==] [==[--out /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/./unittests.compression_instruction_case.xml]==])
+set_tests_properties( [==[unittests.compression instruction case]==] PROPERTIES WORKING_DIRECTORY /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images)
+set( compression-instruction-tests_TESTS [==[unittests.compression instruction case]==])

@@ -1,81 +1,86 @@
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(tl-expected REQUIRED CONFIG)
-find_package(asio REQUIRED)
+find_package(asio REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED CONFIG)
 find_package(sole REQUIRED)
-find_package(SQLite3 REQUIRED)
-find_package(range-v3 REQUIRED)
+find_package(range-v3 REQUIRED CONFIG)
+find_package(libzip REQUIRED CONFIG)
+find_package(SQLite3 REQUIRED CONFIG)
+find_package(zstd REQUIRED CONFIG)
 # Generic test that uses conan libs
 
-add_executable(jpod-service
-                main.cc
-                ops/application.cc
-                shell/terminal.cc 
-                shell/session.cc
-                core/connections/ipc/domain_connection.cc
-                core/connections/ipc/domain_connection_acceptor.cc
-                core/connections/ws/ws_connection.cc
-                core/connections/ws/ws_connection_acceptor.cc
-                core/connections/ws/crypto.cc
-                core/filesystems/zfs_handler.cc
-                # core/networks/interfaces/virtual_network_handler.cc
-                # core/networks/pf/query.cc 
-                # core/networks/pf/rule_set.cc 
-                # core/networks/pf/transaction.cc
-                # core/networks/addresses/provider.cc 
-                # core/networks/addresses/sql_repository.cc
+# if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DASIO_HAS_IO_URING -luring")
+# elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")  
+#     option(ASIO_HAS_KQUEUE "IO_URING SUPPORT" ON)
+# elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR CMAKE_SYSTEM_NAME STREQUAL "SunOS")
+#     message(STATUS "Building On Some solaris variant.")
+#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DASIO_HAS_DEV_POLL")
+# endif ()
 
-                # http related stuff
-                core/networks/http/request.cc 
-                core/networks/http/asio_client.cc
-                core/networks/http/connection.cc
-                core/networks/http/request_builder.cc
-                core/networks/http/file_destination.cc
-                # now we add the container related stuff
-                images/stage.cc
-                images/run_instruction.cc
-                images/copy_instruction.cc
-                images/from_instruction.cc
-                images/work_dir_instruction.cc
-                images/image_service.cc
-                images/sql_image_repository.cc
-                core/databases/connection.cc 
-                core/databases/data_source.cc 
-                core/databases/migrations.cc 
-                core/databases/transaction.cc
-                core/databases/result_set.cc 
-                core/databases/statement.cc 
-                ops/session.cc
-                containers/container.cc
-                containers/container_runtime.cc
-                containers/container_controller.cc
-                containers/container_service.cc
-                containers/sql_container_repository.cc
-                # containers/container_builder.cc
+add_executable(daemon
+                main.cc
+                bootstrap.cc
+                core/commands/command_handler.cc
+                core/commands/command_handler_registry.cc
+                core/connections/connection.cc
+                core/connections/connection_acceptor.cc
+                core/sql/connection.cc 
+                core/sql/data_source.cc 
+                core/sql/migrations.cc 
+                core/sql/result_set.cc 
+                core/sql/statement.cc 
+                core/sql/transaction.cc 
+                domain/images/list_handler.cc
+                domain/images/build_handler.cc
+                domain/images/instructions/download_instruction.cc
+                domain/images/instructions/copy_instruction.cc
+                domain/images/instructions/work_dir_instruction.cc
+                domain/images/instructions/run_instruction.cc
+                domain/images/instructions/compression_instruction.cc
+                domain/images/instructions/mount_instruction.cc
+                domain/images/instructions/unmount_instruction.cc
+                domain/images/instructions/registration_instruction.cc
+                domain/images/instructions/cleanup_instruction.cc
+                domain/images/instructions/build_system_resolver.cc
+                domain/images/sql_repository.cc
+                domain/images/http/request.cc
+                domain/images/http/request_builder.cc
+                domain/images/http/connection_base.cc
+                domain/images/http/secure_connection.cc
+                domain/images/http/insecure_connection.cc
+                domain/images/http/asio_client.cc
                 )
 
-target_link_libraries(jpod-service
+target_link_libraries(daemon
                        PRIVATE
                        fmt::fmt 
                        spdlog::spdlog_header_only
                        asio::asio
-                       jail
-                       dl
-                       util
-                       Msgpack::Msgpack
-                       SQLite::SQLite3
+                       range-v3::range-v3
                        tl::expected
                        sole::sole
-                       range-v3::range-v3
-                       subprocess::subprocess
+                       Msgpack::Msgpack
+                       libzip::zip
+                       zstd::libzstd_static
+                       SQLite::SQLite3
                        )
 
-target_link_libraries(jpod-service PUBLIC OpenSSL::Crypto)                       
+target_link_libraries(daemon PUBLIC OpenSSL::Crypto OpenSSL::SSL)                       
 
-target_include_directories(jpod-service
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+
+    target_link_libraries(daemon PRIVATE jail dl util)   
+    
+elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR CMAKE_SYSTEM_NAME STREQUAL "Solaris" OR CMAKE_SYSTEM_NAME STREQUAL "Illumos")
+    message(STATUS "Building On Solaris OS variant.")
+    
+endif ()
+
+target_include_directories(daemon
                             PUBLIC
                             ${PROJECT_HDRS_FOLDER}
                             PRIVATE "${CMAKE_BINARY_DIR}"
                             )
-install(TARGETS jpod-service DESTINATION bin)
+install(TARGETS daemon DESTINATION bin)

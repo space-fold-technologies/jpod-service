@@ -1,0 +1,3 @@
+add_test( [==[unittests.download instruction case]==] /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/download-instruction-tests [==[download instruction case]==] [==[--reporter xml]==] [==[--out /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/./unittests.download_instruction_case.xml]==])
+set_tests_properties( [==[unittests.download instruction case]==] PROPERTIES WORKING_DIRECTORY /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images)
+set( download-instruction-tests_TESTS [==[unittests.download instruction case]==])

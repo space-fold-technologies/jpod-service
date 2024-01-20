@@ -1,0 +1,3 @@
+add_test( [==[unittests.mount instruction case]==] /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/mount-instruction-tests [==[mount instruction case]==] [==[--reporter xml]==] [==[--out /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/./unittests.mount_instruction_case.xml]==])
+set_tests_properties( [==[unittests.mount instruction case]==] PROPERTIES WORKING_DIRECTORY /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images)
+set( mount-instruction-tests_TESTS [==[unittests.mount instruction case]==])

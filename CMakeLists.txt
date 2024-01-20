@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16...3.23)
 
-project(jpod-service)
+project(daemon)
 # Not ideal to use this global variable, but necessary to make sure
 # that tooling and projects use the same version
 set(CMAKE_CXX_STANDARD 17)
@@ -14,28 +14,15 @@ include(utilities)
 include(rc)
 include(conan)
 run_conan()
-include_directories(SYSTEM /usr/include)
-link_directories(/usr/lib)
-list(APPEND CMAKE_REQUIRED_INCLUDES /usr/include)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 option(BUILD_TESTS "Build Unit tests" ON)
 
 add_subdirectory(third_party/msgpack)
-add_subdirectory(third_party/subprocess)
 include_directories(include)
 add_subdirectory(src)
 
-# Add resources
-# cmrc_add_resources(
-#     jpod
-#     NAMESPACE jpod 
-#     WHENCE jpod 
-#     PREFIX jpod 
-# )
-
-# Tests for the engine
-# Tests for the engine
 option(ENABLE_TESTING "Enable the tests" ${PROJECT_IS_TOP_LEVEL})
 if(ENABLE_TESTING)
     set(PROJECT_HDRS_FOLDER "${CMAKE_CURRENT_LIST_DIR}/include")

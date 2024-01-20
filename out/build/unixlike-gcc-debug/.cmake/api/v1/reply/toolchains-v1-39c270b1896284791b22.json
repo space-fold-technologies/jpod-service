@@ -1,0 +1,101 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/local/lib/gcc12/gcc/x86_64-portbld-freebsd13.2/12.2.0/include",
+						"/usr/local/include",
+						"/usr/include"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/local/lib/gcc12/gcc/x86_64-portbld-freebsd13.2/12.2.0",
+						"/usr/local/x86_64-portbld-freebsd13.2/lib",
+						"/usr/local/lib/gcc12"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"gcc",
+						"gcc_s",
+						"c",
+						"gcc",
+						"gcc_s"
+					]
+				},
+				"path" : "/usr/local/bin/gcc",
+				"version" : "12.2.0"
+			},
+			"language" : "C",
+			"sourceFileExtensions" : 
+			[
+				"c",
+				"m"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"/usr/local/lib/gcc12/include/c++",
+						"/usr/local/lib/gcc12/include/c++/x86_64-portbld-freebsd13.2",
+						"/usr/local/lib/gcc12/include/c++/backward",
+						"/usr/local/lib/gcc12/gcc/x86_64-portbld-freebsd13.2/12.2.0/include",
+						"/usr/local/include",
+						"/usr/include"
+					],
+					"linkDirectories" : 
+					[
+						"/usr/local/lib/gcc12/gcc/x86_64-portbld-freebsd13.2/12.2.0",
+						"/usr/local/x86_64-portbld-freebsd13.2/lib",
+						"/usr/local/lib/gcc12"
+					],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : 
+					[
+						"stdc++",
+						"m",
+						"gcc_s",
+						"gcc",
+						"c",
+						"gcc_s",
+						"gcc"
+					]
+				},
+				"path" : "/usr/local/bin/g++",
+				"version" : "12.2.0"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}

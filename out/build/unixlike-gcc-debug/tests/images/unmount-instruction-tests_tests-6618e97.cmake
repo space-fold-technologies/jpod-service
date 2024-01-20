@@ -1,0 +1,3 @@
+add_test( [==[unittests.unmount instruction case]==] /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/unmount-instruction-tests [==[unmount instruction case]==] [==[--reporter xml]==] [==[--out /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/./unittests.unmount_instruction_case.xml]==])
+set_tests_properties( [==[unittests.unmount instruction case]==] PROPERTIES WORKING_DIRECTORY /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images)
+set( unmount-instruction-tests_TESTS [==[unittests.unmount instruction case]==])

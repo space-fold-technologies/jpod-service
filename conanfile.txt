@@ -2,18 +2,21 @@
 
 [requires]
 spdlog/1.12.0
-asio/1.28.1
+asio/1.29.0
 tl-expected/20190710
 fakeit/2.4.0
-openssl/3.1.2
+openssl/3.2.0
 catch2/2.13.9
 sole/1.0.2
-fakeit/2.4.0
-sqlite3/3.42.0
 range-v3/0.12.0
+libzip/1.10.1
+sqlite3/3.42.0
+zstd/1.5.5
 
 [generators]
 cmake_find_package_multi
 
 [options]
 spdlog:header_only=True
+libzip:with_zstd=True 
+libzip:crypto=openssl
