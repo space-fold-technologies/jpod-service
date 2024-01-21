@@ -1,5 +1,0 @@
-if(EXISTS "/home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/mount-instruction-tests_tests-6618e97.cmake")
-  include("/home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/mount-instruction-tests_tests-6618e97.cmake")
-else()
-  add_test(mount-instruction-tests_NOT_BUILT-6618e97 mount-instruction-tests_NOT_BUILT-6618e97)
-endif()

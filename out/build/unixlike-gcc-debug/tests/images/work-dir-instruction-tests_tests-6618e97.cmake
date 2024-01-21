@@ -1,3 +1,0 @@
-add_test( [==[unittests.work dir instruction case]==] /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/work-dir-instruction-tests [==[work dir instruction case]==] [==[--reporter xml]==] [==[--out /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images/./unittests.work_dir_instruction_case.xml]==])
-set_tests_properties( [==[unittests.work dir instruction case]==] PROPERTIES WORKING_DIRECTORY /home/william/Projects/demonstration/jpod-service/out/build/unixlike-gcc-debug/tests/images)
-set( work-dir-instruction-tests_TESTS [==[unittests.work dir instruction case]==])
