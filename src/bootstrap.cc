@@ -5,6 +5,7 @@
 #include <core/commands/command_handler_registry.h>
 #include <domain/images/list_handler.h>
 #include <domain/images/build_handler.h>
+#include <domain/images/import_handler.h>
 #include <domain/images/sql_repository.h>
 #include <domain/images/http/asio_client.h>
 #include <asio/io_context.hpp>
@@ -35,6 +36,13 @@ void bootstrap::setup()
       [this](connection &conn) -> std::unique_ptr<command_handler>
       {
         return std::make_unique<build_handler>(conn, image_repository, client, context);
+      });
+  registry->add_handler(
+      operation_target::image,
+      request_operation::import,
+      [this](connection &conn) -> std::unique_ptr<command_handler>
+      {
+        return std::make_unique<import_handler>(conn, image_repository);
       });
 }
 void bootstrap::start()

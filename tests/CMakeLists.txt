@@ -14,3 +14,11 @@ target_link_libraries(catch_main PUBLIC spdlog::spdlog Catch2::Catch2)
 
 # image tests 
 add_subdirectory(images)
+
+cmrc_add_resource_library(
+    archives-resources
+    ALIAS archives::rc
+    NAMESPACE archives 
+    PREFIX archives 
+    resources/dummy.zip 
+)
