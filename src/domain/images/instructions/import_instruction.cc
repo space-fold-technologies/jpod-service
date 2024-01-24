@@ -27,71 +27,69 @@ namespace domain::images::instructions
         {
             listener.on_instruction_complete(identifier, error);
         }
-        else if (auto result = extract_image_details(error); error)
+        else if (auto entry = fetch_details_entry(error); error)
         {
             listener.on_instruction_complete(identifier, error);
-        }
-        else if (auto file_size = fs::file_size(resolver.archive_file_path(), error); error)
-        {
-            listener.on_instruction_complete(identifier, error);
-        }
-        else
-        {
-            image_details details;
-            details.identifier = identifier;
-            details.name = result->name;
-            details.tag = result->tag;
-            details.os = result->os;
-            details.variant = result->variant;
-            details.version = result->version;
-            details.registry_uri = "localhost";
-            details.size = file_size;
-            details.labels.insert(result->labels.begin(), result->labels.end());
-            details.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
-            details.parameters.insert(result->parameters.begin(), result->parameters.end());
-            for (const auto &mp : result->mount_points)
-            {
-                details.mount_points.push_back(mount_point{mp.filesystem, mp.folder, mp.options, mp.flags});
-            }
-            error = repository.save_image_details(details);
-            listener.on_instruction_complete(identifier, error);
-        }
-    }
-    std::optional<import_details> import_instruction::extract_image_details(std::error_code &error)
-    {
-        zip_stat_t fs_stats{};
-        if (zip_stat(archive_ptr, IMAGE_INFO.c_str(), ZIP_STAT_NAME | ZIP_STAT_SIZE | ZIP_FL_UNCHANGED, &fs_stats) == -1)
-        {
-            error = fetch_error_code();
-        }
-        else if (zip_file_t *file = zip_fopen(archive_ptr, IMAGE_INFO.c_str(), ZIP_FL_COMPRESSED); file == NULL)
-        {
-            error = fetch_error_code();
         }
         else
         {
             listener.on_instruction_initialized(identifier, name);
-            zip_int64_t bytes_read = 0;
-            buffer.reserve(fs_stats.size);
-            do
+            if (auto result = extract_image_details(*entry, error); error)
             {
-                if (bytes_read = zip_fread(file, buffer.data(), INFO_BUFFER_SIZE); bytes_read == -1)
-                {
-                    error = fetch_error_code();
-                    break;
-                }
-                else if (bytes_read > 0)
-                {
-                    buffer.insert(buffer.end(), chunk.begin(), chunk.end());
-                }
-            } while (bytes_read > 0);
-            zip_fclose(file);
-            if (!error)
-            {
-                return std::nullopt;
+                listener.on_instruction_complete(identifier, error);
             }
-            return unpack_import_details(buffer);
+            else if (auto file_size = fs::file_size(resolver.image_file_path(identifier, error), error); error)
+            {
+                listener.on_instruction_complete(identifier, error);
+            }
+            else
+            {
+                image_details details;
+                details.identifier = identifier;
+                details.name = result->name;
+                details.tag = result->tag;
+                details.os = result->os;
+                details.variant = result->variant;
+                details.version = result->version;
+                details.registry_uri = "localhost";
+                details.entry_point = result->entry_point;
+                details.size = file_size;
+                details.labels.insert(result->labels.begin(), result->labels.end());
+                details.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
+                details.parameters.insert(result->parameters.begin(), result->parameters.end());
+                for (const auto &mp : result->mount_points)
+                {
+                    details.mount_points.push_back(mount_point{mp.filesystem, mp.folder, mp.options, mp.flags});
+                }
+                error = repository.save_image_details(details);
+                listener.on_instruction_complete(identifier, error);
+            }
         }
+    }
+    std::optional<import_details> import_instruction::extract_image_details(details_entry &entry, std::error_code &error)
+    {
+        buffer.reserve(entry.size);
+        zip_int64_t bytes_read = 0;
+        do
+        {
+            if (bytes_read = zip_fread(entry.file, chunk.data(), INFO_BUFFER_SIZE); bytes_read == -1)
+            {
+                error = fetch_error_code();
+                break;
+            }
+            else if (bytes_read > 0)
+            {
+                buffer.insert(buffer.end(), chunk.begin(), chunk.begin() + bytes_read);
+            }
+            logger->info("bytes transfered: {}", bytes_read);
+        } while (bytes_read > 0);
+        zip_fclose(entry.file);
+
+        if (error)
+        {
+            return std::nullopt;
+        }
+        return unpack_import_details(buffer);
     }
     std::error_code import_instruction::initialize()
     {
@@ -107,6 +105,28 @@ namespace domain::images::instructions
             return make_compression_error_code(error_no);
         }
         return {};
+    }
+    std::optional<details_entry> import_instruction::fetch_details_entry(std::error_code &error)
+    {
+        zip_stat_t fs_stab;
+        for (zip_int64_t index = 0; index < zip_get_num_entries(archive_ptr, ZIP_FL_UNCHANGED); ++index)
+        {
+            if (zip_stat_index(archive_ptr, index, ZIP_STAT_NAME | ZIP_STAT_SIZE | ZIP_FL_UNCHANGED, &fs_stab) != -1)
+            {
+                if (strstr(fs_stab.name, IMAGE_INFO.c_str()) != NULL)
+                {
+                    return std::optional(details_entry{
+                        zip_fopen_index(archive_ptr, index, ZIP_FL_UNCHANGED),
+                        fs_stab.size,
+                        std::string(fs_stab.name)});
+                }
+            }
+            else
+            {
+                error = fetch_error_code();
+            }
+        }
+        return std::nullopt;
     }
     std::error_code import_instruction::fetch_error_code()
     {

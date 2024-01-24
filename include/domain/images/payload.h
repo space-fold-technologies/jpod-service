@@ -189,6 +189,7 @@ namespace domain::images
         std::string os;
         std::string variant;
         std::string version;
+        std::string entry_point;
         std::map<std::string, std::string> labels;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> parameters;
@@ -202,10 +203,17 @@ namespace domain::images
         details.name = parsed_content["name"].as<std::string>();
         details.tag = parsed_content["tag"].as<std::string>();
         details.os = parsed_content["os"].as<std::string>();
+        details.entry_point = parsed_content["entry_point"].as<std::string>();
         details.variant = parsed_content["variant"].as<std::string>();
         details.version = parsed_content["version"].as<std::string>();
-        details.env_vars = parsed_content["env_vars"].as<std::map<std::string, std::string>>();
-        details.parameters = parsed_content["parameters"].as<std::map<std::string, std::string>>();
+        details.labels = parsed_content["labels"].as<std::map<std::string, std::string>>();
+        if(parsed_content["environment"]) {
+            details.env_vars = parsed_content["environment"].as<std::map<std::string, std::string>>();
+        }
+        for (const auto &node : parsed_content["parameters"])
+        {
+            details.parameters.emplace(node.first.as<std::string>(), node.second.as<std::string>(" "));
+        }
         for (const auto &node : parsed_content["mount_points"])
         {
             details.mount_points.push_back(mount_point_details{

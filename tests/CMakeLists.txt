@@ -17,8 +17,9 @@ add_subdirectory(images)
 
 cmrc_add_resource_library(
     archives-resources
-    ALIAS archives::rc
     NAMESPACE archives 
+    WHENCE resources
+    ALIAS archives::rc
     PREFIX archives 
     resources/dummy.zip 
 )

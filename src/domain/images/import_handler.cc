@@ -62,6 +62,15 @@ namespace domain::images
     {
         return local_file_path;
     }
+    fs::path import_handler::image_file_path(const std::string &identifier, std::error_code &error)
+    {
+        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.zip");
+        if (!fs::is_directory(image_fs_archive.parent_path(), error))
+        {
+            logger->error("FS GEN ERR : {}", error.message());
+        }
+        return image_fs_archive;
+    }
     fs::path import_handler::generate_image_path(const std::string &identifier, std::error_code &error)
     {
         // generate a folder in a pre-fixed path that has the ${identifier} as the final folder

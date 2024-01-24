@@ -5,6 +5,7 @@
 #include <domain/images/payload.h>
 #include <memory>
 #include <vector>
+#include <optional>
 #include <system_error>
 #include <filesystem>
 
@@ -15,10 +16,18 @@ namespace spdlog
 
 struct zip;
 typedef zip zip_t;
+struct zip_file;
+typedef zip_file zip_file_t;
 
 namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
+    struct archive_entry
+    {
+        zip_file_t *file;
+        std::size_t size;
+        std::string name;
+    };
     class import_resolver;
     class instruction_listener;
     class extraction_instruction : public instruction
@@ -36,6 +45,7 @@ namespace domain::images::instructions
     private:
         std::error_code initialize();
         std::error_code fetch_error_code();
+        std::optional<archive_entry> fetch_archive_entry(std::error_code& error);
 
     private:
         const std::string &identifier;

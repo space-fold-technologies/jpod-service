@@ -27,17 +27,19 @@ TEST_CASE("import instruction case")
         WHEN("the path is given to the import instruction")
         {
             std::string id = sole::uuid4().str();
+            auto archive_path = from_archives("archives/dummy.zip");
             fs::path image_target_path = fs::path(create_folder(fmt::format("{}", id)));
-            When(Method(resolver, archive_file_path)).Return(from_archives("archives/dummy.zip"));
+            When(Method(resolver, archive_file_path)).Return(archive_path);
+            When(Method(resolver, image_file_path)).Return(archive_path);
             When(Method(repository, save_image_details).Using(Any())).Return(std::error_code{});
             import_instruction instruction(id, repository.get(), resolver.get(), listener.get());
             THEN("the image details will be imported")
             {
                 std::error_code error = {};
                 instruction.execute();
-                Verify(Method(listener, on_instruction_initialized).Using(id, "IMPORT"));
-                Verify(Method(listener, on_instruction_data_received).Using(id, Any())).AtLeastOnce();
+                Verify(Method(listener, on_instruction_initialized).Using(id, "IMPORT")).Once();
                 Verify(Method(listener, on_instruction_complete).Using(id, Eq(error))).Once();
+                Verify(Method(repository, save_image_details).Using(Any())).Once();
             }
         }
     }

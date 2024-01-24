@@ -34,6 +34,7 @@ namespace domain::images
         void on_instruction_data_received(std::string id, const std::vector<uint8_t> &content) override;
         void on_instruction_complete(std::string id, std::error_code err) override;
         fs::path archive_file_path() override;
+        fs::path image_file_path(const std::string &identifier, std::error_code &error) override;
         fs::path generate_image_path(const std::string &identifier, std::error_code &error) override;
 
     private:

@@ -11,6 +11,7 @@ namespace domain::images::instructions
     {
     public:
         virtual fs::path archive_file_path() = 0;
+        virtual fs::path image_file_path(const std::string &identifier, std::error_code &error) = 0;
         virtual fs::path generate_image_path(const std::string &identifier, std::error_code &error) = 0;
     };
 }
