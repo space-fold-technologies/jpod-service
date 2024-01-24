@@ -48,8 +48,9 @@ namespace core::connections
         push = 0x03,
         pull = 0x04,
         build = 0x06,
-        authorize = 0x07,
-        shell = 0x08,
+        import = 0x07,
+        authorize = 0x08,
+        shell = 0x09,
         logs = 0x0A
     };
 
@@ -61,6 +62,7 @@ namespace core::connections
             {request_operation::push, "push-sub-operation"},
             {request_operation::pull, "pull-sub-operation"},
             {request_operation::build, "build-sub-operation"},
+            {request_operation::import, "import-sub-operation"},
             {request_operation::authorize, "authorize-sub-operation"},
             {request_operation::shell, "shell-sub-operation"},
             {request_operation::logs, "logs-sub-operation"}};

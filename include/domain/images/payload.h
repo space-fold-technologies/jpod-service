@@ -2,6 +2,7 @@
 #define __DAEMON_DOMAIN_IMAGES_PAYLOADS__
 
 #include <msgpack/msgpack.hpp>
+#include <yaml-cpp/yaml.h>
 
 using namespace std::chrono;
 
@@ -179,6 +180,66 @@ namespace domain::images
     inline std::vector<uint8_t> pack_progress_frame(progress_frame &order)
     {
         return msgpack::pack(order);
+    }
+
+    struct import_details
+    {
+        std::string name;
+        std::string tag;
+        std::string os;
+        std::string variant;
+        std::string version;
+        std::string entry_point;
+        std::map<std::string, std::string> labels;
+        std::map<std::string, std::string> env_vars;
+        std::map<std::string, std::string> parameters;
+        std::vector<mount_point_details> mount_points;
+    };
+
+    inline import_details unpack_import_details(const std::vector<uint8_t> &content)
+    {
+        import_details details;
+        YAML::Node parsed_content = YAML::Load(std::string(content.begin(), content.end()));
+        details.name = parsed_content["name"].as<std::string>();
+        details.tag = parsed_content["tag"].as<std::string>();
+        details.os = parsed_content["os"].as<std::string>();
+        details.entry_point = parsed_content["entry_point"].as<std::string>();
+        details.variant = parsed_content["variant"].as<std::string>();
+        details.version = parsed_content["version"].as<std::string>();
+        details.labels = parsed_content["labels"].as<std::map<std::string, std::string>>();
+        if(parsed_content["environment"]) {
+            details.env_vars = parsed_content["environment"].as<std::map<std::string, std::string>>();
+        }
+        for (const auto &node : parsed_content["parameters"])
+        {
+            details.parameters.emplace(node.first.as<std::string>(), node.second.as<std::string>(" "));
+        }
+        for (const auto &node : parsed_content["mount_points"])
+        {
+            details.mount_points.push_back(mount_point_details{
+                node["filesystem"].as<std::string>(),
+                node["folder"].as<std::string>(),
+                node["options"].as<std::string>(),
+                node["flags"].as<uint64_t>()});
+        }
+        return details;
+    }
+
+    struct import_order
+    {
+
+        std::string archive_path;
+
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(archive_path);
+        }
+    };
+
+    inline import_order unpack_import_order(const std::vector<uint8_t> &content)
+    {
+        return msgpack::unpack<import_order>(content);
     }
 }
 #endif // __DAEMON_DOMAIN_IMAGES_PAYLOADS__
