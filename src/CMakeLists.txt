@@ -57,6 +57,8 @@ add_executable(daemon
                 domain/images/http/secure_connection.cc
                 domain/images/http/insecure_connection.cc
                 domain/images/http/asio_client.cc
+                # networking
+                domain/networking/asio_address_provider.cc
                 )
 
 target_link_libraries(daemon

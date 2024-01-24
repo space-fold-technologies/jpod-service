@@ -15,6 +15,9 @@ target_link_libraries(catch_main PUBLIC spdlog::spdlog Catch2::Catch2)
 # image tests 
 add_subdirectory(images)
 
+# networking tests 
+add_subdirectory(networking)
+
 cmrc_add_resource_library(
     archives-resources
     NAMESPACE archives 
