@@ -11,6 +11,7 @@ namespace domain::networking
     {
     public:
         virtual ~ip_address_provider() = default;
+        virtual void initialize(std::error_code &error) = 0;
         virtual ip_address fetch_next_available(ip_address_type type, std::error_code &error) = 0;
         virtual bool remove(const std::string &address_identifier) = 0;
     };
