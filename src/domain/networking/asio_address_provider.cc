@@ -1,16 +1,17 @@
 #include <domain/networking/asio_address_provider.h>
-#include <asio/ip/address.hpp>
-#include <asio/ip/address_v4_range.hpp>
-#include <asio/ip/address_v6_range.hpp>
+#include <range/v3/view/transform.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/algorithm/find_if_not.hpp>
+#include <range/v3/algorithm/find.hpp>
 #include <bitset>
 #include <sole.hpp>
+
+namespace rv = ranges::view;
 
 namespace domain::networking
 {
     asio_ip_address_provider::asio_ip_address_provider(std::string ip_v4_cidr, std::string ip_v6_cidr) : ip_v4_cidr(std::move(ip_v4_cidr)),
-                                                                                                         ip_v6_cidr(std::move(ip_v6_cidr)),
-                                                                                                         ip_v4_range(nullptr),
-                                                                                                         ip_v6_range(nullptr) {}
+                                                                                                         ip_v6_cidr(std::move(ip_v6_cidr)) {}
     void asio_ip_address_provider::initialize(std::error_code &error)
     {
 
@@ -23,35 +24,44 @@ namespace domain::networking
             ip_v6_range = generate_ip_v6_range(error);
         }
     }
-    ip_address asio_ip_address_provider::fetch_next_available(ip_address_type type, std::error_code &error)
+    std::optional<ip_address> asio_ip_address_provider::fetch_next_available(ip_address_type type, std::error_code &error)
     {
         if (type == ip_address_type::v4)
         {
             if (auto result = fetch_next_available_ip_v4(error); !error && result.has_value())
             {
                 auto identifier = sole::uuid4().str();
-                return ip_address{identifier, result->to_string(), ip_address_type::v4, ip_v4_cidr};
+                taken_ip_v4_addresses.emplace(identifier, ip_address{identifier, result->to_string(), ip_address_type::v4, ip_v4_cidr});
+                return taken_ip_v4_addresses.at(identifier);
             }
-        }
-        else if (type == ip_address_type::v6)
-        {
-            if (auto result = fetch_next_available_ip_v6(error); !error && result.has_value())
+            else if (type == ip_address_type::v6)
             {
-                auto identifier = sole::uuid4().str();
-                return ip_address{identifier, result->to_string(), ip_address_type::v6, ip_v6_cidr};
+                if (auto result = fetch_next_available_ip_v6(error); !error && result.has_value())
+                {
+                    auto identifier = sole::uuid4().str();
+                    taken_ip_v6_addresses.emplace(identifier, ip_address{identifier, result->to_string(), ip_address_type::v6, ip_v6_cidr});
+                    return taken_ip_v6_addresses.at(identifier);
+                }
             }
         }
+        return std::nullopt;
     }
     std::optional<asio::ip::address> asio_ip_address_provider::fetch_next_available_ip_v4(std::error_code &error)
     {
-        return std::nullopt;
+        auto map_to_ip = [](const auto &entry) -> std::string
+        { return entry.second.value; };
+        auto take_ip_addresses = taken_ip_v4_addresses | rv::transform(map_to_ip) | ranges::to<std::vector<std::string>>();
+        auto first_free_ip = [&take_ip_addresses](const auto &ip) -> bool
+        { return !(take_ip_addresses.empty() || ranges::find(take_ip_addresses, ip.to_string()) == take_ip_addresses.end()); };
+        auto result = ranges::find_if_not(ip_v4_range, first_free_ip);
+        return std::make_optional(*result);
     }
     std::optional<asio::ip::address> asio_ip_address_provider::fetch_next_available_ip_v6(std::error_code &error)
     {
         return std::nullopt;
     }
     bool asio_ip_address_provider::remove(const std::string &address_identifier) {}
-    std::unique_ptr<asio::ip::address_v4_range> asio_ip_address_provider::generate_ip_v4_range(std::error_code &error)
+    asio::ip::address_v4_range asio_ip_address_provider::generate_ip_v4_range(std::error_code &error)
     {
         auto pos = ip_v4_cidr.find("/");
         auto address = asio::ip::address_v4::from_string(ip_v4_cidr.substr(0, pos));
@@ -67,9 +77,9 @@ namespace domain::networking
         unsigned long first_addr = first_addr_bs.to_ulong();
         auto first_address = asio::ip::address_v4(first_addr);
         auto last_address = asio::ip::address_v4(last_addr);
-        return std::make_unique<asio::ip::address_v4_range>(first_address, last_address);
+        return asio::ip::address_v4_range(first_address, last_address);
     }
-    std::unique_ptr<asio::ip::address_v6_range> asio_ip_address_provider::generate_ip_v6_range(std::error_code &error)
+    asio::ip::address_v6_range asio_ip_address_provider::generate_ip_v6_range(std::error_code &error)
     {
         auto pos = ip_v6_cidr.find("/");
         auto start_address = asio::ip::address_v6::from_string(ip_v6_cidr.substr(0, pos));
@@ -89,7 +99,7 @@ namespace domain::networking
             offset--;
         }
         auto end_address = asio::ip::address_v6(bytes);
-        return std::make_unique<asio::ip::address_v6_range>(start_address, end_address);
+        return asio::ip::address_v6_range(start_address, end_address);
     }
     asio_ip_address_provider::~asio_ip_address_provider()
     {

@@ -12,7 +12,7 @@ find_package(asio REQUIRED CONFIG)
 add_executable(address-provider-tests 
                test_address_provider.cc
                ${PROJECT_SRC_FOLDER}/domain/networking/asio_address_provider.cc)
-target_link_libraries(copy-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio)
+target_link_libraries(address-provider-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
