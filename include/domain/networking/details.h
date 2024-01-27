@@ -14,6 +14,8 @@ namespace domain::networking
     {
         std::string identifier;
         std::string value;
+        std::string netmask;
+        std::string broadcast;
         ip_address_type type;
         std::string cidr;
     };

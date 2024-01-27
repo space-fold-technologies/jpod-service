@@ -59,6 +59,7 @@ add_executable(daemon
                 domain/images/http/asio_client.cc
                 # networking
                 domain/networking/asio_address_provider.cc
+                domain/networking/virtual_network_provider.cc
                 )
 
 target_link_libraries(daemon
