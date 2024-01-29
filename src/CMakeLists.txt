@@ -59,7 +59,7 @@ add_executable(daemon
                 domain/images/http/asio_client.cc
                 #containers
                 domain/containers/runtime.cc 
-                domain/containers/freebsd_container.cc
+                domain/containers/freebsd/freebsd_container.cc
                 domain/containers/creation_handler.cc
                 )
 

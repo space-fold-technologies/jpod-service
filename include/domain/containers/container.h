@@ -2,14 +2,18 @@
 #define __DAEMON_DOMAIN_CONTAINERS_CONTAINER__
 
 #include <domain/containers/orders.h>
-
+#include <memory>
 namespace domain::containers
 {
+    class container_listener;
     class container
     {
     public:
-        virtual void initialize(const container_details &details) = 0;
+        virtual void initialize() = 0;
         virtual ~container() = default;
+        virtual void start() = 0;
+        void resize(int columns, int rows);
+        virtual void register_listener(std::shared_ptr<container_listener> listener) = 0;
     };
 }
 

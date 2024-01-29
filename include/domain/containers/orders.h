@@ -1,18 +1,26 @@
 #ifndef __DAEMON_DOMAIN_CONTAINERS_ORDERS__
 #define __DAEMON_DOMAIN_CONTAINERS_ORDERS__
 
+#include <domain/images/mappings.h>
 #include <string>
 #include <map>
 
 namespace domain::containers
 {
-    class container_details
+    class build_order
     {
-        std::string image;
-        std::string tag;
+        std::string tagged_image;
         std::string name;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+    };
+
+    class container_details
+    {
+        std::string identifier;
+        std::map<std::string, std::string> parameters;
+        std::map<std::string, std::string> env_vars;
+        std::vector<domain::images::mount_point> mount_points;
     };
 }
 
