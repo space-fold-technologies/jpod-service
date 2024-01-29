@@ -1,27 +1,28 @@
 #ifndef __DAEMON_DOMAIN_CONTAINERS_ORDERS__
 #define __DAEMON_DOMAIN_CONTAINERS_ORDERS__
 
-#include <domain/images/mappings.h>
-#include <string>
-#include <map>
+#include <msgpack/msgpack.hpp>
 
 namespace domain::containers
 {
-    class build_order
+    class container_creation_order
     {
         std::string tagged_image;
         std::string name;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+
+        template <class T>
+        void pack(T &pack) 
+        {
+             pack(image, tag, name, port_map, env_vars);
+        }
     };
 
-    class container_details
+     inline container_creation_order unpack_container_creation_order(const std::vector<uint8_t> &content)
     {
-        std::string identifier;
-        std::map<std::string, std::string> parameters;
-        std::map<std::string, std::string> env_vars;
-        std::vector<domain::images::mount_point> mount_points;
-    };
+        return msgpack::unpack<container_creation_order>(content);
+    }
 }
 
 #endif // __DAEMON_DOMAIN_CONTAINERS_ORDERS__
