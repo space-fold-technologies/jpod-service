@@ -10,9 +10,20 @@
 
 namespace domain::containers
 {
-    sql_container_repository::sql_container_repository(core::sql::pool::data_source &data_source) : data_source(data_source) {}
-    std::optional<domain::images::image_details> sql_container_repository::fetch_image_details(const std::string &registry, const std::string &name, const std::string &tag) {}
-    std::optional<container_details> sql_container_repository::fetch(const std::string &identifier) {}
-    bool sql_container_repository::save(const container_properties &properties) {}
+    sql_container_repository::sql_container_repository(core::sql::pool::data_source &data_source) : data_source(data_source)
+    {
+    }
+    std::optional<domain::images::image_details> sql_container_repository::fetch_image_details(const std::string &registry, const std::string &name, const std::string &tag)
+    {
+        return std::nullopt;
+    }
+    std::optional<container_details> sql_container_repository::fetch(const std::string &identifier)
+    {
+        return std::nullopt;
+    }
+    bool sql_container_repository::save(const container_properties &properties)
+    {
+        return false;
+    }
     sql_container_repository::~sql_container_repository() {}
 }

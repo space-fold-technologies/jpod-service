@@ -80,7 +80,7 @@ namespace core::connections
     {
         success = 0x00,
         failure = 0x01,
-        pending = 0x02,
+        progress = 0x02,
         close_order = 0x03,
         frame = 0x04
     };
@@ -89,7 +89,7 @@ namespace core::connections
         {
             {response_operation::success, "success-response-type"},
             {response_operation::failure, "failure-response-type"},
-            {response_operation::pending, "pending-response-type"},
+            {response_operation::progress, "progress-response-type"},
             {response_operation::close_order, "close-order-type"},
             {response_operation::frame, "frame-type"}};
 
@@ -131,9 +131,9 @@ namespace core::connections
         std::vector<uint8_t> header;
         std::size_t length = data.size();
         header.assign(2 + (length >= 126 ? 2 : 0) + (length >= 65536 ? 6 : 0), 0);
-        //write_bit_field(&header[0], static_cast<uint8_t>(is_request), 0, 1);
-        
-        //write_bit_field(&header[0], static_cast<uint8_t>(operation), 7, 4);
+        // write_bit_field(&header[0], static_cast<uint8_t>(is_request), 0, 1);
+
+        // write_bit_field(&header[0], static_cast<uint8_t>(operation), 7, 4);
         header[0] = ((static_cast<uint8_t>(operation) & 15) | ((uint8_t)is_request << 7));
         write_bit_field(&header[0], static_cast<uint8_t>(target), 3, 3);
         if (length < 126)

@@ -23,13 +23,13 @@ namespace core::sql::errors
         }
     };
 
-    const sql_failure_category &__category()
+    inline const sql_failure_category &__category()
     {
         static sql_failure_category fc;
         return fc;
     }
 
-    const std::error_code make_error_code(int ec) noexcept
+    inline const std::error_code make_error_code(int ec) noexcept
     {
 
         return std::error_code{ec, __category()};
