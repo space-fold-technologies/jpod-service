@@ -51,13 +51,15 @@ namespace domain::containers
             properties.env_vars.insert(details->env_vars.begin(), details->env_vars.end());
             properties.env_vars.insert(order.env_vars.begin(), order.env_vars.end());
             properties.network_properties = order.network_properties;
-            if (repository->save(properties))
+            if (auto error = repository->save(properties); error)
             {
-                send_success("container created");
+                send_error(error);
+                
             }
             else
             {
-                send_error(std::make_error_code(std::errc::resource_unavailable_try_again));
+               
+               send_success("container created");
             };
         }
     }
