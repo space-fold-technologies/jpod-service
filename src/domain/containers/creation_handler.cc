@@ -5,6 +5,7 @@
 #include <domain/images/helpers.h>
 #include <domain/images/payload.h>
 #include <domain/images/instructions/compression_errors.h>
+#include <domain/images/instructions/errors.h>
 #include <fstream>
 #include <vector>
 #include <spdlog/spdlog.h>
@@ -26,7 +27,7 @@ namespace domain::containers
         auto order = unpack_container_creation_order(payload);
         if (auto query = dmi::resolve_tagged_image_details(order.tagged_image); !query)
         {
-            // send_error(err); // will need an appropriate error for this
+            send_error(dmi::make_error_code(dmi::error_code::invalid_order_issued));
         }
         else if (auto details = repository->fetch_image_details(query->registry, query->name, query->tag); !details)
         {
