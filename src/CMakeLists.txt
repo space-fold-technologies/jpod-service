@@ -61,6 +61,7 @@ add_executable(daemon
                 domain/containers/runtime.cc 
                 domain/containers/freebsd/freebsd_container.cc
                 domain/containers/creation_handler.cc
+                domain/containers/sql_repository.cc
                 )
 
 target_link_libraries(daemon

@@ -22,12 +22,10 @@ namespace domain::images::instructions
 {
     class directory_resolver;
     class instruction_listener;
-    struct image_registry_query;
 
     class unmount_instruction : public instruction
     {
-        public:
-
+    public:
         explicit unmount_instruction(
             const std::string &identifier,
             const std::string &order,
@@ -39,7 +37,7 @@ namespace domain::images::instructions
 
     private:
         std::error_code unmount_filesystems(const std::vector<mount_point> &mount_points, fs::path &directory);
-        std::optional<image_registry_query> resolve_tagged_image_details();
+
     private:
         std::string identifier;
         std::string order;

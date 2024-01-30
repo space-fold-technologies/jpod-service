@@ -18,9 +18,8 @@ namespace spdlog
 namespace domain::containers
 {
     class container_listener;
+    struct container_details;
 }
-
-struct jailparam;
 
 namespace domain::containers::freebsd
 {
@@ -35,20 +34,6 @@ namespace domain::containers::freebsd
         virtual ~freebsd_container();
         void initialize() override;
         void register_listener(std::shared_ptr<container_listener> listener) override;
-
-    private:
-        int start_process_in_jail();
-        void start_jail();
-        void clean();
-        bool close_on_exec(int fd);
-        void read_from_shell();
-        void disable_stdio_inheritance();
-        void process_wait();
-        bool setup_pipe(int fd);
-        // std::optional<user_details> fetch_user_information(const std::string &username, std::error_code &error); // this will be put into a utility
-        // void setup_environment(const user_details &details); // into utility class
-        // void add_parameter(std::vector<jailparam> &parameters, const std::string &key, const std::string &value); // into utility class
-        // void add_mount_point_entry(std::vector<iovec> &entries, const std::string &key, const std::string &value);
 
     private:
         asio::io_context &context;

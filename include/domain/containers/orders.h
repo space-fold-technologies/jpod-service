@@ -5,21 +5,22 @@
 
 namespace domain::containers
 {
-    class container_creation_order
+    struct container_creation_order
     {
         std::string tagged_image;
         std::string name;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::string network_properties;
 
         template <class T>
-        void pack(T &pack) 
+        void pack(T &pack)
         {
-             pack(image, tag, name, port_map, env_vars);
+            pack(tagged_image, name, port_map, env_vars);
         }
     };
 
-     inline container_creation_order unpack_container_creation_order(const std::vector<uint8_t> &content)
+    inline container_creation_order unpack_container_creation_order(const std::vector<uint8_t> &content)
     {
         return msgpack::unpack<container_creation_order>(content);
     }

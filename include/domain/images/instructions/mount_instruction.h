@@ -25,7 +25,6 @@ namespace domain::images::instructions
 {
     class directory_resolver;
     class instruction_listener;
-    struct image_registry_query;
     struct mount_point_entry
     {
         std::string filesystem;
@@ -49,9 +48,8 @@ namespace domain::images::instructions
 #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
         void add_mount_point_entry(std::vector<iovec> &entries, const std::string &key, const std::string &value);
 #endif
-        bool mount_filesystems(const std::vector<mount_point_entry>& entries, std::error_code& error);
-        std::optional<image_registry_query> resolve_tagged_image_details();
-        std::vector<mount_point_entry> resolve_mountpoint_folders(const std::vector<mount_point> &mount_points, std::error_code& error);
+        bool mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error);
+        std::vector<mount_point_entry> resolve_mountpoint_folders(const std::vector<mount_point> &mount_points, std::error_code &error);
 
     private:
         std::string identifier;

@@ -1,5 +1,6 @@
 #include <domain/containers/freebsd/freebsd_container.h>
 #include <domain/containers/container_listener.h>
+#include <domain/containers/details.h>
 #include <asio/io_context.hpp>
 #include <spdlog/spdlog.h>
 
