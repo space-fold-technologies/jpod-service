@@ -6,7 +6,6 @@
 #include <map>
 #include <optional>
 
-
 namespace spdlog
 {
     class logger;
@@ -19,7 +18,6 @@ namespace domain::images::instructions
 {
     class instruction_listener;
     struct image_properties;
-    struct image_registry_query;
     struct image_properties
     {
         std::string name;
@@ -39,9 +37,6 @@ namespace domain::images::instructions
             instruction_listener &listener);
         virtual ~registration_instruction();
         void execute() override;
-
-    private:
-        std::optional<image_registry_query> resolve_tagged_image_details();
 
     private:
         const std::string &identifier;

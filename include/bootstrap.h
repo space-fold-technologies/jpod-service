@@ -20,13 +20,18 @@ namespace core::sql::pool
 {
     class data_source;
 };
-namespace domain::images 
+namespace domain::images
 {
     class image_repository;
 };
-namespace domain::images::http 
+namespace domain::images::http
 {
     class client;
+};
+
+namespace domain::containers
+{
+    class container_repository;
 };
 using namespace core::commands;
 using namespace core::connections;
@@ -45,6 +50,7 @@ private:
     std::unique_ptr<connection_acceptor> acceptor;
     std::unique_ptr<core::sql::pool::data_source> data_source;
     std::shared_ptr<domain::images::image_repository> image_repository;
+    std::shared_ptr<domain::containers::container_repository> container_repository;
     std::shared_ptr<domain::images::http::client> client;
     asio::io_context &context;
 };

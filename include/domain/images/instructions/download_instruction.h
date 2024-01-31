@@ -32,7 +32,6 @@ namespace domain::images::instructions
     constexpr std::size_t DOWNLOAD_BUFFER_SIZE = 1024 * 1000;
     class directory_resolver;
     class instruction_listener;
-    struct image_registry_query;
 
     class download_instruction : public instruction, public http::download_destination, public std::enable_shared_from_this<download_instruction>
     {
@@ -51,7 +50,6 @@ namespace domain::images::instructions
         std::size_t write(const std::vector<uint8_t> &data) override;
 
     private:
-        std::optional<image_registry_query> resolve_tagged_image_details();
         void fetch_image_details(const registry &reg, const std::string &name, const std::string &tag);
         void download_image_filesystem(const registry &reg, const image_meta &details);
         void extract_image_filesystem(const registry &reg, const image_meta &details);

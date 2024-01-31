@@ -92,7 +92,7 @@ namespace domain::images::instructions
                     {
                         callback(std::make_error_code(std::errc::io_error), frame);
                     }
-                    else if (auto *input_file = zip_fopen(archive.get(), entry_name, 0))
+                    else if (auto *input_file = zip_fopen(archive.get(), entry_name, 0); input_file == nullptr)
                     {
                         callback(std::make_error_code(std::errc::io_error), frame);
                     }

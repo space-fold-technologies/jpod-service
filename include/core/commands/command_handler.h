@@ -28,7 +28,7 @@ namespace core::commands
         void send_error(const std::error_code &err);
         void send_frame(const std::vector<uint8_t> &payload);
         void send_success(const std::string& message);
-        void send_pending();
+        void send_progress(const std::string& operation, const std::vector<uint8_t>& data);
         void send_close(const std::vector<uint8_t> &payload);
 
     public:

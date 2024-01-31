@@ -57,6 +57,10 @@ add_executable(daemon
                 domain/images/http/secure_connection.cc
                 domain/images/http/insecure_connection.cc
                 domain/images/http/asio_client.cc
+                #containers
+                domain/containers/runtime.cc 
+                domain/containers/creation_handler.cc
+                domain/containers/sql_repository.cc
                 # networking
                 domain/networking/asio_address_provider.cc
                 domain/networking/virtual_network_provider.cc

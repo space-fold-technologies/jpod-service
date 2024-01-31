@@ -35,8 +35,13 @@ namespace core::commands
         logger->info("payload frame size: {}", content.size());
         connection.write(content);
     }
-    void command_handler::send_pending()
+    void command_handler::send_progress(const std::string& operation, const std::vector<uint8_t>& data)
     {
+        progress_payload order{operation, data};
+        auto progress = pack_progress_payload(order);
+        auto content = encode_frame(operation_target::client, response_operation::progress,false, progress);
+        logger->info("payload frame size: {}", content.size());
+        connection.write(content);
     }
     void command_handler::send_close(const std::vector<uint8_t> &payload)
     {

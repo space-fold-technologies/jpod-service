@@ -35,17 +35,18 @@ namespace core::commands
         return msgpack::pack(order);
     }
 
-    struct pending_payload
+    struct progress_payload
     {
         std::string operation;
+        std::vector<uint8_t> content;
         template <class T>
         void pack(T &pack)
         {
-            pack(operation);
+            pack(operation, content);
         }
     };
 
-    inline std::vector<uint8_t> pack_pending_payload(pending_payload &order)
+    inline std::vector<uint8_t> pack_progress_payload(progress_payload &order)
     {
         return msgpack::pack(order);
     }
