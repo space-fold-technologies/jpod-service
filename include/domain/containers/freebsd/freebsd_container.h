@@ -6,6 +6,7 @@
 #include <asio/streambuf.hpp>
 #include <system_error>
 #include <memory>
+#include <map>
 
 namespace spdlog
 {
@@ -26,7 +27,7 @@ namespace domain::containers::freebsd
     public:
         freebsd_container(
             asio::io_context &context,
-            container_details details,
+            operation_details details,
             runtime_listener &listener);
         void initialize() override;
         virtual ~freebsd_container() override;
@@ -39,14 +40,12 @@ namespace domain::containers::freebsd
         std::error_code unmount_file_systems();
         std::error_code create_jail();
         std::error_code start_process_in_jail();
-        void process_wait();
         bool setup_pipe(int fd);
-        bool close_on_exec(int fd);
-        void disable_stdio_inheritance();
         void clean();
         void read_from_shell();
-        void on_operation_failure(std::error_code error);
-        void on_operation_output(const std::vector<uint8_t>& content); 
+        void wait_to_read_from_shell();
+        void on_operation_failure(std::error_code& error);
+        void on_operation_output(const std::vector<uint8_t> &content);
 
     private:
         asio::io_context &context;
@@ -55,6 +54,7 @@ namespace domain::containers::freebsd
         std::vector<uint8_t> buffer;
         std::unique_ptr<asio::posix::stream_descriptor> stream;
         std::shared_ptr<spdlog::logger> logger;
+        std::map<listener_category, std::shared_ptr<container_listener>> operation_listeners;
         std::shared_ptr<container_listener> operation_listener;
     };
 }
