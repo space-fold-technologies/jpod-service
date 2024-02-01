@@ -44,7 +44,7 @@ namespace domain::containers::freebsd
         void clean();
         void read_from_shell();
         void wait_to_read_from_shell();
-        void on_operation_failure(std::error_code& error);
+        void on_operation_failure(std::error_code &error);
         void on_operation_output(const std::vector<uint8_t> &content);
 
     private:
