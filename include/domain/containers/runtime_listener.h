@@ -11,7 +11,7 @@ namespace domain::containers
     public:
         virtual void container_initialized(const std::string &identifier) = 0;
         virtual void container_started(const std::string &identifier) = 0;
-        virtual void container_failed(const std::string &identifier, std::error_code error) = 0;
+        virtual void container_failed(const std::string &identifier, const std::error_code &error) = 0;
         virtual void container_stopped(const std::string &identifier) = 0;
     };
 }

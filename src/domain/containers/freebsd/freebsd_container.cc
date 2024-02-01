@@ -37,13 +37,20 @@ namespace domain::containers::freebsd
         {
             listener.container_failed(details.identifier, std::move(error));
         }
-        else if (auto error = start_process_in_jail(); error)
-        {
-            listener.container_failed(details.identifier, std::move(error));
-        }
         else
         {
-            listener.container_initialized(details.identifier);
+            if (!details.entry_point.empty())
+            {
+                error = start_process_in_jail(); // having an entry point should be optional
+            }
+            if (error)
+            {
+                listener.container_failed(details.identifier, error);
+            }
+            else
+            {
+                listener.container_initialized(details.identifier);
+            }
         }
     }
     void freebsd_container::start()
