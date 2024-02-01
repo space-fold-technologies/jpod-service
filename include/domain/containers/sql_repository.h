@@ -17,6 +17,7 @@ namespace domain::containers
         virtual ~sql_container_repository();
         std::optional<domain::images::image_details> fetch_image_details(const std::string &registry, const std::string &name, const std::string &tag) override;
         std::optional<container_details> fetch(const std::string &identifier) override;
+        std::optional<container_details> first_match(const std::string& query) override;
         std::error_code save(const container_properties &properties) override;
 
     private:

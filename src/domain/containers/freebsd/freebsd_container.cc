@@ -86,10 +86,10 @@ namespace domain::containers::freebsd
     }
     void freebsd_container::register_listener(std::shared_ptr<container_listener> operation_listener)
     {
-        if (this->operation_listener)
+        if (auto pos = operation_listeners.find(operation_listener->type()); pos != operation_listeners.end())
         {
-            this->operation_listener.reset();
-            this->operation_listener = operation_listener;
+            operation_listeners.erase(pos);
+            operation_listeners.emplace(operation_listener->type(), operation_listener);
         }
     }
 

@@ -1,6 +1,5 @@
 #include <domain/containers/creation_handler.h>
 #include <domain/containers/repository.h>
-#include <domain/containers/runtime.h>
 #include <domain/containers/orders.h>
 #include <domain/images/helpers.h>
 #include <domain/images/payload.h>
@@ -51,22 +50,21 @@ namespace domain::containers
             properties.port_map.insert(order.port_map.begin(), order.port_map.end());
             properties.env_vars.insert(details->env_vars.begin(), details->env_vars.end());
             properties.env_vars.insert(order.env_vars.begin(), order.env_vars.end());
+            properties.entry_point = details->entry_point;
             properties.network_properties = order.network_properties;
             if (auto error = repository->save(properties); error)
             {
                 send_error(error);
-                
             }
             else
             {
-               
-               send_success("container created");
-            };
+                send_success("container created");
+            }
         }
     }
     fs::path creation_handler::generate_container_folder(const std::string &identifier, std::error_code &error)
     {
-        fs::path target = fs::path(configuration.container_base_folder) / fs::path(identifier);
+        fs::path target = fs::path(configuration.containers_folder) / fs::path(identifier);
         if (!fs::exists(target))
         {
             if (!fs::create_directories(target, error))
@@ -124,7 +122,7 @@ namespace domain::containers
     }
     fs::path creation_handler::fetch_image_archive(std::string &image_identifier, std::error_code &error)
     {
-        fs::path target = fs::path(configuration.image_base_folder) / fs::path(image_identifier) / fs::path("fs.zip");
+        fs::path target = fs::path(configuration.images_folder) / fs::path(image_identifier) / fs::path("fs.zip");
         if (!fs::exists(target, error))
         {
             return {};

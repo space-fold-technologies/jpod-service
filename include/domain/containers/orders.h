@@ -24,6 +24,21 @@ namespace domain::containers
     {
         return msgpack::unpack<container_creation_order>(content);
     }
+
+    struct container_start_order
+    {
+        std::string term;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(term);
+        }
+    };
+
+    inline container_start_order unpack_container_start_order(const std::vector<uint8_t> &content)
+    {
+        return msgpack::unpack<container_start_order>(content);
+    }
 }
 
 #endif // __DAEMON_DOMAIN_CONTAINERS_ORDERS__

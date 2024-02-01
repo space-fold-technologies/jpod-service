@@ -50,8 +50,10 @@ namespace core::connections
         build = 0x06,
         import = 0x07,
         authorize = 0x08,
-        shell = 0x09,
-        logs = 0x0A
+        start = 0x09,
+        shell = 0x0A,
+        logs = 0x0B
+
     };
 
     inline std::map<request_operation, std::string> request_operations_map =
@@ -65,6 +67,7 @@ namespace core::connections
             {request_operation::import, "import-sub-operation"},
             {request_operation::authorize, "authorize-sub-operation"},
             {request_operation::shell, "shell-sub-operation"},
+            {request_operation::start, "container-start-sub-operation"},
             {request_operation::logs, "logs-sub-operation"}};
 
     inline std::string &request_operation_value(request_operation operation)

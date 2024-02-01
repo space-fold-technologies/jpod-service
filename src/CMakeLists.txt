@@ -60,6 +60,7 @@ add_executable(daemon
                 #containers
                 domain/containers/runtime.cc 
                 domain/containers/creation_handler.cc
+                domain/containers/start_handler.cc
                 domain/containers/sql_repository.cc
                 #containers::freebsd
                 domain/containers/freebsd/freebsd_container.cc
