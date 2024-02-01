@@ -2,6 +2,7 @@
 #define __DAEMON_DOMAIN_CONTAINERS_CONTAINER__
 
 #include <domain/containers/details.h>
+#include <domain/containers/runtime_listener.h>
 #include <memory>
 
 namespace domain::containers
@@ -11,17 +12,18 @@ namespace domain::containers
     {
 
     public:
-        container(container_details details) : details(std::move(details))
+        container(container_details details, runtime_listener &listener) : details(std::move(details)), listener(listener)
         {
         }
         virtual void initialize() = 0;
         virtual ~container() = default;
         virtual void start() = 0;
         virtual void resize(int columns, int rows) = 0;
-        virtual void register_listener(std::shared_ptr<container_listener> listener) = 0;
+        virtual void register_listener(std::shared_ptr<container_listener> operation_listener) = 0;
 
     protected:
         container_details details;
+        runtime_listener &listener;
     };
 }
 

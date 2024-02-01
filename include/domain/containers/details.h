@@ -11,6 +11,7 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
         std::vector<domain::images::mount_point> mount_points;
+        std::string entry_point;
         std::string network_properties;
     };
 
