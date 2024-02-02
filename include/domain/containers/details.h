@@ -11,6 +11,7 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
         std::vector<domain::images::mount_point> mount_points;
+        std::string entry_point;
         std::string network_properties;
     };
 
@@ -19,6 +20,7 @@ namespace domain::containers
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::string entry_point;
         std::string network_properties;
         template <class T>
         void pack(T &pack)
@@ -42,6 +44,7 @@ namespace domain::containers
         details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
         details.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
+        details.entry_point = internals.entry_point;
         details.network_properties = internals.network_properties;;
     }
 
@@ -53,6 +56,7 @@ namespace domain::containers
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::string entry_point;
         std::string network_properties;
     };
 
@@ -61,6 +65,7 @@ namespace domain::containers
         properties.parameters.insert(internals.parameters.begin(), internals.parameters.end());
         properties.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         properties.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
+        properties.entry_point = internals.entry_point;
         properties.network_properties = internals.network_properties;
     }
 

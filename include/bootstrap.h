@@ -1,7 +1,7 @@
 #ifndef __DAEMON_BOOTSTRAP__
 #define __DAEMON_BOOTSTRAP__
 #include <memory>
-
+#include <filesystem>
 namespace asio
 {
     class io_context;
@@ -32,10 +32,11 @@ namespace domain::images::http
 namespace domain::containers
 {
     class container_repository;
+    class runtime;
 };
 using namespace core::commands;
 using namespace core::connections;
-
+namespace fs = std::filesystem;
 class bootstrap
 {
 public:
@@ -51,8 +52,11 @@ private:
     std::unique_ptr<core::sql::pool::data_source> data_source;
     std::shared_ptr<domain::images::image_repository> image_repository;
     std::shared_ptr<domain::containers::container_repository> container_repository;
+    std::shared_ptr<domain::containers::runtime> runtime;
     std::shared_ptr<domain::images::http::client> client;
     asio::io_context &context;
+    fs::path containers_folder;
+    fs::path images_folder;
 };
 
 #endif // __DAEMON_BOOTSTRAP__

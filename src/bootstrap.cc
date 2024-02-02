@@ -11,6 +11,8 @@
 // container headers
 #include <domain/containers/sql_repository.h>
 #include <domain/containers/creation_handler.h>
+#include <domain/containers/start_handler.h>
+#include <domain/containers/runtime.h>
 #include <asio/io_context.hpp>
 
 using namespace domain::images;
@@ -22,6 +24,7 @@ bootstrap::bootstrap(asio::io_context &context) : context(context),
                                                   data_source(nullptr),
                                                   image_repository(nullptr),
                                                   container_repository(nullptr),
+                                                  runtime(nullptr),
                                                   client(nullptr)
 {
 }
@@ -54,8 +57,15 @@ void bootstrap::setup()
       request_operation::build,
       [this](connection &conn) -> std::unique_ptr<command_handler>
       {
-        creation_configuration cfg{};
+        creation_configuration cfg{containers_folder, images_folder};
         return std::make_unique<creation_handler>(conn, cfg, container_repository);
+      });
+  registry->add_handler(
+      operation_target::container,
+      request_operation::start,
+      [this](connection &conn) -> std::unique_ptr<command_handler>
+      {
+        return std::make_unique<start_handler>(conn, container_repository, runtime, containers_folder);
       });
 }
 void bootstrap::start()

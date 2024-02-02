@@ -20,8 +20,8 @@ namespace domain::containers
 {
     struct creation_configuration
     {
-        std::string container_base_folder;
-        std::string image_base_folder;
+        std::string containers_folder;
+        std::string images_folder;
     };
     class container_repository;
     class creation_handler : public core::commands::command_handler
