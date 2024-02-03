@@ -72,18 +72,6 @@ namespace domain::containers::freebsd
                              }
                          }); });
     }
-    void freebsd_container::resize(int columns, int rows)
-    {
-        struct winsize size;
-        size.ws_col = (unsigned short)columns;
-        size.ws_row = (unsigned short)rows;
-        size.ws_xpixel = 0;
-        size.ws_ypixel = 0;
-        if (ioctl(file_descriptor, TIOCSWINSZ, &size) < 0)
-        {
-            listener.container_failed(details.identifier, std::error_code(errno, std::system_category()));
-        }
-    }
     void freebsd_container::register_listener(std::shared_ptr<container_listener> operation_listener)
     {
         if (auto pos = operation_listeners.find(operation_listener->type()); pos != operation_listeners.end())

@@ -37,12 +37,15 @@ namespace domain::containers
     }
     void logging_handler::on_operation_initialization()
     {
+        send_success("logging session started");
     }
     void logging_handler::on_operation_output(const std::vector<uint8_t> &content)
     {
+        send_frame(content);
     }
     void logging_handler::on_operation_failure(const std::error_code &error)
     {
+        send_error(error);
     }
     listener_category logging_handler::type()
     {

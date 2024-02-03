@@ -32,7 +32,6 @@ namespace domain::containers::freebsd
         void initialize() override;
         virtual ~freebsd_container() override;
         void start() override;
-        void resize(int columns, int rows) override;
         void register_listener(std::shared_ptr<container_listener> operation_listener) override;
 
     private:
