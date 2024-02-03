@@ -31,6 +31,7 @@ namespace domain::containers
         virtual ~runtime();
         void create_container(operation_details details);
         void remove_container(std::string &identifier);
+        std::shared_ptr<container> fetch_container(const std::string &identifier);
         void container_initialized(const std::string &identifier) override;
         void container_started(const std::string &identifier) override;
         void container_failed(const std::string &identifier, const std::error_code &error) override;

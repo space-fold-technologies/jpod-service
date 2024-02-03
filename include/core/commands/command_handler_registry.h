@@ -20,7 +20,7 @@ namespace core::connections
 using namespace core::connections;
 namespace core::commands
 {
-    typedef std::function<std::unique_ptr<command_handler>(connection &)> command_handler_provider;
+    typedef std::function<std::shared_ptr<command_handler>(connection &)> command_handler_provider;
     class command_handler_registry
     {
     public:

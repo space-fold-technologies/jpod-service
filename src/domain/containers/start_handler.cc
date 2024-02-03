@@ -22,7 +22,7 @@ namespace domain::containers
 
     void start_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
-        auto order = unpack_container_start_order(payload);
+        auto order = unpack_container_term_order(payload);
         // create the operation details from querying the database
         if (auto result = repository->first_match(order.term); !result.has_value())
         {

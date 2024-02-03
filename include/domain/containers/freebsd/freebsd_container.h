@@ -32,7 +32,6 @@ namespace domain::containers::freebsd
         void initialize() override;
         virtual ~freebsd_container() override;
         void start() override;
-        void resize(int columns, int rows) override;
         void register_listener(std::shared_ptr<container_listener> operation_listener) override;
 
     private:
@@ -54,7 +53,7 @@ namespace domain::containers::freebsd
         std::vector<uint8_t> buffer;
         std::unique_ptr<asio::posix::stream_descriptor> stream;
         std::shared_ptr<spdlog::logger> logger;
-        std::map<listener_category, std::shared_ptr<container_listener>> operation_listeners;
+        std::map<listener_category, std::weak_ptr<container_listener>> operation_listeners;
     };
 }
 #endif // __DAEMON_DOMAIN_CONTAINERS_FREEBSD_CONTAINER_IMPLEMENTATION__

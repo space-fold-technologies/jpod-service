@@ -108,6 +108,27 @@ namespace domain::containers
             return details;
         }
     }
+
+    std::optional<std::string> sql_container_repository::first_identifier_match(const std::string &query)
+    {
+        std::string sql("SELECT "
+                        "c.identifier "
+                        "FROM container_tb AS c "
+                        "WHERE c.identifier LIKE ? "
+                        "OR c.name LIKE ? LIMIT 1");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        statement.bind(0, query);
+        statement.bind(1, query);
+        if (auto result = statement.execute_query(); !result.has_next())
+        {
+            return std::nullopt;
+        }
+        else
+        {
+            return result.fetch<std::string>("identifier");
+        }
+    }
     std::error_code sql_container_repository::save(const container_properties &properties)
     {
         std::string sql("INSERT INTO container_tb(identifier, name, internals, image_id) "
