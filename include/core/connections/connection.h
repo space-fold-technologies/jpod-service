@@ -56,7 +56,7 @@ namespace core::connections
         std::deque<std::vector<uint8_t>> sending_queue;
         std::shared_ptr<core::commands::command_handler_registry> command_handler_registry;
         removal_trigger_callback removal_callback;
-        std::unique_ptr<core::commands::command_handler> command_handler;
+        std::shared_ptr<core::commands::command_handler> command_handler;
         std::shared_ptr<spdlog::logger> logger;
     };
 };

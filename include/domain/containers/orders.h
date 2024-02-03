@@ -25,7 +25,7 @@ namespace domain::containers
         return msgpack::unpack<container_creation_order>(content);
     }
 
-    struct container_start_order
+    struct container_term_order
     {
         std::string term;
         template <class T>
@@ -35,9 +35,9 @@ namespace domain::containers
         }
     };
 
-    inline container_start_order unpack_container_start_order(const std::vector<uint8_t> &content)
+    inline container_term_order unpack_container_term_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<container_start_order>(content);
+        return msgpack::unpack<container_term_order>(content);
     }
     namespace shell
     {

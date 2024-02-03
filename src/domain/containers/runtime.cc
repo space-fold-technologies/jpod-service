@@ -54,6 +54,10 @@ namespace domain::containers
             monitors.erase(pos);
         }
     }
+    std::shared_ptr<container> runtime::fetch_container(const std::string &identifier)
+    {
+        return containers.at(identifier);
+    }
     runtime::~runtime()
     {
         containers.clear();

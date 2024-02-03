@@ -262,26 +262,36 @@ namespace domain::containers::freebsd
     {
         if (auto pos = operation_listeners.find(listener_category::observer); pos != operation_listeners.end())
         {
-            auto operation_listener = pos->second;
-            operation_listener->on_operation_failure(error);
+            if (auto operation_listener = pos->second.lock(); operation_listener)
+            {
+                operation_listener->on_operation_failure(error);
+            }
         }
         else if (auto pos = operation_listeners.find(listener_category::runtime); pos != operation_listeners.end())
         {
-            auto operation_listener = pos->second;
-            operation_listener->on_operation_failure(error);
+            if (auto operation_listener = pos->second.lock(); operation_listener)
+            {
+                operation_listener->on_operation_failure(error);
+            }
         }
     }
     void freebsd_container::on_operation_output(const std::vector<uint8_t> &content)
     {
         if (auto pos = operation_listeners.find(listener_category::observer); pos != operation_listeners.end())
         {
-            auto operation_listener = pos->second;
-            operation_listener->on_operation_output(content);
+
+            if (auto operation_listener = pos->second.lock(); operation_listener)
+            {
+                operation_listener->on_operation_output(content);
+            }
         }
         else if (auto pos = operation_listeners.find(listener_category::runtime); pos != operation_listeners.end())
         {
-            auto operation_listener = pos->second;
-            operation_listener->on_operation_output(content);
+
+            if (auto operation_listener = pos->second.lock(); operation_listener)
+            {
+                operation_listener->on_operation_output(content);
+            }
         }
     }
 

@@ -37,43 +37,43 @@ void bootstrap::setup()
   registry->add_handler(
       operation_target::image,
       request_operation::list,
-      [&](connection &conn) -> std::unique_ptr<command_handler>
+      [&](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_unique<list_handler>(conn);
+        return std::make_shared<list_handler>(conn);
       });
   registry->add_handler(
       operation_target::image,
       request_operation::build,
-      [this](connection &conn) -> std::unique_ptr<command_handler>
+      [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_unique<build_handler>(conn, image_repository, client, context);
+        return std::make_shared<build_handler>(conn, image_repository, client, context);
       });
   registry->add_handler(
       operation_target::image,
       request_operation::import,
-      [this](connection &conn) -> std::unique_ptr<command_handler>
+      [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_unique<import_handler>(conn, image_repository);
+        return std::make_shared<import_handler>(conn, image_repository);
       });
   registry->add_handler(
       operation_target::container,
       request_operation::build,
-      [this](connection &conn) -> std::unique_ptr<command_handler>
+      [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         creation_configuration cfg{containers_folder, images_folder};
-        return std::make_unique<creation_handler>(conn, cfg, container_repository);
+        return std::make_shared<creation_handler>(conn, cfg, container_repository);
       });
   registry->add_handler(
       operation_target::container,
       request_operation::start,
-      [this](connection &conn) -> std::unique_ptr<command_handler>
+      [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_unique<start_handler>(conn, container_repository, runtime, containers_folder);
+        return std::make_shared<start_handler>(conn, container_repository, runtime, containers_folder);
       });
   registry->add_handler(
       operation_target::container,
       request_operation::shell,
-      [this](connection &conn) -> std::unique_ptr<command_handler>
+      [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         auto provider = [this](
                             const std::string &identifier,
@@ -81,14 +81,14 @@ void bootstrap::setup()
         {
           return {};
         };
-        return std::make_unique<shell_handler>(conn, container_repository, provider);
+        return std::make_shared<shell_handler>(conn, container_repository, provider);
       });
   registry->add_handler(
       operation_target::container,
       request_operation::logs,
-      [this](connection &conn) -> std::unique_ptr<command_handler>
+      [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_unique<logging_handler>(conn, container_repository, runtime);
+        return std::make_shared<logging_handler>(conn, container_repository, runtime);
       });
 }
 void bootstrap::start()

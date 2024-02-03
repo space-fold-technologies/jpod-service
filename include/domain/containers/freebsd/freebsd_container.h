@@ -54,7 +54,7 @@ namespace domain::containers::freebsd
         std::vector<uint8_t> buffer;
         std::unique_ptr<asio::posix::stream_descriptor> stream;
         std::shared_ptr<spdlog::logger> logger;
-        std::map<listener_category, std::shared_ptr<container_listener>> operation_listeners;
+        std::map<listener_category, std::weak_ptr<container_listener>> operation_listeners;
     };
 }
 #endif // __DAEMON_DOMAIN_CONTAINERS_FREEBSD_CONTAINER_IMPLEMENTATION__
