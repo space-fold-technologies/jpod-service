@@ -9,9 +9,12 @@
 #include <domain/images/sql_repository.h>
 #include <domain/images/http/asio_client.h>
 // container headers
+#include <domain/containers/virtual_terminal.h>
 #include <domain/containers/sql_repository.h>
 #include <domain/containers/creation_handler.h>
+#include <domain/containers/logging_handler.h>
 #include <domain/containers/start_handler.h>
+#include <domain/containers/shell_handler.h>
 #include <domain/containers/runtime.h>
 #include <asio/io_context.hpp>
 
@@ -66,6 +69,26 @@ void bootstrap::setup()
       [this](connection &conn) -> std::unique_ptr<command_handler>
       {
         return std::make_unique<start_handler>(conn, container_repository, runtime, containers_folder);
+      });
+  registry->add_handler(
+      operation_target::container,
+      request_operation::shell,
+      [this](connection &conn) -> std::unique_ptr<command_handler>
+      {
+        auto provider = [this](
+                            const std::string &identifier,
+                            terminal_listener &listener) -> std::unique_ptr<virtual_terminal>
+        {
+          return {};
+        };
+        return std::make_unique<shell_handler>(conn, container_repository, provider);
+      });
+  registry->add_handler(
+      operation_target::container,
+      request_operation::logs,
+      [this](connection &conn) -> std::unique_ptr<command_handler>
+      {
+        return std::make_unique<logging_handler>(conn, container_repository, runtime);
       });
 }
 void bootstrap::start()
