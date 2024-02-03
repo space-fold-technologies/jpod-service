@@ -66,6 +66,7 @@ add_executable(daemon
                 domain/containers/sql_repository.cc
                 #containers::freebsd
                 domain/containers/freebsd/freebsd_container.cc
+                domain/containers/freebsd/freebsd_terminal.cc
                 # networking
                 domain/networking/asio_address_provider.cc
                 domain/networking/virtual_network_provider.cc

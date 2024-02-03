@@ -33,7 +33,14 @@ namespace domain::containers
             else
             {
                 terminal = provider(*result, *this);
-                terminal->start();
+                if (auto error = terminal->initialize(); error)
+                {
+                    send_error(error);
+                }
+                else
+                {
+                    terminal->start();
+                }
             }
         }
         case shell::terminal_size:

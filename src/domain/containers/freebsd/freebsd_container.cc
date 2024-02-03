@@ -122,7 +122,7 @@ namespace domain::containers::freebsd
         auto pid = forkpty(&fd, NULL, NULL, &size);
         if (pid < 0)
         {
-            std::error_code(errno, std::system_category());
+            return std::error_code(errno, std::system_category());
         }
         else if (pid == 0)
         {

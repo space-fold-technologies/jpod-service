@@ -18,6 +18,10 @@
 #include <domain/containers/runtime.h>
 #include <asio/io_context.hpp>
 
+#if defined(__FreeBSD__)
+#include <domain/containers/freebsd/freebsd_terminal.h>
+#endif
+
 using namespace domain::images;
 using namespace domain::containers;
 
@@ -79,7 +83,7 @@ void bootstrap::setup()
                             const std::string &identifier,
                             terminal_listener &listener) -> std::unique_ptr<virtual_terminal>
         {
-          return {};
+          return create_virtual_terminal(identifier, listener);
         };
         return std::make_shared<shell_handler>(conn, container_repository, provider);
       });
@@ -99,6 +103,16 @@ void bootstrap::stop()
 {
   acceptor->stop();
 }
+
+#if defined(__FreeBSD__)
+std::unique_ptr<virtual_terminal> bootstrap::create_virtual_terminal(
+    const std::string &identifier,
+    terminal_listener &listener)
+{
+  return std::make_unique<freebsd::freebsd_terminal>(context, identifier, listener);
+}
+#endif
+
 bootstrap::~bootstrap()
 {
 }

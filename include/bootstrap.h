@@ -32,6 +32,8 @@ namespace domain::images::http
 namespace domain::containers
 {
     class container_repository;
+    class terminal_listener;
+    class virtual_terminal;
     class runtime;
 };
 using namespace core::commands;
@@ -45,6 +47,11 @@ public:
     void setup();
     void start();
     void stop();
+
+private:
+    std::unique_ptr<domain::containers::virtual_terminal> create_virtual_terminal(
+        const std::string &identifier,
+        domain::containers::terminal_listener &listener);
 
 private:
     std::shared_ptr<command_handler_registry> registry;
