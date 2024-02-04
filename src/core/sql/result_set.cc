@@ -36,8 +36,13 @@ namespace core::sql
         content.reserve(size);
         const void *raw_ptr = sqlite3_column_blob(this->statement_ptr->instance, column_index);
         std::memcpy(content.data(), raw_ptr, size);
-        //need to know if sqlite will free the pointer
+        // need to know if sqlite will free the pointer
         return content;
+    }
+    time_point<system_clock, nanoseconds> result_set::fetch_timestamp(const int column_index) const
+    {
+        time_point<system_clock, nanoseconds> timestamp;
+        return timestamp;
     }
     bool result_set::has_next()
     {

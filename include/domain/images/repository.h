@@ -17,6 +17,7 @@ namespace domain::images
         virtual bool has_image(const std::string &registry, const std::string &name, const std::string &tag) = 0;
         virtual std::error_code save_image_details(const image_details &details) = 0;
         virtual std::optional<image_details> fetch_image_details(const std::string &registry, const std::string &name, const std::string &tag) = 0;
+        virtual std::vector<image_summary_entry> fetch_matching_details(const std::string &query) = 0;
         virtual std::optional<std::string> fetch_image_identifier(const std::string &registry, const std::string &name, const std::string &tag) = 0;
         virtual std::vector<mount_point> fetch_image_mount_points(const std::string &registry, const std::string &name, const std::string &tag) = 0;
     };

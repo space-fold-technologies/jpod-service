@@ -43,7 +43,7 @@ void bootstrap::setup()
       request_operation::list,
       [&](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<list_handler>(conn);
+        return std::make_shared<image_list_handler>(conn, image_repository);
       });
   registry->add_handler(
       operation_target::image,

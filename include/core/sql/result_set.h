@@ -4,7 +4,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
 
+using namespace std::chrono;
 namespace core::sql
 {
     class statement;
@@ -36,6 +38,10 @@ namespace core::sql
             {
                 return fetch_blob(column_index(column_name));
             }
+            else if constexpr (std::is_same_v<T, time_point<system_clock, nanoseconds>>)
+            {
+                return fetch_timestamp(column_index(column_name));
+            }
         }
 
         bool has_next();
@@ -48,6 +54,7 @@ namespace core::sql
         double fetch_double(const int column_index) const;
         std::string fetch_string(const int column_index) const;
         std::vector<uint8_t> fetch_blob(const int column_index) const;
+        time_point<system_clock, nanoseconds> fetch_timestamp(const int column_index) const;
     };
 }
 

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <msgpack/msgpack.hpp>
 
+using namespace std::chrono;
+
 namespace domain::images
 {
     struct registry
@@ -48,6 +50,36 @@ namespace domain::images
     inline image_internals unpack_image_internals(const std::vector<uint8_t> &content)
     {
         return msgpack::unpack<image_internals>(content);
+    }
+
+    struct image_summary_entry
+    {
+        std::string identifier;
+        std::string name;
+        std::string repository;
+        std::string tag;
+        std::size_t size;
+        time_point<system_clock, nanoseconds> created_at;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(identifier, repository, tag, size, created_at);
+        }
+    };
+
+    struct image_summary
+    {
+        std::vector<image_summary_entry> entries;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(entries);
+        }
+    };
+
+    inline std::vector<uint8_t> pack_image_entries(std::vector<image_summary_entry> &entries)
+    {
+        return msgpack::pack(image_summary{entries});
     }
 
     struct image_details

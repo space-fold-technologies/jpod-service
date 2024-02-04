@@ -29,8 +29,7 @@ namespace domain::images
         std::string repository;
         std::string tag;
         std::size_t size;
-        std::string query;
-        time_point<system_clock, nanoseconds> created_at;
+        time_point<system_clock, milliseconds> created_at;
         template <class T>
         void pack(T &pack)
         {
