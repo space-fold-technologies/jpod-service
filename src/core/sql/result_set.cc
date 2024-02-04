@@ -41,8 +41,9 @@ namespace core::sql
     }
     time_point<system_clock, nanoseconds> result_set::fetch_timestamp(const int column_index) const
     {
-        time_point<system_clock, nanoseconds> timestamp;
-        return timestamp;
+        auto timestamp = seconds(sqlite3_column_int64(this->statement_ptr->instance, column_index));
+        auto value = system_clock::from_time_t(timestamp.count());
+        return time_point_cast<nanoseconds>(value);
     }
     bool result_set::has_next()
     {

@@ -144,6 +144,7 @@ namespace domain::images
                                       "i.tag, "
                                       "r.name AS repository, "
                                       "i.size, "
+                                      "UNIXEPOCH(i.created_at), AS creation_date, "
                                       "FROM image_tb AS m "
                                       "INNER JOIN registry_tb AS r ON i.registry_id = r.id {}",
                                       !query.empty() ? "WHERE i.name LIKE ? OR i.identifier LIKE ? " : "");
@@ -165,7 +166,7 @@ namespace domain::images
             entry.tag = result.fetch<std::string>("tag");
             entry.repository = result.fetch<std::string>("repository");
             entry.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
-            entry.created_at = result.fetch<time_point<system_clock, milliseconds>>("created_at");
+            entry.created_at = result.fetch<time_point<system_clock, milliseconds>>("creation_date");
             entries.push_back(entry);
         }
         return entries;
