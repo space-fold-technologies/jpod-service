@@ -15,6 +15,7 @@ namespace domain::containers
         virtual std::optional<container_details> first_match(const std::string &query) = 0;
         virtual std::optional<std::string> first_identifier_match(const std::string &query) = 0;
         virtual std::error_code save(const container_properties &properties) = 0;
+        virtual std::vector<container_summary_entry> fetch_match(const std::string &query, const std::string &state) = 0;
     };
 }
 #endif // __DAEMON_DOMAIN_CONTAINERS_REPOSITORY__

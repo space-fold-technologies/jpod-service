@@ -15,6 +15,7 @@
 #include <domain/containers/logging_handler.h>
 #include <domain/containers/start_handler.h>
 #include <domain/containers/shell_handler.h>
+#include <domain/containers/list_handler.h>
 #include <domain/containers/runtime.h>
 #include <asio/io_context.hpp>
 
@@ -43,7 +44,7 @@ void bootstrap::setup()
       request_operation::list,
       [&](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<list_handler>(conn);
+        return std::make_shared<image_list_handler>(conn, image_repository);
       });
   registry->add_handler(
       operation_target::image,
@@ -93,6 +94,13 @@ void bootstrap::setup()
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         return std::make_shared<logging_handler>(conn, container_repository, runtime);
+      });
+  registry->add_handler(
+      operation_target::container,
+      request_operation::list,
+      [this](connection &conn) -> std::shared_ptr<command_handler>
+      {
+        return std::make_shared<container_list_handler>(conn, container_repository);
       });
 }
 void bootstrap::start()

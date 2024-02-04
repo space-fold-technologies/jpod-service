@@ -11,15 +11,17 @@ namespace spdlog
 
 namespace domain::images
 {
-    class list_handler : public core::commands::command_handler
+    class image_repository;
+    class image_list_handler : public core::commands::command_handler
     {
     public:
-        list_handler(core::connections::connection &connection);
-        virtual ~list_handler();
+        image_list_handler(core::connections::connection &connection, std::shared_ptr<image_repository> repository);
+        virtual ~image_list_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
         void on_connection_closed(const std::error_code &error) override;
 
     private:
+        std::shared_ptr<image_repository> repository;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

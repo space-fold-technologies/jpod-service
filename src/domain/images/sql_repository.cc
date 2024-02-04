@@ -135,6 +135,42 @@ namespace domain::images
             return details;
         }
     }
+    std::vector<image_summary_entry> sql_image_repository::fetch_matching_details(const std::string &query)
+    {
+
+        std::string sql = fmt::format("SELECT "
+                                      "i.identifier, "
+                                      "i.name, "
+                                      "i.tag, "
+                                      "r.name AS repository, "
+                                      "i.size, "
+                                      "UNIXEPOCH(i.created_at), AS creation_date, "
+                                      "FROM image_tb AS m "
+                                      "INNER JOIN registry_tb AS r ON i.registry_id = r.id {}",
+                                      !query.empty() ? "WHERE i.name LIKE ? OR i.identifier LIKE ? " : "");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        if (!query.empty())
+        {
+            statement.bind(0, query);
+            statement.bind(1, query);
+        }
+
+        auto result = statement.execute_query();
+        std::vector<image_summary_entry> entries;
+        while (result.has_next())
+        {
+            image_summary_entry entry{};
+            entry.identifier = result.fetch<std::string>("identifier");
+            entry.name = result.fetch<std::string>("name");
+            entry.tag = result.fetch<std::string>("tag");
+            entry.repository = result.fetch<std::string>("repository");
+            entry.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
+            entry.created_at = result.fetch<time_point<system_clock, milliseconds>>("creation_date");
+            entries.push_back(entry);
+        }
+        return entries;
+    }
     std::optional<std::string> sql_image_repository::fetch_image_identifier(const std::string &registry, const std::string &name, const std::string &tag)
     {
         std::string sql("SELECT i.identifier "

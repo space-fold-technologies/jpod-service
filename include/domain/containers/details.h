@@ -45,7 +45,8 @@ namespace domain::containers
         details.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
         details.entry_point = internals.entry_point;
-        details.network_properties = internals.network_properties;;
+        details.network_properties = internals.network_properties;
+        ;
     }
 
     struct container_properties
@@ -60,13 +61,42 @@ namespace domain::containers
         std::string network_properties;
     };
 
-     inline void fill_container_properties(container_properties &properties, const container_internals &internals)
+    inline void fill_container_properties(container_properties &properties, const container_internals &internals)
     {
         properties.parameters.insert(internals.parameters.begin(), internals.parameters.end());
         properties.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         properties.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
         properties.entry_point = internals.entry_point;
         properties.network_properties = internals.network_properties;
+    }
+
+    struct container_summary_entry
+    {
+        std::string identifier;
+        std::string name;
+        std::string image;
+        std::map<std::string, std::string> port_map;
+        time_point<system_clock, nanoseconds> created_at;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(identifier, name, image, port_map, created_at);
+        }
+    };
+
+    struct container_summary
+    {
+        std::vector<container_summary_entry> entries;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(entries);
+        }
+    };
+
+    inline std::vector<uint8_t> pack_container_summary(std::vector<container_summary_entry> &entries)
+    {
+        return msgpack::pack(container_summary{entries});
     }
 
 }
