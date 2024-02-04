@@ -59,6 +59,7 @@ add_executable(daemon
                 domain/images/http/asio_client.cc
                 #containers
                 domain/containers/runtime.cc 
+                domain/containers/list_handler.cc
                 domain/containers/creation_handler.cc
                 domain/containers/start_handler.cc
                 domain/containers/logging_handler.cc

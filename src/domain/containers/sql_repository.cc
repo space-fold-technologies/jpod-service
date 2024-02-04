@@ -148,5 +148,55 @@ namespace domain::containers
         txn.commit();
         return {};
     }
+    std::vector<container_summary_entry> sql_container_repository::fetch_match(const std::string &query, const std::string &state)
+    {
+        std::string sql = fmt::format(
+            "SELECT "
+            "c.identifier, "
+            "c.name AS container_name, "
+            "i.name AS image_name, "
+            "c.internals, "
+            "c.created_at "
+            "FROM container_tb AS c "
+            "INNER JOIN image_tb AS i ON c.image_id = i.id "
+            "WHERE {} {}",
+            !query.empty()
+                ? "c.name LIKE ? OR c.identifier LIKE ? "
+                : "",
+            state != "all" ? "c.state = ?"
+                           : "");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        if (!query.empty())
+        {
+            statement.bind(0, query);
+            statement.bind(1, query);
+            if (!state.empty())
+            {
+                statement.bind(1, query);
+            }
+        }
+        else
+        {
+            if (!state.empty())
+            {
+                statement.bind(0, query);
+            }
+        }
+        auto result = statement.execute_query();
+        std::vector<container_summary_entry> entries;
+        while (result.has_next())
+        {
+            container_summary_entry entry{};
+            entry.identifier = result.fetch<std::string>("identifier");
+            entry.name = result.fetch<std::string>("container_name");
+            entry.image = result.fetch<std::string>("image_name");
+            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("created_at");
+            auto internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
+            entry.port_map.insert(internals.port_map.begin(), internals.port_map.end());
+            entries.push_back(entry);
+        }
+        return entries;
+    }
     sql_container_repository::~sql_container_repository() {}
 }

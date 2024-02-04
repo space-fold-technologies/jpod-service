@@ -60,6 +60,37 @@ namespace domain::containers
     {
         return msgpack::unpack<container_shell_order>(content);
     }
+    namespace filter
+    {
+        constexpr uint8_t all = 0x00;
+        constexpr uint8_t active = 0x01;
+        constexpr uint8_t shutdown = 0x02;
+    };
+    struct container_list_order
+    {
+        uint8_t mode;
+        std::string query;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(mode, query);
+        }
+    };
+
+    inline container_list_order unpack_container_list_order(const std::vector<uint8_t> &content)
+    {
+        return msgpack::unpack<container_list_order>(content);
+    }
+
+    inline auto mode_value(uint8_t mode) -> std::string
+    {
+        if (mode == filter::all)
+            return "all";
+        if (mode == filter::active)
+            return "active";
+        if (mode == filter::shutdown)
+            return "shutdown";
+    }
 }
 
 #endif // __DAEMON_DOMAIN_CONTAINERS_ORDERS__
