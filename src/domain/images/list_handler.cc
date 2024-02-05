@@ -16,8 +16,8 @@ namespace domain::images
     }
     void image_list_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
-        auto order = unpack_list_order(payload);
-        auto entries = repository->fetch_matching_details(order.query);
+        auto order = unpack_image_term_order(payload);
+        auto entries = repository->fetch_matching_details(order.term);
         send_frame(pack_image_entries(entries));
     }
     void image_list_handler::on_connection_closed(const std::error_code &error)
