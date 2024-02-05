@@ -84,12 +84,12 @@ namespace domain::containers
 
     inline auto mode_value(uint8_t mode) -> std::string
     {
-        if (mode == filter::all)
-            return "all";
+
         if (mode == filter::active)
             return "active";
-        if (mode == filter::shutdown)
+        else if (mode == filter::shutdown)
             return "shutdown";
+        return "all";
     }
 }
 

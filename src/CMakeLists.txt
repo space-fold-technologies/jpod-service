@@ -38,6 +38,7 @@ add_executable(daemon
                 domain/images/list_handler.cc
                 domain/images/build_handler.cc
                 domain/images/import_handler.cc
+                domain/images/removal_handler.cc
                 domain/images/instructions/download_instruction.cc
                 domain/images/instructions/copy_instruction.cc
                 domain/images/instructions/work_dir_instruction.cc
@@ -64,6 +65,7 @@ add_executable(daemon
                 domain/containers/start_handler.cc
                 domain/containers/logging_handler.cc
                 domain/containers/shell_handler.cc
+                domain/containers/removal_handler.cc
                 domain/containers/sql_repository.cc
                 #containers::freebsd
                 domain/containers/freebsd/freebsd_container.cc

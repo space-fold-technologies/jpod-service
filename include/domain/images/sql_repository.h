@@ -21,6 +21,8 @@ namespace domain::images
         std::vector<image_summary_entry> fetch_matching_details(const std::string &query) override;
         std::optional<std::string> fetch_image_identifier(const std::string &registry, const std::string &name, const std::string &tag) override;
         std::vector<mount_point> fetch_image_mount_points(const std::string &registry, const std::string &name, const std::string &tag) override;
+        bool has_containers(const std::string &query) override;
+        std::error_code remove(const std::string &query) override;
 
     private:
         core::sql::pool::data_source &data_source;

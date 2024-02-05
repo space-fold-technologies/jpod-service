@@ -215,6 +215,42 @@ namespace domain::images
         }
         return mount_points;
     }
+    bool sql_image_repository::has_containers(const std::string &query)
+    {
+        std::string sql("SELECT "
+                        "COUNT(*) AS has_containers "
+                        "FROM container_tb AS c "
+                        "INNER JOIN image_tb AS i ON c.image_id = i.id "
+                        "WHERE i.name = ? OR i.identifier = ?");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        statement.bind(0, query);
+        statement.bind(1, query);
+        if (auto result = statement.execute_query(); !result.has_next())
+        {
+            return false;
+        }
+        else
+        {
+            return result.fetch<uint32_t>("has_containers") > 0;
+        }
+    }
+    std::error_code sql_image_repository::remove(const std::string &query)
+    {
+        std::string sql("DELETE "
+                        "FROM image_tb WHERE name = ? OR identifier = ?");
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(0, query);
+        statement.bind(1, query);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
+    }
     sql_image_repository::~sql_image_repository()
     {
     }

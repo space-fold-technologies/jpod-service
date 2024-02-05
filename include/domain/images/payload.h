@@ -8,19 +8,19 @@ using namespace std::chrono;
 
 namespace domain::images
 {
-    struct list_order
+    struct image_term_order
     {
-        std::string query;
+        std::string term;
         template <class T>
         void pack(T &pack)
         {
-            pack(query);
+            pack(term);
         }
     };
 
-    inline list_order unpack_list_order(const std::vector<uint8_t> &content)
+    inline image_term_order unpack_image_term_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<list_order>(content);
+        return msgpack::unpack<image_term_order>(content);
     }
 
     struct summary_entry
@@ -206,7 +206,8 @@ namespace domain::images
         details.variant = parsed_content["variant"].as<std::string>();
         details.version = parsed_content["version"].as<std::string>();
         details.labels = parsed_content["labels"].as<std::map<std::string, std::string>>();
-        if(parsed_content["environment"]) {
+        if (parsed_content["environment"])
+        {
             details.env_vars = parsed_content["environment"].as<std::map<std::string, std::string>>();
         }
         for (const auto &node : parsed_content["parameters"])
