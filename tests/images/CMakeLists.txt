@@ -11,6 +11,7 @@ find_package(asio REQUIRED CONFIG)
 find_package(libzip REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
+find_package(SQLite3 REQUIRED CONFIG)
 
 add_executable(copy-instruction-tests 
                test_copy_instruction.cc
@@ -208,6 +209,33 @@ target_link_libraries(import-instruction-tests PRIVATE catch_main fakeit::fakeit
 # to whatever you want, or use different for different binaries
 catch_discover_tests(
   import-instruction-tests
+TEST_PREFIX
+"unittests."
+REPORTER
+xml
+OUTPUT_DIR
+.
+OUTPUT_PREFIX
+"unittests."
+OUTPUT_SUFFIX
+.xml)
+
+
+add_executable(image-store-tests 
+  test_image_store.cc
+  ${PROJECT_SRC_FOLDER}/core/sql/connection.cc 
+  ${PROJECT_SRC_FOLDER}/core/sql/data_source.cc 
+  ${PROJECT_SRC_FOLDER}/core/sql/migrations.cc 
+  ${PROJECT_SRC_FOLDER}/core/sql/result_set.cc 
+  ${PROJECT_SRC_FOLDER}/core/sql/statement.cc 
+  ${PROJECT_SRC_FOLDER}/core/sql/transaction.cc
+  ${PROJECT_SRC_FOLDER}/domain/images/sql_repository.cc)
+target_link_libraries(image-store-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole Msgpack::Msgpack SQLite::SQLite3)
+
+# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
+# to whatever you want, or use different for different binaries
+catch_discover_tests(
+  image-store-tests
 TEST_PREFIX
 "unittests."
 REPORTER
