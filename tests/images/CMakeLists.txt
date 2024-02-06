@@ -230,7 +230,7 @@ add_executable(image-store-tests
   ${PROJECT_SRC_FOLDER}/core/sql/statement.cc 
   ${PROJECT_SRC_FOLDER}/core/sql/transaction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/sql_repository.cc)
-target_link_libraries(image-store-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole Msgpack::Msgpack SQLite::SQLite3)
+target_link_libraries(image-store-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole Msgpack::Msgpack SQLite::SQLite3 resource::rc)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries

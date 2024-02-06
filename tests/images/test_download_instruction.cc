@@ -36,7 +36,7 @@ TEST_CASE("download instruction case")
         WHEN("no valid registries available")
         {
             Mock<image_repository> repository;
-            When(Method(repository, fetch_registry_by_uri).Using(Eq("funky.pods.com"))).Return(std::nullopt);
+            When(Method(repository, fetch_registry_by_path).Using(Eq("funky.pods.com"))).Return(std::nullopt);
             When(Method(repository, has_image).Using("funky.pods.com", "freebsd", "14")).Return(false);
             std::string order("funky.pods.com/freebsd:14");
             download_instruction instruction(id, order, client.get(), repository.get(), resolver.get(), listener.get());
@@ -52,7 +52,7 @@ TEST_CASE("download instruction case")
         WHEN("no repository with target image")
         {
             Mock<image_repository> repository;
-            When(Method(repository, fetch_registry_by_uri).Using(Eq("fox-soft.pods.com"))).Return(fox_soft_registry);
+            When(Method(repository, fetch_registry_by_path).Using(Eq("fox-soft.pods.com"))).Return(fox_soft_registry);
             When(Method(repository, has_image).Using("fox-soft.pods.com", "freebsd", "14")).Return(false);
             When(Method(client, execute).Using(Any(), Any())).Do(no_image_found);
             std::string order("fox-soft.pods.com/freebsd:14");
@@ -68,7 +68,7 @@ TEST_CASE("download instruction case")
         WHEN("credentials to a target repository are not valid expired")
         {
             Mock<image_repository> repository;
-            When(Method(repository, fetch_registry_by_uri).Using(Eq("fox-soft.pods.com"))).Return(fox_soft_registry);
+            When(Method(repository, fetch_registry_by_path).Using(Eq("fox-soft.pods.com"))).Return(fox_soft_registry);
             When(Method(repository, has_image).Using("fox-soft.pods.com", "freebsd", "14")).Return(false);
             When(Method(client, execute).Using(Any(), Any())).Do(no_registry_access);
             std::string order("fox-soft.pods.com/freebsd:14");
@@ -84,7 +84,7 @@ TEST_CASE("download instruction case")
         WHEN("valid credentials are available for the target repository")
         {
             Mock<image_repository> repository;
-            When(Method(repository, fetch_registry_by_uri).Using(Eq("wikin.pods.com"))).Return(wikin_registry);
+            When(Method(repository, fetch_registry_by_path).Using(Eq("wikin.pods.com"))).Return(wikin_registry);
             When(Method(repository, has_image).Using("wikin.pods.com", "freebsd", "14")).Return(false);
             When(Method(client, execute).Using(Any(), Any())).Do(access_permitted);
             std::map<std::string, std::string> headers;

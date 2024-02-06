@@ -10,6 +10,27 @@ using namespace std::chrono;
 
 namespace domain::images
 {
+    struct registry_details
+    {
+        std::string name;
+        std::string uri;
+        std::string path;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(name, uri, path);
+        }
+    };
+    struct authorization_update
+    {
+        std::string path;
+        std::string token;
+        template <class T>
+        void pack(T &pack)
+        {
+            pack(path, token);
+        }
+    };
     struct registry
     {
         std::string uri;

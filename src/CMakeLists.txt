@@ -88,6 +88,7 @@ target_link_libraries(daemon
                        zstd::libzstd_static
                        yaml-cpp::yaml-cpp
                        SQLite::SQLite3
+                       resource::rc
                        )
 
 target_link_libraries(daemon PUBLIC OpenSSL::Crypto OpenSSL::SSL)                       

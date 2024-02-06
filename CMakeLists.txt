@@ -19,6 +19,18 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 option(BUILD_TESTS "Build Unit tests" ON)
 
+###################################################################
+# ADDED COMPILED RESOURCES                                        #  
+###################################################################
+
+cmrc_add_resource_library(
+    resources
+    NAMESPACE resources 
+    WHENCE resources
+    ALIAS resource::rc
+    resources/migrations/initial-tables.sql 
+)
+
 add_subdirectory(third_party/msgpack)
 include_directories(include)
 add_subdirectory(src)

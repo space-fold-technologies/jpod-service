@@ -13,7 +13,45 @@ namespace domain::images
     sql_image_repository::sql_image_repository(core::sql::pool::data_source &data_source) : data_source(data_source)
     {
     }
-    std::optional<registry> sql_image_repository::fetch_registry_by_uri(const std::string &path)
+    std::error_code sql_image_repository::add_registry(const registry_details &details)
+    {
+        std::string sql("INSERT INTO registry_tb(name, uri, path) "
+                        "VALUES(?, ?, ?)");
+
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(0, details.name);
+        statement.bind(1, details.uri);
+        statement.bind(2, details.path);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
+    }
+    std::error_code sql_image_repository::update_token(const authorization_update &update)
+    {
+        std::string sql("UPDATE registry_tb "
+                        "SET "
+                        "token = ? "
+                        "WHERE "
+                        "path = ?");
+
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(0, update.token);
+        statement.bind(1, update.path);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
+    }
+    std::optional<registry> sql_image_repository::fetch_registry_by_path(const std::string &path)
     {
         std::string sql("SELECT "
                         "r.uri, "

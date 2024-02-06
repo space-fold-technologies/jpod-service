@@ -71,7 +71,7 @@ namespace domain::images::instructions
                     });
             }
         }
-        else if (auto registry = result->registry == "default" ? repository.fetch_registry_by_name("default") : repository.fetch_registry_by_uri(result->registry); registry.has_value())
+        else if (auto registry = result->registry == "local" ? repository.fetch_registry_by_name("local") : repository.fetch_registry_by_path(result->registry); registry.has_value())
         {
             fetch_image_details(*registry, result->name, result->tag);
         }
