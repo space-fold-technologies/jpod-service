@@ -1,6 +1,7 @@
 #ifndef __DAEMON_CORE_SQL_RESULT_SET__
 #define __DAEMON_CORE_SQL_RESULT_SET__
 
+#include <type_traits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,33 +16,40 @@ namespace core::sql
     public:
         explicit result_set(const std::shared_ptr<statement> statement);
         virtual ~result_set() = default;
-        template <typename T>
+        template <typename T, std::enable_if_t<std::is_same<T, std::string>::value> * = nullptr>
         inline T fetch(const std::string &column_name) const
         {
-            if constexpr (std::is_same_v<T, std::string>)
-            {
-                return fetch_string(column_index(column_name));
-            }
-            else if constexpr (std::is_same_v<T, double>)
-            {
-                return fetch_double(column_index(column_name));
-            }
-            else if constexpr (std::is_same_v<T, int32_t>)
-            {
-                return fetch_integer(column_index(column_name));
-            }
-            else if constexpr (std::is_same_v<T, int64_t>)
-            {
-                return fetch_long(column_index(column_name));
-            }
-            else if constexpr (std::is_same_v<T, std::vector<uint8_t>>)
-            {
-                return fetch_blob(column_index(column_name));
-            }
-            else if constexpr (std::is_same_v<T, time_point<system_clock, nanoseconds>>)
-            {
-                return fetch_timestamp(column_index(column_name));
-            }
+            return fetch_string(column_index(column_name));
+        }
+        template <typename T, std::enable_if_t<std::is_same<T, double>::value> * = nullptr>
+        inline T fetch(const std::string &column_name) const
+        {
+            return fetch_double(column_index(column_name));
+        }
+        template <typename T, std::enable_if_t<std::is_same<T, int32_t>::value> * = nullptr>
+        inline T fetch(const std::string &column_name) const
+        {
+            return fetch_integer(column_index(column_name));
+        }
+        template <typename T, std::enable_if_t<std::is_same<T, int64_t>::value> * = nullptr>
+        inline T fetch(const std::string &column_name) const
+        {
+            return fetch_long(column_index(column_name));
+        }
+        template <typename T, std::enable_if_t<std::is_same<T, bool>::value> * = nullptr>
+        inline T fetch(const std::string &column_name) const
+        {
+            return fetch_bool(column_index(column_name));
+        }
+        template <typename T, std::enable_if_t<std::is_same<T, std::vector<uint8_t>>::value> * = nullptr>
+        inline T fetch(const std::string &column_name) const
+        {
+            return fetch_blob(column_index(column_name));
+        }
+        template <typename T, std::enable_if_t<std::is_same<T, time_point<system_clock, nanoseconds>>::value> * = nullptr>
+        inline T fetch(const std::string &column_name) const
+        {
+            return fetch_timestamp(column_index(column_name));
         }
 
         bool has_next();
@@ -52,6 +60,7 @@ namespace core::sql
         int32_t fetch_integer(const int column_index) const;
         int64_t fetch_long(const int column_index) const;
         double fetch_double(const int column_index) const;
+        bool fetch_bool(const int column_index) const;
         std::string fetch_string(const int column_index) const;
         std::vector<uint8_t> fetch_blob(const int column_index) const;
         time_point<system_clock, nanoseconds> fetch_timestamp(const int column_index) const;

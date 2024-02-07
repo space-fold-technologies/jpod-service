@@ -113,7 +113,7 @@ namespace domain::images
         std::string version;
         std::size_t size;
         std::string entry_point;
-        std::string registry_uri;
+        std::string registry_path;
         std::map<std::string, std::string> labels;
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> env_vars;

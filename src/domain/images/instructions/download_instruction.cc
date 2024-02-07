@@ -184,17 +184,17 @@ namespace domain::images::instructions
                     listener.on_instruction_data_received(identifier, pack_progress_frame(progress));
                     if (progress.percentage == 1.0)
                     {
-                        save_image_details(reg.uri, details);
+                        save_image_details(details);
                     }
                 }
             });
     }
-    void download_instruction::save_image_details(const std::string registry_uri, const image_meta &meta)
+    void download_instruction::save_image_details(const image_meta &meta)
     {
 
         image_details details{};
         details.identifier = meta.identifier;
-        details.registry_uri = registry_uri;
+        details.registry_path = meta.repository;
         details.name = meta.name;
         details.tag = meta.tag;
         details.size = meta.size;

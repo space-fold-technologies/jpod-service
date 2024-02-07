@@ -104,7 +104,7 @@ namespace domain::images
     std::error_code sql_image_repository::save_image_details(const image_details &details)
     {
         std::string sql("INSERT INTO image_tb(identifier, name, tag, os, variant, version, entry_point, size, internals, registry_id) "
-                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
+                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.path = ?))");
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
@@ -119,7 +119,7 @@ namespace domain::images
         statement.bind(6, details.entry_point);
         statement.bind(7, static_cast<int64_t>(details.size));
         statement.bind(8, pack_image_internals(internals));
-        statement.bind(8, details.registry_uri);
+        statement.bind(8, details.registry_path);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -204,7 +204,7 @@ namespace domain::images
             entry.tag = result.fetch<std::string>("tag");
             entry.repository = result.fetch<std::string>("repository");
             entry.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
-            entry.created_at = result.fetch<time_point<system_clock, milliseconds>>("creation_date");
+            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("creation_date");
             entries.push_back(entry);
         }
         return entries;
@@ -270,7 +270,7 @@ namespace domain::images
         }
         else
         {
-            return result.fetch<uint32_t>("has_containers") > 0;
+            return result.fetch<int32_t>("has_containers") > 0;
         }
     }
     std::error_code sql_image_repository::remove(const std::string &query)

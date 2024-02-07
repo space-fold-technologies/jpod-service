@@ -24,6 +24,10 @@ namespace core::sql
     {
         return sqlite3_column_double(this->statement_ptr->instance, column_index);
     }
+    bool result_set::fetch_bool(const int column_index) const
+    {
+        return sqlite3_column_int(this->statement_ptr->instance, column_index) > 0;
+    }
     std::string result_set::fetch_string(const int column_index) const
     {
         const char *text = reinterpret_cast<const char *>(sqlite3_column_text(this->statement_ptr->instance, column_index));

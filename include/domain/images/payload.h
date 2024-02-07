@@ -147,6 +147,7 @@ namespace domain::images
         std::string variant;
         std::string version;
         std::size_t size;
+        std::string repository;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> parameters;
         std::vector<mount_point_details> mount_points;

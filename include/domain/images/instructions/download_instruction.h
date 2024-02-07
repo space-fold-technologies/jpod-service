@@ -53,7 +53,7 @@ namespace domain::images::instructions
         void fetch_image_details(const registry &reg, const std::string &name, const std::string &tag);
         void download_image_filesystem(const registry &reg, const image_meta &details);
         void extract_image_filesystem(const registry &reg, const image_meta &details);
-        void save_image_details(const std::string registry_uri, const image_meta &meta);
+        void save_image_details(const image_meta &meta);
 
     private:
         std::string identifier;
