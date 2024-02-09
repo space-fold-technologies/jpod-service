@@ -5,7 +5,7 @@
 #include <chrono>
 #include <fmt/format.h>
 
-TEST_CASE("repository instruction case")
+TEST_CASE("image repository case")
 {
     core::sql::pool::data_source data_source(":memory:", 2);
     data_source.initialize();

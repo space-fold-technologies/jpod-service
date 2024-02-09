@@ -1,5 +1,5 @@
-#ifndef __JPOD_TESTING_HELPERS__
-#define __JPOD_TESTING_HELPERS__
+#ifndef __JPOD_IMAGES_TESTING_HELPERS__
+#define __JPOD_IMAGES_TESTING_HELPERS__
 
 #include <cmrc/cmrc.hpp>
 #include <core/sql/data_source.h>
@@ -17,4 +17,4 @@ namespace core::sql
     }
 }
 
-#endif // __JPOD_TESTING_HELPERS__
+#endif // __JPOD_IMAGES_TESTING_HELPERS__
