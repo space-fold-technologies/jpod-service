@@ -66,9 +66,9 @@ namespace domain::images
                 std::string parent_image_order;
                 ranges::for_each(
                     stage.steps,
-                    [this, &instructions, &stage_identifier, &parent_image_order](const std::pair<std::string, int> &step)
+                    [this, &instructions, &stage_identifier, &parent_image_order](const std::pair<std::string, step_type> &step)
                     {
-                        switch (static_cast<step_type>(step.second))
+                        switch (step.second)
                         {
                         case step_type::from:
                             instructions.push_back(create_download_instruction(stage_identifier, step.first));

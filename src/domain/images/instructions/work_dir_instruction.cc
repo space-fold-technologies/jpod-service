@@ -16,7 +16,7 @@ namespace domain::images::instructions
     }
     void work_dir_instruction::execute()
     {
-        auto parts = order | ranges::view::split(' ') | ranges::to<std::vector<std::string>>();
+        auto parts = order | ranges::views::split(' ') | ranges::to<std::vector<std::string>>();
         if (parts.empty())
         {
             listener.on_instruction_complete(identifier, make_error_code(error_code::no_work_directory));

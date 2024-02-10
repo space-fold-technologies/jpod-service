@@ -37,6 +37,10 @@ namespace core::sql
             {
                 logger->error("MIGRATION {} FAILED", migration);
             }
+            else
+            {
+                logger->info("MIGRATION SUCCESSFUL");
+            }
         }
     }
     migration_handler::~migration_handler()

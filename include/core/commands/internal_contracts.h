@@ -1,54 +1,54 @@
 #ifndef __DAEMON_CORE_COMMANDS_INTERNAL_CONTRACTS__
 #define __DAEMON_CORE_COMMANDS_INTERNAL_CONTRACTS__
 
-#include <msgpack/msgpack.hpp>
+#include <msgpack.hpp>
 
 namespace core::commands
 {
     struct success_payload
     {
         std::string message;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(message);
-        }
+        MSGPACK_DEFINE(message);
     };
 
-    inline std::vector<uint8_t> pack_success_payload(success_payload &order)
+    inline std::vector<uint8_t> pack_success_payload(const success_payload &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     struct error_payload
     {
         std::string message;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(message);
-        }
+        MSGPACK_DEFINE(message);
     };
 
-    inline std::vector<uint8_t> pack_error_payload(error_payload &order)
+    inline std::vector<uint8_t> pack_error_payload(const error_payload &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     struct progress_payload
     {
         std::string operation;
         std::vector<uint8_t> content;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(operation, content);
-        }
+        MSGPACK_DEFINE(operation, content);
     };
 
-    inline std::vector<uint8_t> pack_progress_payload(progress_payload &order)
+    inline std::vector<uint8_t> pack_progress_payload(const progress_payload &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
 }

@@ -14,7 +14,7 @@ namespace core::sql
     class result_set
     {
     public:
-        explicit result_set(const std::shared_ptr<statement> statement);
+        explicit result_set(statement &stmt);
         virtual ~result_set() = default;
         template <typename T, std::enable_if_t<std::is_same<T, std::string>::value> * = nullptr>
         inline T fetch(const std::string &column_name) const
@@ -55,7 +55,7 @@ namespace core::sql
         bool has_next();
 
     private:
-        const std::shared_ptr<statement> statement_ptr;
+        statement &stmt;
         int column_index(const std::string &column_name) const;
         int32_t fetch_integer(const int column_index) const;
         int64_t fetch_long(const int column_index) const;

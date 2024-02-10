@@ -9,6 +9,7 @@ find_package(libzip REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
+find_package(msgpack REQUIRED CONFIG)
 
 # Generic test that uses conan libs
 
@@ -83,16 +84,18 @@ target_link_libraries(daemon
                        range-v3::range-v3
                        tl::expected
                        sole::sole
-                       Msgpack::Msgpack
+                       msgpack-cxx
                        libzip::zip
                        zstd::libzstd_static
                        yaml-cpp::yaml-cpp
                        SQLite::SQLite3
                        resource::rc
+                       PUBLIC 
+                       OpenSSL::Crypto 
+                       OpenSSL::SSL
                        )
-
-target_link_libraries(daemon PUBLIC OpenSSL::Crypto OpenSSL::SSL)                       
-
+ 
+                  
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 
     target_link_libraries(daemon PRIVATE jail dl util)   

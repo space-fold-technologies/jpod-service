@@ -37,8 +37,8 @@ namespace domain::images::http
             {
                 ctx.set_verify_mode(asio::ssl::verify_none);
             }
-            return ctx;
-        }
+                }
+        return ctx;
     };
     class secure_connection : public connection, public connection_base
     {

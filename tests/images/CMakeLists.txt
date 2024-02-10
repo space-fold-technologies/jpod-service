@@ -12,11 +12,12 @@ find_package(libzip REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED CONFIG)
+find_package(msgpack REQUIRED CONFIG)
 
 add_executable(copy-instruction-tests 
                test_copy_instruction.cc
                ${PROJECT_SRC_FOLDER}/domain/images/instructions/copy_instruction.cc)
-target_link_libraries(copy-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(copy-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -38,7 +39,7 @@ add_executable(download-instruction-tests
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/download_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/http/request.cc
   ${PROJECT_SRC_FOLDER}/domain/images/http/request_builder.cc)
-target_link_libraries(download-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(download-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -58,7 +59,7 @@ OUTPUT_SUFFIX
 add_executable(work-dir-instruction-tests 
   test_work_dir_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/work_dir_instruction.cc)
-target_link_libraries(work-dir-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(work-dir-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -79,7 +80,7 @@ OUTPUT_SUFFIX
 add_executable(compression-instruction-tests 
   test_compression_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/compression_instruction.cc)
-target_link_libraries(compression-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole libzip::zip zstd::libzstd_static asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(compression-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole libzip::zip zstd::libzstd_static asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -100,7 +101,7 @@ OUTPUT_SUFFIX
 add_executable(mount-instruction-tests 
   test_mount_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/mount_instruction.cc)
-target_link_libraries(mount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(mount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -121,7 +122,7 @@ OUTPUT_SUFFIX
 add_executable(unmount-instruction-tests 
   test_unmount_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/unmount_instruction.cc)
-target_link_libraries(unmount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(unmount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -141,7 +142,7 @@ OUTPUT_SUFFIX
 add_executable(registration-instruction-tests 
   test_registration_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/registration_instruction.cc)
-target_link_libraries(registration-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(registration-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -162,7 +163,7 @@ OUTPUT_SUFFIX
 add_executable(cleanup-instruction-tests 
   test_cleanup_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/cleanup_instruction.cc)
-target_link_libraries(cleanup-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp)
+target_link_libraries(cleanup-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -182,7 +183,7 @@ OUTPUT_SUFFIX
 add_executable(extraction-instruction-tests 
   test_extraction_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/extraction_instruction.cc)
-target_link_libraries(extraction-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 libzip::zip zstd::libzstd_static sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp archives::rc)
+target_link_libraries(extraction-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 libzip::zip zstd::libzstd_static sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp archives::rc)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -203,7 +204,7 @@ OUTPUT_SUFFIX
 add_executable(import-instruction-tests 
   test_import_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/import_instruction.cc)
-target_link_libraries(import-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 libzip::zip zstd::libzstd_static sole::sole asio::asio Msgpack::Msgpack yaml-cpp::yaml-cpp archives::rc)
+target_link_libraries(import-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 libzip::zip zstd::libzstd_static sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp archives::rc)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -230,7 +231,7 @@ add_executable(image-store-tests
   ${PROJECT_SRC_FOLDER}/core/sql/statement.cc 
   ${PROJECT_SRC_FOLDER}/core/sql/transaction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/sql_repository.cc)
-target_link_libraries(image-store-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole Msgpack::Msgpack SQLite::SQLite3 resource::rc)
+target_link_libraries(image-store-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole msgpack-cxx SQLite::SQLite3 resource::rc)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries

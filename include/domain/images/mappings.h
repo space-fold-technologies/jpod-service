@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <msgpack/msgpack.hpp>
+#include <msgpack.hpp>
 
 using namespace std::chrono;
 
@@ -15,21 +15,13 @@ namespace domain::images
         std::string name;
         std::string uri;
         std::string path;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(name, uri, path);
-        }
+        MSGPACK_DEFINE(name, uri, path)
     };
     struct authorization_update
     {
         std::string path;
         std::string token;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(path, token);
-        }
+        MSGPACK_DEFINE(path, token)
     };
     struct registry
     {
@@ -43,11 +35,7 @@ namespace domain::images
         std::string folder;
         std::string options;
         uint64_t flags;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(filesystem, folder, options, flags);
-        }
+        MSGPACK_DEFINE(filesystem, folder, options, flags)
     };
 
     struct image_internals
@@ -56,21 +44,23 @@ namespace domain::images
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> env_vars;
         std::vector<mount_point> mount_points;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(labels, parameters, env_vars, mount_points);
-        }
+        MSGPACK_DEFINE(labels, parameters, env_vars, mount_points)
     };
 
-    inline std::vector<uint8_t> pack_image_internals(image_internals &order)
+    inline std::vector<uint8_t> pack_image_internals(const image_internals &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     inline image_internals unpack_image_internals(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<image_internals>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<image_internals>();
     }
 
     struct image_summary_entry
@@ -81,26 +71,22 @@ namespace domain::images
         std::string tag;
         std::size_t size;
         time_point<system_clock, nanoseconds> created_at;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(identifier, repository, tag, size, created_at);
-        }
+        MSGPACK_DEFINE(identifier, name, repository, tag, size, created_at)
     };
 
     struct image_summary
     {
         std::vector<image_summary_entry> entries;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(entries);
-        }
+        MSGPACK_DEFINE(entries)
     };
 
     inline std::vector<uint8_t> pack_image_entries(std::vector<image_summary_entry> &entries)
     {
-        return msgpack::pack(image_summary{entries});
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, entries);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     struct image_details

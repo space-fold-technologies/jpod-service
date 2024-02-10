@@ -13,7 +13,7 @@ namespace core::sql
                                                                                      instance(nullptr),
                                                                                      logger(spdlog::get("jpod"))
   {
-    if (sqlite3_prepare_v2(this->connection->handle(), this->query.c_str(), -1, &this->instance, nullptr) != SQLITE_OK)
+    if (sqlite3_prepare_v3(this->connection->handle(), this->query.c_str(), -1, 0, &this->instance, nullptr) != SQLITE_OK)
     {
       logger->error("FAILED TO DO BIND {}", sqlite3_errmsg(connection->handle()));
     }
@@ -33,23 +33,32 @@ namespace core::sql
 
   void statement::bind(const int index, const std::string &value) noexcept
   {
-    if (sqlite3_bind_text(this->instance, index, value.c_str(), value.size(), SQLITE_STATIC) != SQLITE_OK)
+    if (auto result_code = sqlite3_bind_text(this->instance, index, value.c_str(), -1, SQLITE_STATIC); result_code != SQLITE_OK)
     {
-      logger->error("STRING BIND FAILED");
+      logger->error("STRING BIND FAILED: {}", sqlite3_errstr(result_code));
     }
   }
 
   void statement::bind(const int index, const int value) noexcept
   {
-    sqlite3_bind_int(this->instance, index, value);
+    if (auto result_code = sqlite3_bind_int(this->instance, index, value); result_code != SQLITE_OK)
+    {
+      logger->error("INT BIND FAILED: {}",  sqlite3_errstr(result_code));
+    }
   }
   void statement::bind(const int index, const int64_t value) noexcept
   {
-    sqlite3_bind_int64(this->instance, index, value);
+    if(auto result_code = sqlite3_bind_int64(this->instance, index, value); result_code != SQLITE_OK)
+    {
+      logger->error("INT-64 BIND FAILED: {}",  sqlite3_errstr(result_code));
+    }
   }
   void statement::bind(const int index, const double value) noexcept
   {
-    sqlite3_bind_double(this->instance, index, value);
+    if(auto result_code = sqlite3_bind_double(this->instance, index, value); result_code != SQLITE_OK)
+    {
+      logger->error("DOUBLE BIND FAILED: {}",  sqlite3_errstr(result_code));
+    }
   }
   void statement::clear() noexcept
   {
@@ -73,15 +82,15 @@ namespace core::sql
 
   void statement::bind(const int index, const std::vector<uint8_t> &content) noexcept
   {
-    if (sqlite3_bind_blob(this->instance, index, content.data(), content.size(), SQLITE_STATIC) != SQLITE_OK)
+    if (auto result_code = sqlite3_bind_blob(this->instance, index, content.data(), content.size(), SQLITE_STATIC); result_code != SQLITE_OK)
     {
-      logger->error("bind blob failed");
+      logger->error("BLOB BIND FAILED: {}", sqlite3_errstr(result_code));
     }
   }
 
   result_set statement::execute_query() noexcept
   {
-    return result_set(shared_from_this());
+    return result_set(*this);
   }
 
   statement::~statement()

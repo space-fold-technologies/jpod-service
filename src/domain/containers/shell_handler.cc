@@ -46,7 +46,7 @@ namespace domain::containers
         case shell::terminal_size:
         {
             auto value = std::string(order.data.begin(), order.data.end());
-            auto parts = value | ranges::view::split(':') | ranges::to<std::vector<std::string>>();
+            auto parts = value | ranges::views::split(':') | ranges::to<std::vector<std::string>>();
             auto columns = std::stoi(parts.at(0));
             auto rows = std::stoi(parts.at(1));
             terminal->resize(columns, rows);

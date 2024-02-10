@@ -205,7 +205,7 @@ namespace domain::images::instructions
         {
             return domain::images::mount_point{p.filesystem, p.folder, p.options, p.flags};
         };
-        details.mount_points = meta.mount_points | ranges::view::transform(transformer) | ranges::to<std::vector<domain::images::mount_point>>();
+        details.mount_points = meta.mount_points | ranges::views::transform(transformer) | ranges::to<std::vector<domain::images::mount_point>>();
 
         if (std::error_code error = repository.save_image_details(details); error)
         {

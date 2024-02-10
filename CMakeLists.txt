@@ -31,7 +31,6 @@ cmrc_add_resource_library(
     resources/migrations/initial-tables.sql 
 )
 
-add_subdirectory(third_party/msgpack)
 include_directories(include)
 add_subdirectory(src)
 

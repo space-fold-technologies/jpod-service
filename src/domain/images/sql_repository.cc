@@ -21,9 +21,9 @@ namespace domain::images
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         auto statement = connection->statement(sql);
-        statement.bind(0, details.name);
-        statement.bind(1, details.uri);
-        statement.bind(2, details.path);
+        statement.bind(1, details.name);
+        statement.bind(2, details.uri);
+        statement.bind(3, details.path);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -42,8 +42,8 @@ namespace domain::images
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         auto statement = connection->statement(sql);
-        statement.bind(0, update.token);
-        statement.bind(1, update.path);
+        statement.bind(1, update.token);
+        statement.bind(2, update.path);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -60,7 +60,7 @@ namespace domain::images
                         "WHERE r.path = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, path);
+        statement.bind(1, path);
         auto result = statement.execute_query();
         if (!result.has_next())
         {
@@ -77,7 +77,7 @@ namespace domain::images
                         "WHERE r.name = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, name);
+        statement.bind(1, name);
         auto result = statement.execute_query();
         if (!result.has_next())
         {
@@ -95,9 +95,9 @@ namespace domain::images
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         auto result = statement.execute_query();
         return result.has_next() ? result.fetch<bool>("image_exists") : false;
     }
@@ -110,16 +110,16 @@ namespace domain::images
         core::sql::transaction txn(connection);
         image_internals internals{details.labels, details.parameters, details.env_vars, details.mount_points};
         auto statement = connection->statement(sql);
-        statement.bind(0, details.identifier);
-        statement.bind(1, details.name);
-        statement.bind(2, details.tag);
-        statement.bind(3, details.os);
-        statement.bind(4, details.variant);
-        statement.bind(5, details.version);
-        statement.bind(6, details.entry_point);
-        statement.bind(7, static_cast<int64_t>(details.size));
-        statement.bind(8, pack_image_internals(internals));
-        statement.bind(8, details.registry_path);
+        statement.bind(1, details.identifier);
+        statement.bind(2, details.name);
+        statement.bind(3, details.tag);
+        statement.bind(4, details.os);
+        statement.bind(5, details.variant);
+        statement.bind(6, details.version);
+        statement.bind(7, details.entry_point);
+        statement.bind(8, static_cast<int64_t>(details.size));
+        statement.bind(9, pack_image_internals(internals));
+        statement.bind(10, details.registry_path);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -146,9 +146,9 @@ namespace domain::images
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -190,8 +190,8 @@ namespace domain::images
         auto statement = connection->statement(sql);
         if (!query.empty())
         {
-            statement.bind(0, query);
             statement.bind(1, query);
+            statement.bind(2, query);
         }
 
         auto result = statement.execute_query();
@@ -219,9 +219,9 @@ namespace domain::images
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         auto result = statement.execute_query();
         if (!result.has_next())
         {
@@ -240,9 +240,9 @@ namespace domain::images
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         auto result = statement.execute_query();
         std::vector<mount_point> mount_points;
         if (result.has_next())
@@ -262,8 +262,8 @@ namespace domain::images
                         "WHERE i.name = ? OR i.identifier = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return false;
@@ -280,8 +280,8 @@ namespace domain::images
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);

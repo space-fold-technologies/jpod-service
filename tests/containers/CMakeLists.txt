@@ -7,6 +7,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 find_package(range-v3 REQUIRED CONFIG)
 find_package(sole REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED CONFIG)
+find_package(msgpack REQUIRED CONFIG)
 
 
 add_executable(container-store-tests 
@@ -19,7 +20,7 @@ add_executable(container-store-tests
   ${PROJECT_SRC_FOLDER}/core/sql/transaction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/sql_repository.cc
   ${PROJECT_SRC_FOLDER}/domain/containers/sql_repository.cc)
-target_link_libraries(container-store-tests PRIVATE catch_main range-v3::range-v3 sole::sole Msgpack::Msgpack SQLite::SQLite3 resource::rc)
+target_link_libraries(container-store-tests PRIVATE catch_main range-v3::range-v3 sole::sole msgpack-cxx SQLite::SQLite3 resource::rc)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries

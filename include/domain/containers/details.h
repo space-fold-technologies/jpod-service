@@ -22,21 +22,24 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::string entry_point;
         std::string network_properties;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(parameters, port_map, env_vars, network_properties);
-        }
+
+        MSGPACK_DEFINE(parameters, port_map, env_vars, network_properties)
     };
 
     inline container_internals unpack_container_internals(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<container_internals>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_internals>();
     }
 
-    inline std::vector<uint8_t> pack_container_internals(container_internals &order)
+    inline std::vector<uint8_t> pack_container_internals(const container_internals &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     inline void fill_container_details(container_details &details, const container_internals &internals)
@@ -46,7 +49,6 @@ namespace domain::containers
         details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
         details.entry_point = internals.entry_point;
         details.network_properties = internals.network_properties;
-        ;
     }
 
     struct container_properties
@@ -77,26 +79,24 @@ namespace domain::containers
         std::string image;
         std::map<std::string, std::string> port_map;
         time_point<system_clock, nanoseconds> created_at;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(identifier, name, image, port_map, created_at);
-        }
+
+        MSGPACK_DEFINE(identifier, name, image, port_map, created_at)
     };
 
     struct container_summary
     {
         std::vector<container_summary_entry> entries;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(entries);
-        }
+
+        MSGPACK_DEFINE(entries)
     };
 
-    inline std::vector<uint8_t> pack_container_summary(std::vector<container_summary_entry> &entries)
+    inline std::vector<uint8_t> pack_container_summary(const std::vector<container_summary_entry> &entries)
     {
-        return msgpack::pack(container_summary{entries});
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, container_summary{entries});
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
 }

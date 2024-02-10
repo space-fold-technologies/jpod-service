@@ -6,7 +6,7 @@
 #include <bitset>
 #include <sole.hpp>
 
-namespace rv = ranges::view;
+namespace rv = ranges::views;
 
 namespace domain::networking
 {

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS registry_tb(
     name TEXT NOT NULL,
     uri TEXT NOT NULL,
     token TEXT,
-    path NOT NULL
+    path TEXT
 );
 
 CREATE TABLE IF NOT EXISTS image_tb(

@@ -23,7 +23,7 @@ namespace domain::images::instructions
     }
     void copy_instruction::execute()
     {
-        auto parts = order | ranges::view::split(' ') | ranges::to<std::vector<std::string>>();
+        auto parts = order | ranges::views::split(' ') | ranges::to<std::vector<std::string>>();
         auto total = parts.size();
         if (total < 2)
         {
