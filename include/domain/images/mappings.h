@@ -23,7 +23,7 @@ namespace domain::images
         std::string token;
         MSGPACK_DEFINE(path, token)
     };
-    struct registry
+    struct registry_access_details
     {
         std::string uri;
         std::string token;

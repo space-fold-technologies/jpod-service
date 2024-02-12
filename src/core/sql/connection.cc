@@ -12,7 +12,7 @@ namespace core::sql::internal
     void connection::open()
     {
         sqlite3 *db;
-        logger->info("DATABASE FILE {}", path);
+        logger->trace("DATABASE FILE {}", path);
         if (sqlite3_open_v2(path.c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_NOMUTEX, nullptr) != SQLITE_OK)
         {
             logger->error("SQLITE 3 ERROR ON OPENING {}", sqlite3_errmsg(db));

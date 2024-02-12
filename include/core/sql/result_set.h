@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <map>
 
 using namespace std::chrono;
 namespace core::sql
@@ -15,7 +16,7 @@ namespace core::sql
     {
     public:
         explicit result_set(statement &stmt);
-        virtual ~result_set() = default;
+        virtual ~result_set();
         template <typename T, std::enable_if_t<std::is_same<T, std::string>::value> * = nullptr>
         inline T fetch(const std::string &column_name) const
         {
@@ -64,6 +65,9 @@ namespace core::sql
         std::string fetch_string(const int column_index) const;
         std::vector<uint8_t> fetch_blob(const int column_index) const;
         time_point<system_clock, nanoseconds> fetch_timestamp(const int column_index) const;
+
+    private:
+        std::map<std::string, int> row_indices;
     };
 }
 

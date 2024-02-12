@@ -10,8 +10,8 @@ namespace core::sql::pool
                                                                         connection_mutex(),
                                                                         logger(spdlog::get("jpod"))
     {
-        logger->info("SQLITE {}", sqlite3_libversion());
-        logger->info("IS THREAD SAFE {}", sqlite3_threadsafe() ? "ON" : "OFF");
+        logger->trace("SQLITE {}", sqlite3_libversion());
+        logger->trace("IS THREAD SAFE {}", sqlite3_threadsafe() ? "ON" : "OFF");
     }
 
     core::sql::connection_proxy data_source::connection()

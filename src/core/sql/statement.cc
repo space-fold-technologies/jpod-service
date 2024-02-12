@@ -60,6 +60,13 @@ namespace core::sql
       logger->error("DOUBLE BIND FAILED: {}",  sqlite3_errstr(result_code));
     }
   }
+  void statement::bind(const int index, const std::vector<uint8_t> &content) noexcept
+  {
+    if (auto result_code = sqlite3_bind_blob(this->instance, index, content.data(), content.size(), SQLITE_STATIC); result_code != SQLITE_OK)
+    {
+      logger->error("BLOB BIND FAILED: {}", sqlite3_errstr(result_code));
+    }
+  }
   void statement::clear() noexcept
   {
     if (instance != nullptr)
@@ -78,14 +85,6 @@ namespace core::sql
     }
     sqlite3_mutex_leave(sqlite3_db_mutex(this->connection->handle()));
     return sqlite3_changes(connection->handle());
-  }
-
-  void statement::bind(const int index, const std::vector<uint8_t> &content) noexcept
-  {
-    if (auto result_code = sqlite3_bind_blob(this->instance, index, content.data(), content.size(), SQLITE_STATIC); result_code != SQLITE_OK)
-    {
-      logger->error("BLOB BIND FAILED: {}", sqlite3_errstr(result_code));
-    }
   }
 
   result_set statement::execute_query() noexcept

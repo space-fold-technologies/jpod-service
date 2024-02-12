@@ -51,7 +51,7 @@ namespace domain::images
         txn.commit();
         return {};
     }
-    std::optional<registry> sql_image_repository::fetch_registry_by_path(const std::string &path)
+    std::optional<registry_access_details> sql_image_repository::fetch_registry_by_path(const std::string &path)
     {
         std::string sql("SELECT "
                         "r.uri, "
@@ -66,9 +66,12 @@ namespace domain::images
         {
             return std::nullopt;
         }
-        return {registry{result.fetch<std::string>("uri"), result.fetch<std::string>("token")}};
+        registry_access_details details{};
+        details.uri = result.fetch<std::string>("uri");
+        details.token = result.fetch<std::string>("token");
+        return std::make_optional(details);
     }
-    std::optional<registry> sql_image_repository::fetch_registry_by_name(const std::string &name)
+    std::optional<registry_access_details> sql_image_repository::fetch_registry_by_name(const std::string &name)
     {
         std::string sql("SELECT "
                         "r.uri, "
@@ -83,12 +86,15 @@ namespace domain::images
         {
             return std::nullopt;
         }
-        return {registry{result.fetch<std::string>("uri"), result.fetch<std::string>("token")}};
+        registry_access_details details{};
+        details.uri = result.fetch<std::string>("uri");
+        details.token = result.fetch<std::string>("token");
+        return std::make_optional(details);
     }
     bool sql_image_repository::has_image(const std::string &registry, const std::string &name, const std::string &tag)
     {
         std::string sql("SELECT COUNT(*) AS image_exists "
-                        "FROM image_tb AS i"
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
@@ -139,7 +145,7 @@ namespace domain::images
                         "i.entry_point, "
                         "i.size, "
                         "i.internals "
-                        "FROM image_tb AS m "
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
@@ -182,8 +188,8 @@ namespace domain::images
                                       "i.tag, "
                                       "r.name AS repository, "
                                       "i.size, "
-                                      "UNIXEPOCH(i.created_at), AS creation_date, "
-                                      "FROM image_tb AS m "
+                                      "UNIXEPOCH(i.created_at) AS creation_date "
+                                      "FROM image_tb AS i "
                                       "INNER JOIN registry_tb AS r ON i.registry_id = r.id {}",
                                       !query.empty() ? "WHERE i.name LIKE ? OR i.identifier LIKE ? " : "");
         auto connection = data_source.connection();
@@ -212,7 +218,7 @@ namespace domain::images
     std::optional<std::string> sql_image_repository::fetch_image_identifier(const std::string &registry, const std::string &name, const std::string &tag)
     {
         std::string sql("SELECT i.identifier "
-                        "FROM image_tb AS i"
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
@@ -231,9 +237,8 @@ namespace domain::images
     }
     std::vector<mount_point> sql_image_repository::fetch_image_mount_points(const std::string &registry, const std::string &name, const std::string &tag)
     {
-        std::string sql("SELECT m.internals "
-                        "FROM mount_point_tb AS m "
-                        "INNER JOIN image_tb AS i ON m.image_id = i.id "
+        std::string sql("SELECT i.internals "
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "

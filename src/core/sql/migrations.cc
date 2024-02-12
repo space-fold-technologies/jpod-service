@@ -30,16 +30,11 @@ namespace core::sql
     }
     void migration_handler::apply(const std::string &content, const std::string &migration)
     {
-        logger->info("adding script: {}\n{}", migration, content);
         if (auto proxy = data_source.connection(); proxy.is_valid())
         {
             if (proxy->execute(content) < 0)
             {
                 logger->error("MIGRATION {} FAILED", migration);
-            }
-            else
-            {
-                logger->info("MIGRATION SUCCESSFUL");
             }
         }
     }

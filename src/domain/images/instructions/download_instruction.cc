@@ -81,7 +81,7 @@ namespace domain::images::instructions
         }
     }
 
-    void download_instruction::fetch_image_details(const registry &reg, const std::string &name, const std::string &tag)
+    void download_instruction::fetch_image_details(const registry_access_details &details, const std::string &name, const std::string &tag)
     {
         image_query query{};
         query.name = name;
@@ -97,10 +97,10 @@ namespace domain::images::instructions
             query.architecture = std::string(machine_details.machine);
             auto body = pack_image_query(query);
             auto request = http::request::builder()
-                               .address(fmt::format("{}/images/fs/look-up", reg.uri))
+                               .address(fmt::format("{}/images/fs/look-up", details.uri))
                                .add_header("Content-Type", "application/x-msgpack")
                                .add_header("Content-Length", fmt::format("{}", body.size()))
-                               .add_header("Authorization", fmt::format("Bearer {}", reg.token))
+                               .add_header("Authorization", fmt::format("Bearer {}", details.token))
                                .body(body)
                                .post()
                                .build(error);
@@ -112,7 +112,7 @@ namespace domain::images::instructions
             {
                 client.execute(
                     request,
-                    [this, &reg](std::error_code err, const http::response &response)
+                    [this, &details](std::error_code err, const http::response &response)
                     {
                         logger->trace("STATUS CODE: {}", response.status_code);
                         logger->trace("CONTENT-LENGTH: {}", response.content_length());
@@ -122,7 +122,7 @@ namespace domain::images::instructions
                             // so this means we can move on to the next step
                             this->listener.on_instruction_initialized(this->identifier, this->name);
                             auto payload = unpack_image_details(response.data);
-                            download_image_filesystem(reg, payload);
+                            download_image_filesystem(details, payload);
                         }
                         else
                         {
@@ -132,11 +132,11 @@ namespace domain::images::instructions
             }
         }
     }
-    void download_instruction::download_image_filesystem(const registry &reg, const image_meta &details)
+    void download_instruction::download_image_filesystem(const registry_access_details &details, const image_meta &meta)
     {
         std::error_code err;
-        auto uri = fmt::format("{}/{}", reg.uri, details.identifier);
-        if (fs::path archive_destination = resolver.generate_image_path(details.identifier, err); err)
+        auto uri = fmt::format("{}/{}", details.uri, meta.identifier);
+        if (fs::path archive_destination = resolver.generate_image_path(meta.identifier, err); err)
         {
             listener.on_instruction_complete(identifier, err);
         }
@@ -144,12 +144,12 @@ namespace domain::images::instructions
         {
             image_archive = archive_destination / fs::path("fs.zip");
             std::map<std::string, std::string> headers;
-            headers.emplace("Authorization", fmt::format("Bearer {}", reg.token));
+            headers.emplace("Authorization", fmt::format("Bearer {}", details.token));
             client.download(
                 uri,
                 headers,
                 shared_from_this(),
-                [this, &reg, &details](std::error_code error, http::download_status status)
+                [this, &details, &meta](std::error_code error, http::download_status status)
                 {
                     if (error)
                     {
@@ -162,18 +162,18 @@ namespace domain::images::instructions
                         listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                         if (status.complete)
                         {
-                            extract_image_filesystem(reg, details);
+                            extract_image_filesystem(details, meta);
                         }
                     }
                 });
         }
     }
-    void download_instruction::extract_image_filesystem(const registry &reg, const image_meta &details)
+    void download_instruction::extract_image_filesystem(const registry_access_details &details, const image_meta &meta)
     {
         resolver.extract_image(
             identifier,
-            details.identifier,
-            [this, &reg, &details](std::error_code error, progress_frame &progress)
+            meta.identifier,
+            [this, &details, &meta](std::error_code error, progress_frame &progress)
             {
                 if (error)
                 {
@@ -184,7 +184,7 @@ namespace domain::images::instructions
                     listener.on_instruction_data_received(identifier, pack_progress_frame(progress));
                     if (progress.percentage == 1.0)
                     {
-                        save_image_details(details);
+                        save_image_details(meta);
                     }
                 }
             });

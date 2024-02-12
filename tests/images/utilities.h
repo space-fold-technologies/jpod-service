@@ -112,9 +112,9 @@ namespace domain::images::instructions
         frame.percentage = 1.0;
         callback({}, frame);
     };
-    inline auto fox_soft_registry = std::optional<domain::images::registry>{domain::images::registry{"https://registry.fox-soft.pods.com", "xfrnzzfhere%*#)@"}};
+    inline auto fox_soft_registry = std::optional<domain::images::registry_access_details>{domain::images::registry_access_details{"https://registry.fox-soft.pods.com", "xfrnzzfhere%*#)@"}};
 
-    inline auto wikin_registry = std::optional<domain::images::registry>{domain::images::registry{"https://registry.wikin.pods.com", "xfrnzzfhere%*#)@"}};
+    inline auto wikin_registry = std::optional<domain::images::registry_access_details>{domain::images::registry_access_details{"https://registry.wikin.pods.com", "xfrnzzfhere%*#)@"}};
 
     inline std::vector<domain::images::mount_point> mount_points()
     {

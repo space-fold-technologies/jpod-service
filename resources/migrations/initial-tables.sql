@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS image_tb(
     name TEXT NOT NULL,
     tag TEXT NOT NULL,
     os TEXT NOT NULL,
+    size INTEGER NOT NULL,
     variant TEXT NOT NULL,
     version TEXT NOT NULL,
     entry_point TEXT NULL,
