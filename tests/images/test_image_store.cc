@@ -102,23 +102,23 @@ TEST_CASE("image repository case")
             REQUIRE(summary.size == details.size);
             REQUIRE(summary.created_at < std::chrono::system_clock::now());
         }
-        // SECTION("can return all image summaries with no query")
-        // {
-        //     auto summaries = repository.fetch_matching_details("");
-        //     REQUIRE(summaries.size() == 1);
-        //     auto summary = summaries.at(0);
-        //     REQUIRE(summary.identifier == identifier);
-        //     REQUIRE(summary.name == details.name);
-        //     REQUIRE(summary.tag == details.tag);
-        //     REQUIRE(summary.repository == "venka");
-        //     REQUIRE(summary.size == details.size);
-        //     REQUIRE(summary.created_at < std::chrono::system_clock::now());
-        // }
-        // SECTION("can remove an existing image entry")
-        // {
-        //     std::error_code error = repository.remove(identifier);
-        //     REQUIRE_FALSE(error);
-        //     REQUIRE_FALSE(repository.has_image("hub.venka.com", "alpine", "latest"));
-        // }
+        SECTION("can return all image summaries with no query")
+        {
+            auto summaries = repository.fetch_matching_details("");
+            REQUIRE(summaries.size() == 1);
+            auto summary = summaries.at(0);
+            REQUIRE(summary.identifier == identifier);
+            REQUIRE(summary.name == details.name);
+            REQUIRE(summary.tag == details.tag);
+            REQUIRE(summary.repository == "venka");
+            REQUIRE(summary.size == details.size);
+            REQUIRE(summary.created_at < std::chrono::system_clock::now());
+        }
+        SECTION("can remove an existing image entry")
+        {
+            std::error_code error = repository.remove(identifier);
+            REQUIRE_FALSE(error);
+            REQUIRE_FALSE(repository.has_image("hub.venka.com", "alpine", "latest"));
+        }
     }
 }

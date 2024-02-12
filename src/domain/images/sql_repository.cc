@@ -190,14 +190,14 @@ namespace domain::images
                                       "i.size, "
                                       "UNIXEPOCH(i.created_at) AS creation_date "
                                       "FROM image_tb AS i "
-                                      "INNER JOIN registry_tb AS r ON i.registry_id = r.id {}",
-                                      !query.empty() ? "WHERE i.name LIKE ? OR i.identifier LIKE ? " : "");
+                                      "INNER JOIN registry_tb AS r ON i.registry_id = r.id{}",
+                                      !query.empty() ? " WHERE i.name LIKE ? OR i.identifier LIKE ?" : "");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
         if (!query.empty())
         {
-            statement.bind(1, query);
-            statement.bind(2, query);
+            statement.bind(1, fmt::format("%{}%",query));
+            statement.bind(2, fmt::format("%{}%",query));
         }
 
         auto result = statement.execute_query();
