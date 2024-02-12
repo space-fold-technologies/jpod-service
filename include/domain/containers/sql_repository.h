@@ -20,9 +20,15 @@ namespace domain::containers
         std::optional<container_details> first_match(const std::string &query) override;
         std::optional<std::string> first_identifier_match(const std::string &query) override;
         std::error_code save(const container_properties &properties) override;
-        std::vector<container_summary_entry> fetch_match(const std::string &query, const std::string &state) override;
+        std::vector<container_summary_entry> fetch_match(const std::string &query, const std::string &status) override;
         bool is_running(const std::string &query) override;
+        std::error_code register_status(const std::string &identifier, const std::string &status) override;
         std::error_code remove(const std::string &query) override;
+
+    private:
+        std::vector<container_summary_entry> fetch_match_without_query(const std::string &status);
+        std::vector<container_summary_entry> fetch_match_with_query(const std::string query, const std::string &status);
+
     private:
         core::sql::pool::data_source &data_source;
     };

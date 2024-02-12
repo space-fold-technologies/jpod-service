@@ -77,10 +77,10 @@ namespace domain::containers
         std::string identifier;
         std::string name;
         std::string image;
+        std::string status;
         std::map<std::string, std::string> port_map;
         time_point<system_clock, nanoseconds> created_at;
-
-        MSGPACK_DEFINE(identifier, name, image, port_map, created_at)
+        MSGPACK_DEFINE(identifier, name, image, status, port_map, created_at)
     };
 
     struct container_summary

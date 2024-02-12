@@ -65,7 +65,27 @@ TEST_CASE("container repository case")
         {
             auto summaries = repository.fetch_match("kep", "all");
             REQUIRE(summaries.size() == 1);
-
+            auto entry = summaries.at(0);
+            REQUIRE(entry.identifier == container_identifier);
+            REQUIRE(entry.name == "kepler");
+            REQUIRE(entry.image == "alpine");
+            REQUIRE(entry.created_at < std::chrono::system_clock::now());
+            REQUIRE(entry.port_map == properties.port_map);
+            REQUIRE(entry.status == "shutdown");
+        }
+        SECTION("can update container status")
+        {
+            error = repository.register_status(container_identifier, "active");
+            REQUIRE_FALSE(error);
+            auto summaries = repository.fetch_match("kep", "active");
+            REQUIRE(summaries.size() == 1);
+            auto entry = summaries.at(0);
+            REQUIRE(entry.identifier == container_identifier);
+            REQUIRE(entry.name == "kepler");
+            REQUIRE(entry.image == "alpine");
+            REQUIRE(entry.created_at < std::chrono::system_clock::now());
+            REQUIRE(entry.port_map == properties.port_map);
+            REQUIRE(entry.status == "active");
         }
         // Need to write a status update for container repositoy
     }
