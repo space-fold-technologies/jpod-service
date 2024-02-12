@@ -25,9 +25,13 @@ TEST_CASE("container repository case")
             container_identifier,
             "kepler",
             *image_identifier,
-            std::map<std::string, std::string>{},
-            std::map<std::string, std::string>{},
-            std::map<std::string, std::string>{},
+            std::map<std::string, std::string>{
+                {"persist", ""},
+                {"allow.raw_sockets", ""},
+                {"allow.mount", ""},
+                {"securelevel", "3"}},
+            std::map<std::string, std::string>{{"9090", "9090"}},
+            std::map<std::string, std::string>{{"JAVA_HOME", "/opt/sdks/java"}},
             "/bin/sh",
             "nats"};
         std::error_code error = repository.save(properties);
@@ -39,11 +43,17 @@ TEST_CASE("container repository case")
             REQUIRE(result->identifier == container_identifier);
             REQUIRE(result->entry_point == "/bin/sh");
             REQUIRE(result->network_properties == "nats");
+            REQUIRE(result->parameters == properties.parameters);
+            REQUIRE(result->env_vars == properties.env_vars);
+            REQUIRE(result->port_map == properties.port_map);
             result = repository.first_match("kepler");
             REQUIRE(result.has_value());
             REQUIRE(result->identifier == container_identifier);
             REQUIRE(result->entry_point == "/bin/sh");
             REQUIRE(result->network_properties == "nats");
+            REQUIRE(result->parameters == properties.parameters);
+            REQUIRE(result->env_vars == properties.env_vars);
+            REQUIRE(result->port_map == properties.port_map);
         }
         SECTION("can fetch identifier")
         {

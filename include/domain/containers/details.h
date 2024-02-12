@@ -23,7 +23,7 @@ namespace domain::containers
         std::string entry_point;
         std::string network_properties;
 
-        MSGPACK_DEFINE(parameters, port_map, env_vars, network_properties)
+        MSGPACK_DEFINE(parameters, port_map, env_vars, entry_point, network_properties)
     };
 
     inline container_internals unpack_container_internals(const std::vector<uint8_t> &content)
