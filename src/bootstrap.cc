@@ -2,6 +2,7 @@
 #include <core/connections/connection_acceptor.h>
 #include <core/connections/frame.h>
 #include <core/sql/data_source.h>
+#include <core/sql/migrations.h>
 #include <core/commands/command_handler_registry.h>
 #include <domain/images/list_handler.h>
 #include <domain/images/build_handler.h>
@@ -26,19 +27,42 @@
 using namespace domain::images;
 using namespace domain::containers;
 
-bootstrap::bootstrap(asio::io_context &context) : context(context),
-                                                  registry(std::make_shared<command_handler_registry>()),
-                                                  acceptor(std::make_unique<connection_acceptor>(context, registry)),
-                                                  data_source(nullptr),
-                                                  image_repository(nullptr),
-                                                  container_repository(nullptr),
-                                                  runtime(nullptr),
-                                                  client(nullptr)
+bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : context(context),
+                                                                               registry(std::make_shared<command_handler_registry>()),
+                                                                               acceptor(std::make_unique<connection_acceptor>(context, registry)),
+                                                                               data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
+                                                                               image_repository(std::make_shared<domain::images::sql_image_repository>(*data_source)),
+                                                                               container_repository(std::make_shared<domain::containers::sql_container_repository>(*data_source)),
+                                                                               runtime(nullptr),
+                                                                               client(nullptr)
 {
 }
 void bootstrap::setup()
 {
   client = std::make_shared<http::asio_client>(context, 4);
+  runtime = std::make_shared<domain::containers::runtime>(
+      context,
+      container_repository,
+      [this]() -> std::shared_ptr<domain::containers::container_monitor>
+      {
+        return this->create_container_monitor();
+      });
+  core::sql::migration_handler handler(*data_source, "migrations");
+  handler.migrate();
+  setup_handlers();
+  data_source->initialize();
+}
+void bootstrap::start()
+{
+  acceptor->start();
+}
+void bootstrap::stop()
+{
+  acceptor->stop();
+}
+
+void bootstrap::setup_handlers()
+{
   registry->add_handler(
       operation_target::image,
       request_operation::list,
@@ -103,14 +127,6 @@ void bootstrap::setup()
         return std::make_shared<container_list_handler>(conn, container_repository);
       });
 }
-void bootstrap::start()
-{
-  acceptor->start();
-}
-void bootstrap::stop()
-{
-  acceptor->stop();
-}
 
 #if defined(__FreeBSD__)
 std::unique_ptr<virtual_terminal> bootstrap::create_virtual_terminal(
@@ -120,6 +136,11 @@ std::unique_ptr<virtual_terminal> bootstrap::create_virtual_terminal(
   return std::make_unique<freebsd::freebsd_terminal>(context, identifier, listener);
 }
 #endif
+
+std::shared_ptr<domain::containers::container_monitor> bootstrap::create_container_monitor()
+{
+  return {};
+}
 
 bootstrap::~bootstrap()
 {
