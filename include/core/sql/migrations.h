@@ -19,7 +19,8 @@ namespace core::sql
 {
     class migration_handler
     {
-        explicit migration_handler(pool::data_source &data_source, const std::string &folder);
+    public:
+        explicit migration_handler(pool::data_source &data_source, std::string path);
         virtual ~migration_handler();
         void migrate();
 
@@ -28,7 +29,7 @@ namespace core::sql
 
     private:
         pool::data_source &data_source;
-        const std::string &folder;
+        std::string path;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

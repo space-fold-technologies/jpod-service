@@ -51,7 +51,7 @@ namespace domain::images::instructions
                 details.os = result->os;
                 details.variant = result->variant;
                 details.version = result->version;
-                details.registry_uri = "localhost";
+                details.registry_path = "localhost";
                 details.entry_point = result->entry_point;
                 details.size = file_size;
                 details.labels.insert(result->labels.begin(), result->labels.end());

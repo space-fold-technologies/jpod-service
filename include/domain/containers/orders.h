@@ -1,7 +1,7 @@
 #ifndef __DAEMON_DOMAIN_CONTAINERS_ORDERS__
 #define __DAEMON_DOMAIN_CONTAINERS_ORDERS__
 
-#include <msgpack/msgpack.hpp>
+#include <msgpack.hpp>
 
 namespace domain::containers
 {
@@ -13,31 +13,28 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::string network_properties;
 
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(tagged_image, name, port_map, env_vars);
-        }
+        MSGPACK_DEFINE(tagged_image, name, port_map, env_vars)
     };
 
     inline container_creation_order unpack_container_creation_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<container_creation_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_creation_order>();
     }
 
     struct container_term_order
     {
         std::string term;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(term);
-        }
+
+        MSGPACK_DEFINE(term)
     };
 
     inline container_term_order unpack_container_term_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<container_term_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_term_order>();
     }
     namespace shell
     {
@@ -49,16 +46,15 @@ namespace domain::containers
     {
         uint8_t type;
         std::vector<uint8_t> data;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(type, data);
-        }
+
+        MSGPACK_DEFINE(type, data)
     };
 
     inline container_shell_order unpack_container_shell_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<container_shell_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_shell_order>();
     }
     namespace filter
     {
@@ -70,16 +66,15 @@ namespace domain::containers
     {
         uint8_t mode;
         std::string query;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(mode, query);
-        }
+
+        MSGPACK_DEFINE(mode, query)
     };
 
     inline container_list_order unpack_container_list_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<container_list_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_list_order>();
     }
 
     inline auto mode_value(uint8_t mode) -> std::string

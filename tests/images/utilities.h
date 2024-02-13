@@ -85,8 +85,11 @@ namespace domain::images::instructions
         meta.size = std::size_t(1024);
         meta.mount_points.push_back(domain::images::mount_point_details{"linprocfs", "/dev/shm", "mode=263", 0});
         domain::images::http::response resp{};
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, meta);
+        resp.data = std::vector<uint8_t>(buffer.size());
+        std::memcpy(resp.data.data(), buffer.data(), buffer.size());
         resp.status_code = "200";
-        resp.data = msgpack::pack(meta);
         resp.headers.emplace("Content-Length", fmt::format("{}", resp.data.size()));
         resp.headers.emplace("Content-Type", "application/x-msgpack");
         callback({}, resp);
@@ -109,9 +112,9 @@ namespace domain::images::instructions
         frame.percentage = 1.0;
         callback({}, frame);
     };
-    inline auto fox_soft_registry = std::optional<domain::images::registry>{domain::images::registry{"https://registry.fox-soft.pods.com", "xfrnzzfhere%*#)@"}};
+    inline auto fox_soft_registry = std::optional<domain::images::registry_access_details>{domain::images::registry_access_details{"https://registry.fox-soft.pods.com", "xfrnzzfhere%*#)@"}};
 
-    inline auto wikin_registry = std::optional<domain::images::registry>{domain::images::registry{"https://registry.wikin.pods.com", "xfrnzzfhere%*#)@"}};
+    inline auto wikin_registry = std::optional<domain::images::registry_access_details>{domain::images::registry_access_details{"https://registry.wikin.pods.com", "xfrnzzfhere%*#)@"}};
 
     inline std::vector<domain::images::mount_point> mount_points()
     {
@@ -122,7 +125,7 @@ namespace domain::images::instructions
         pts.push_back(domain::images::mount_point{"tmpfs", "dev/shm", "rw,mode=1777", 0});
         return pts;
     }
-    inline std::optional<domain::images::image_details> dummy_image_details() 
+    inline std::optional<domain::images::image_details> dummy_image_details()
     {
         domain::images::image_details details{};
         details.identifier = "71dbec89-cad4-4f60-a73f-9be9a7ba6aca";

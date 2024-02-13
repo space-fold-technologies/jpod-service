@@ -25,16 +25,16 @@ namespace domain::containers
                         "i.entry_point, "
                         "i.size, "
                         "i.internals "
-                        "FROM image_tb AS m "
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -51,7 +51,7 @@ namespace domain::containers
             details.version = result.fetch<std::string>("version");
             details.entry_point = result.fetch<std::string>("entry_point");
             details.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
-            domain::images::image_internals internals = domain::images::unpack_image_internals(result.fetch<std::vector<uint8_t>>("internals"));
+            auto internals = domain::images::unpack_image_internals(result.fetch<std::vector<uint8_t>>("internals"));
             details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
             details.labels.insert(internals.labels.begin(), internals.labels.end());
             details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
@@ -68,7 +68,7 @@ namespace domain::containers
                         "WHERE c.identifier = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, identifier);
+        statement.bind(1, identifier);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -77,7 +77,8 @@ namespace domain::containers
         {
             container_details details{};
             details.identifier = result.fetch<std::string>("identifier");
-            container_internals internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
+            auto content = result.fetch<std::vector<uint8_t>>("internals");
+            auto internals = unpack_container_internals(content);
             fill_container_details(details, internals);
             return details;
         }
@@ -93,8 +94,8 @@ namespace domain::containers
                         "OR c.name LIKE ? LIMIT 1");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -118,8 +119,8 @@ namespace domain::containers
                         "OR c.name LIKE ? LIMIT 1");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -131,16 +132,17 @@ namespace domain::containers
     }
     std::error_code sql_container_repository::save(const container_properties &properties)
     {
-        std::string sql("INSERT INTO container_tb(identifier, name, internals, image_id) "
-                        "VALUES(?, ?, ?, SELECT i.id FROM image_tb AS i WHERE i.identifier = ?)");
+        std::string sql("INSERT INTO container_tb(identifier, name, internals, status, image_id) "
+                        "VALUES(?, ?, ?, ?, (SELECT i.id FROM image_tb AS i WHERE i.identifier = ?))");
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
-        container_internals internals{properties.parameters, properties.port_map, properties.env_vars, properties.network_properties};
+        auto internals = container_internals{properties.parameters, properties.port_map, properties.env_vars, properties.entry_point, properties.network_properties};
         auto statement = connection->statement(sql);
-        statement.bind(0, properties.identifier);
-        statement.bind(1, properties.name);
-        statement.bind(2, pack_container_internals(internals));
-        statement.bind(3, properties.image_identifier);
+        statement.bind(1, properties.identifier);
+        statement.bind(2, properties.name);
+        statement.bind(3, pack_container_internals(internals));
+        statement.bind(4, "shutdown");
+        statement.bind(5, properties.image_identifier);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -148,39 +150,70 @@ namespace domain::containers
         txn.commit();
         return {};
     }
-    std::vector<container_summary_entry> sql_container_repository::fetch_match(const std::string &query, const std::string &state)
+    std::vector<container_summary_entry> sql_container_repository::fetch_match(const std::string &query, const std::string &status)
+    {
+        return query.empty() ? fetch_match_without_query(status) : fetch_match_with_query(query, status);
+    }
+    std::vector<container_summary_entry> sql_container_repository::fetch_match_without_query(const std::string &status)
     {
         std::string sql = fmt::format(
             "SELECT "
             "c.identifier, "
+            "c.status, "
+            "c.name AS container_name, "
+            "i.name AS image_name, "
+            "c.internals, "
+            "c.created_at "
+            "FROM container_tb AS c "
+            "INNER JOIN image_tb AS i ON c.image_id = i.id"
+            "",
+            (status != "all" ? " WHERE c.status = ?" : ""));
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        if (status != "all")
+        {
+            statement.bind(1, status);
+        }
+
+        auto result = statement.execute_query();
+        std::vector<container_summary_entry> entries;
+        while (result.has_next())
+        {
+            container_summary_entry entry{};
+            entry.identifier = result.fetch<std::string>("identifier");
+            entry.name = result.fetch<std::string>("container_name");
+            entry.status = result.fetch<std::string>("status");
+            entry.image = result.fetch<std::string>("image_name");
+            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("created_at");
+            auto internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
+            entry.port_map.insert(internals.port_map.begin(), internals.port_map.end());
+            entries.push_back(entry);
+        }
+        return entries;
+    }
+    std::vector<container_summary_entry> sql_container_repository::fetch_match_with_query(const std::string query, const std::string &status)
+    {
+        std::string sql = fmt::format(
+            "SELECT "
+            "c.identifier, "
+            "c.status, "
             "c.name AS container_name, "
             "i.name AS image_name, "
             "c.internals, "
             "c.created_at "
             "FROM container_tb AS c "
             "INNER JOIN image_tb AS i ON c.image_id = i.id "
-            "WHERE {} {}",
-            !query.empty()
-                ? "c.name LIKE ? OR c.identifier LIKE ? "
-                : "",
-            state != "all" ? "c.state = ?"
-                           : "");
+            "WHERE c.name LIKE ? OR c.identifier LIKE ?{}",
+            (status != "all" ? " AND c.status = ?" : ""));
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
         if (!query.empty())
         {
-            statement.bind(0, query);
-            statement.bind(1, query);
-            if (!state.empty())
+            statement.bind(1, fmt::format("%{}%", query));
+            statement.bind(2, fmt::format("%{}%", query));
+            if (status != "all")
             {
-                statement.bind(1, query);
-            }
-        }
-        else
-        {
-            if (!state.empty())
-            {
-                statement.bind(0, query);
+                statement.bind(3, status);
             }
         }
         auto result = statement.execute_query();
@@ -190,6 +223,7 @@ namespace domain::containers
             container_summary_entry entry{};
             entry.identifier = result.fetch<std::string>("identifier");
             entry.name = result.fetch<std::string>("container_name");
+            entry.status = result.fetch<std::string>("status");
             entry.image = result.fetch<std::string>("image_name");
             entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("created_at");
             auto internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
@@ -203,13 +237,14 @@ namespace domain::containers
         std::string sql("SELECT "
                         "COUNT(*) AS is_running "
                         "FROM container_tb AS c "
-                        "WHERE c.state = ? "
-                        "AND c.name = ? OR c.identifier = ?");
+                        "WHERE c.status = ? "
+                        "AND c.name = ? "
+                        "OR c.identifier = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, "shutdown");
-        statement.bind(1, query);
+        statement.bind(1, "active");
         statement.bind(2, query);
+        statement.bind(3, query);
 
         if (auto result = statement.execute_query(); !result.has_next())
         {
@@ -220,6 +255,26 @@ namespace domain::containers
             return result.fetch<int32_t>("is_running") > 0;
         }
     }
+    std::error_code sql_container_repository::register_status(const std::string &identifier, const std::string &status)
+    {
+        std::string sql("UPDATE "
+                        "container_tb "
+                        "SET "
+                        "status = ? "
+                        "WHERE "
+                        "identifier = ?");
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(1, status);
+        statement.bind(2, identifier);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
+    }
     std::error_code sql_container_repository::remove(const std::string &query)
     {
 
@@ -229,8 +284,8 @@ namespace domain::containers
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);

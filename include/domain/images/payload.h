@@ -1,7 +1,7 @@
 #ifndef __DAEMON_DOMAIN_IMAGES_PAYLOADS__
 #define __DAEMON_DOMAIN_IMAGES_PAYLOADS__
 
-#include <msgpack/msgpack.hpp>
+#include <msgpack.hpp>
 #include <yaml-cpp/yaml.h>
 
 using namespace std::chrono;
@@ -11,16 +11,14 @@ namespace domain::images
     struct image_term_order
     {
         std::string term;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(term);
-        }
+        MSGPACK_DEFINE(term)
     };
 
     inline image_term_order unpack_image_term_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<image_term_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<image_term_order>();
     }
 
     struct summary_entry
@@ -30,32 +28,30 @@ namespace domain::images
         std::string tag;
         std::size_t size;
         time_point<system_clock, milliseconds> created_at;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(identifier, repository, tag, size);
-        }
+        MSGPACK_DEFINE(identifier, repository, tag, size, created_at)
     };
 
     struct summary
     {
         std::string name;
         std::vector<summary_entry> entries;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(name, entries);
-        }
+        MSGPACK_DEFINE(name, entries)
     };
 
     inline std::vector<uint8_t> pack_summary(summary &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     inline summary unpack_summary(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<summary>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<summary>();
     }
 
     enum class step_type : int
@@ -71,13 +67,9 @@ namespace domain::images
         std::string name;
         std::string tag;
         std::map<std::string, std::string> labels;
-        std::map<std::string, int> steps;
+        std::map<std::string, step_type> steps;
 
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(name, tag, labels, steps);
-        }
+        MSGPACK_DEFINE(name, tag, labels, steps)
 
         bool operator==(const stage rhs)
         {
@@ -93,16 +85,14 @@ namespace domain::images
         std::vector<stage> stages;
         std::string entry_point;
 
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(name, tag, current_directory, stages, entry_point);
-        }
+        MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point)
     };
 
     inline build_order unpack_build_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<build_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<build_order>();
     }
 
     struct image_query
@@ -112,16 +102,16 @@ namespace domain::images
         std::string version;
         std::string architecture;
 
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(name, tag, version, architecture);
-        }
+        MSGPACK_DEFINE(name, tag, version, architecture)
     };
 
     inline std::vector<uint8_t> pack_image_query(image_query &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     struct mount_point_details
@@ -130,11 +120,7 @@ namespace domain::images
         std::string folder;
         std::string options;
         uint64_t flags;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(filesystem, folder, options, flags);
-        }
+        MSGPACK_DEFINE(filesystem, folder, options)
     };
 
     struct image_meta
@@ -147,19 +133,19 @@ namespace domain::images
         std::string variant;
         std::string version;
         std::size_t size;
+        std::string repository;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> parameters;
         std::vector<mount_point_details> mount_points;
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(identifier, host, name, tag, os, variant, version, size, env_vars, parameters, mount_points);
-        }
+
+        MSGPACK_DEFINE(identifier, host, name, tag, os, variant, version, size, env_vars, parameters, mount_points)
     };
 
     inline image_meta unpack_image_details(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<image_meta>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<image_meta>();
     }
 
     struct progress_frame
@@ -169,16 +155,16 @@ namespace domain::images
         std::string feed;
         double percentage;
 
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(entry_name, sub_entry_name, percentage);
-        }
+        MSGPACK_DEFINE(entry_name, sub_entry_name, percentage)
     };
 
     inline std::vector<uint8_t> pack_progress_frame(progress_frame &order)
     {
-        return msgpack::pack(order);
+        msgpack::sbuffer buffer;
+        msgpack::pack(buffer, order);
+        std::vector<uint8_t> output(buffer.size());
+        std::memcpy(output.data(), buffer.data(), buffer.size());
+        return output;
     }
 
     struct import_details
@@ -227,19 +213,17 @@ namespace domain::images
 
     struct import_order
     {
-
         std::string archive_path;
 
-        template <class T>
-        void pack(T &pack)
-        {
-            pack(archive_path);
-        }
+        MSGPACK_DEFINE(archive_path)
     };
 
     inline import_order unpack_import_order(const std::vector<uint8_t> &content)
     {
-        return msgpack::unpack<import_order>(content);
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<import_order>();
     }
 }
+MSGPACK_ADD_ENUM(domain::images::step_type);
 #endif // __DAEMON_DOMAIN_IMAGES_PAYLOADS__

@@ -23,11 +23,15 @@ namespace domain::containers
 
     class container;
     class container_monitor;
+    class container_repository;
     typedef std::function<std::shared_ptr<container_monitor>()> monitor_provider;
     class runtime : public runtime_listener
     {
     public:
-        runtime(asio::io_context &context, monitor_provider container_monitor_provider);
+        runtime(
+            asio::io_context &context,
+            std::shared_ptr<container_repository> repository,
+            monitor_provider container_monitor_provider);
         virtual ~runtime();
         void create_container(operation_details details);
         void remove_container(std::string &identifier);
@@ -39,6 +43,7 @@ namespace domain::containers
 
     private:
         asio::io_context &context;
+        std::shared_ptr<container_repository> repository;
         monitor_provider container_monitor_provider;
         std::map<std::string, std::shared_ptr<container>> containers;
         std::map<std::string, std::shared_ptr<container_monitor>> monitors;

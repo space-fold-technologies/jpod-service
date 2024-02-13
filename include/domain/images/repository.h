@@ -12,8 +12,10 @@ namespace domain::images
     {
     public:
         virtual ~image_repository() = default;
-        virtual std::optional<registry> fetch_registry_by_uri(const std::string &path) = 0;
-        virtual std::optional<registry> fetch_registry_by_name(const std::string &name) = 0;
+        virtual std::error_code add_registry(const registry_details &details) = 0;
+        virtual std::error_code update_token(const authorization_update &update) = 0;
+        virtual std::optional<registry_access_details> fetch_registry_by_path(const std::string &path) = 0;
+        virtual std::optional<registry_access_details> fetch_registry_by_name(const std::string &name) = 0;
         virtual bool has_image(const std::string &registry, const std::string &name, const std::string &tag) = 0;
         virtual std::error_code save_image_details(const image_details &details) = 0;
         virtual std::optional<image_details> fetch_image_details(const std::string &registry, const std::string &name, const std::string &tag) = 0;

@@ -22,7 +22,7 @@ namespace domain::images::http
 namespace domain::images
 {
     class image_repository;
-    class registry;
+    class registry_access_details;
     class image_meta;
 }
 
@@ -50,10 +50,10 @@ namespace domain::images::instructions
         std::size_t write(const std::vector<uint8_t> &data) override;
 
     private:
-        void fetch_image_details(const registry &reg, const std::string &name, const std::string &tag);
-        void download_image_filesystem(const registry &reg, const image_meta &details);
-        void extract_image_filesystem(const registry &reg, const image_meta &details);
-        void save_image_details(const std::string registry_uri, const image_meta &meta);
+        void fetch_image_details(const registry_access_details &details, const std::string &name, const std::string &tag);
+        void download_image_filesystem(const registry_access_details &details, const image_meta &meta);
+        void extract_image_filesystem(const registry_access_details &details, const image_meta &meta);
+        void save_image_details(const image_meta &meta);
 
     private:
         std::string identifier;

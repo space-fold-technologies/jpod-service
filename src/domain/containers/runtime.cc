@@ -1,5 +1,6 @@
 #include <domain/containers/runtime.h>
 #include <domain/containers/monitor.h>
+#include <domain/containers/repository.h>
 #include <asio/io_context.hpp>
 #if defined(__FreeBSD__)
 #include <domain/containers/freebsd/freebsd_container.h>
@@ -7,9 +8,10 @@
 #include <spdlog/spdlog.h>
 namespace domain::containers
 {
-    runtime::runtime(asio::io_context &context, monitor_provider container_monitor_provider) : context(context),
-                                                                                               container_monitor_provider(container_monitor_provider),
-                                                                                               logger(spdlog::get("jpod"))
+    runtime::runtime(asio::io_context &context, std::shared_ptr<container_repository> repository, monitor_provider container_monitor_provider) : context(context),
+                                                                                                                                                 repository(repository),
+                                                                                                                                                 container_monitor_provider(container_monitor_provider),
+                                                                                                                                                 logger(spdlog::get("jpod"))
     {
     }
     void runtime::create_container(operation_details details)
@@ -33,6 +35,7 @@ namespace domain::containers
     void runtime::container_started(const std::string &identifier)
     {
         logger->info("container: {} started", identifier);
+        repository->register_status(identifier, "active");
     }
     void runtime::container_failed(const std::string &identifier, const std::error_code &error)
     {
@@ -41,6 +44,7 @@ namespace domain::containers
     void runtime::container_stopped(const std::string &identifier)
     {
         logger->info("container: {} stopped", identifier);
+        repository->register_status(identifier, "shutdown");
     }
     void runtime::remove_container(std::string &identifier)
     {

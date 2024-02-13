@@ -13,7 +13,45 @@ namespace domain::images
     sql_image_repository::sql_image_repository(core::sql::pool::data_source &data_source) : data_source(data_source)
     {
     }
-    std::optional<registry> sql_image_repository::fetch_registry_by_uri(const std::string &path)
+    std::error_code sql_image_repository::add_registry(const registry_details &details)
+    {
+        std::string sql("INSERT INTO registry_tb(name, uri, path) "
+                        "VALUES(?, ?, ?)");
+
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(1, details.name);
+        statement.bind(2, details.uri);
+        statement.bind(3, details.path);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
+    }
+    std::error_code sql_image_repository::update_token(const authorization_update &update)
+    {
+        std::string sql("UPDATE registry_tb "
+                        "SET "
+                        "token = ? "
+                        "WHERE "
+                        "path = ?");
+
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(1, update.token);
+        statement.bind(2, update.path);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
+    }
+    std::optional<registry_access_details> sql_image_repository::fetch_registry_by_path(const std::string &path)
     {
         std::string sql("SELECT "
                         "r.uri, "
@@ -22,15 +60,18 @@ namespace domain::images
                         "WHERE r.path = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, path);
+        statement.bind(1, path);
         auto result = statement.execute_query();
         if (!result.has_next())
         {
             return std::nullopt;
         }
-        return {registry{result.fetch<std::string>("uri"), result.fetch<std::string>("token")}};
+        registry_access_details details{};
+        details.uri = result.fetch<std::string>("uri");
+        details.token = result.fetch<std::string>("token");
+        return std::make_optional(details);
     }
-    std::optional<registry> sql_image_repository::fetch_registry_by_name(const std::string &name)
+    std::optional<registry_access_details> sql_image_repository::fetch_registry_by_name(const std::string &name)
     {
         std::string sql("SELECT "
                         "r.uri, "
@@ -39,49 +80,52 @@ namespace domain::images
                         "WHERE r.name = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, name);
+        statement.bind(1, name);
         auto result = statement.execute_query();
         if (!result.has_next())
         {
             return std::nullopt;
         }
-        return {registry{result.fetch<std::string>("uri"), result.fetch<std::string>("token")}};
+        registry_access_details details{};
+        details.uri = result.fetch<std::string>("uri");
+        details.token = result.fetch<std::string>("token");
+        return std::make_optional(details);
     }
     bool sql_image_repository::has_image(const std::string &registry, const std::string &name, const std::string &tag)
     {
         std::string sql("SELECT COUNT(*) AS image_exists "
-                        "FROM image_tb AS i"
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         auto result = statement.execute_query();
         return result.has_next() ? result.fetch<bool>("image_exists") : false;
     }
     std::error_code sql_image_repository::save_image_details(const image_details &details)
     {
         std::string sql("INSERT INTO image_tb(identifier, name, tag, os, variant, version, entry_point, size, internals, registry_id) "
-                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
+                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.path = ?))");
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         image_internals internals{details.labels, details.parameters, details.env_vars, details.mount_points};
         auto statement = connection->statement(sql);
-        statement.bind(0, details.identifier);
-        statement.bind(1, details.name);
-        statement.bind(2, details.tag);
-        statement.bind(3, details.os);
-        statement.bind(4, details.variant);
-        statement.bind(5, details.version);
-        statement.bind(6, details.entry_point);
-        statement.bind(7, static_cast<int64_t>(details.size));
-        statement.bind(8, pack_image_internals(internals));
-        statement.bind(8, details.registry_uri);
+        statement.bind(1, details.identifier);
+        statement.bind(2, details.name);
+        statement.bind(3, details.tag);
+        statement.bind(4, details.os);
+        statement.bind(5, details.variant);
+        statement.bind(6, details.version);
+        statement.bind(7, details.entry_point);
+        statement.bind(8, static_cast<int64_t>(details.size));
+        statement.bind(9, pack_image_internals(internals));
+        statement.bind(10, details.registry_path);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -101,16 +145,16 @@ namespace domain::images
                         "i.entry_point, "
                         "i.size, "
                         "i.internals "
-                        "FROM image_tb AS m "
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -144,16 +188,16 @@ namespace domain::images
                                       "i.tag, "
                                       "r.name AS repository, "
                                       "i.size, "
-                                      "UNIXEPOCH(i.created_at), AS creation_date, "
-                                      "FROM image_tb AS m "
-                                      "INNER JOIN registry_tb AS r ON i.registry_id = r.id {}",
-                                      !query.empty() ? "WHERE i.name LIKE ? OR i.identifier LIKE ? " : "");
+                                      "UNIXEPOCH(i.created_at) AS creation_date "
+                                      "FROM image_tb AS i "
+                                      "INNER JOIN registry_tb AS r ON i.registry_id = r.id{}",
+                                      !query.empty() ? " WHERE i.name LIKE ? OR i.identifier LIKE ?" : "");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
         if (!query.empty())
         {
-            statement.bind(0, query);
-            statement.bind(1, query);
+            statement.bind(1, fmt::format("%{}%",query));
+            statement.bind(2, fmt::format("%{}%",query));
         }
 
         auto result = statement.execute_query();
@@ -166,7 +210,7 @@ namespace domain::images
             entry.tag = result.fetch<std::string>("tag");
             entry.repository = result.fetch<std::string>("repository");
             entry.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
-            entry.created_at = result.fetch<time_point<system_clock, milliseconds>>("creation_date");
+            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("creation_date");
             entries.push_back(entry);
         }
         return entries;
@@ -174,16 +218,16 @@ namespace domain::images
     std::optional<std::string> sql_image_repository::fetch_image_identifier(const std::string &registry, const std::string &name, const std::string &tag)
     {
         std::string sql("SELECT i.identifier "
-                        "FROM image_tb AS i"
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         auto result = statement.execute_query();
         if (!result.has_next())
         {
@@ -193,18 +237,17 @@ namespace domain::images
     }
     std::vector<mount_point> sql_image_repository::fetch_image_mount_points(const std::string &registry, const std::string &name, const std::string &tag)
     {
-        std::string sql("SELECT m.internals "
-                        "FROM mount_point_tb AS m "
-                        "INNER JOIN image_tb AS i ON m.image_id = i.id "
+        std::string sql("SELECT i.internals "
+                        "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
                         "AND i.name = ? "
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, registry);
-        statement.bind(1, name);
-        statement.bind(2, tag);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
         auto result = statement.execute_query();
         std::vector<mount_point> mount_points;
         if (result.has_next())
@@ -224,15 +267,15 @@ namespace domain::images
                         "WHERE i.name = ? OR i.identifier = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return false;
         }
         else
         {
-            return result.fetch<uint32_t>("has_containers") > 0;
+            return result.fetch<int32_t>("has_containers") > 0;
         }
     }
     std::error_code sql_image_repository::remove(const std::string &query)
@@ -242,8 +285,8 @@ namespace domain::images
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         auto statement = connection->statement(sql);
-        statement.bind(0, query);
         statement.bind(1, query);
+        statement.bind(2, query);
         if (auto result_code = statement.execute(); result_code < 0)
         {
             return core::sql::errors::make_error_code(result_code);

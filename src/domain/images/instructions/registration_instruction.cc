@@ -36,7 +36,7 @@ namespace domain::images::instructions
             details->name = properties.name;
             details->tag = properties.tag;
             details->entry_point = properties.entry_point;
-            details->registry_uri = "localhost";
+            details->registry_path = "localhost";
             details->labels.insert(properties.labels.begin(), properties.labels.end());
             details->env_vars.insert(properties.env_vars.begin(), properties.env_vars.end());
             std::error_code error = repository.save_image_details(*details);

@@ -85,7 +85,8 @@ namespace domain::images::instructions
                 target_shell = _PATH_BSHELL;
 #endif
             }
-            if (auto err = execlp(target_shell, target_shell, "-c", fmt::format("\"{}\"", order), NULL); err < 0)
+            std::string argument = fmt::format("\"{}\"", order);
+            if (auto err = execlp(target_shell, target_shell, "-c", argument.c_str(), NULL); err < 0)
             {
                 listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
             }

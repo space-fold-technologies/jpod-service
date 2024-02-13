@@ -47,7 +47,7 @@ namespace domain::images::instructions
         else
         {
             listener.on_instruction_initialized(identifier, name);
-            if (!mount_filesystems(entries, error); error)
+            if (mount_filesystems(entries, error); error)
             {
                 listener.on_instruction_complete(identifier, error);
             }

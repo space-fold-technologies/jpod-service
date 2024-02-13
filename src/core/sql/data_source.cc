@@ -1,6 +1,5 @@
 #include <core/sql/data_source.h>
 #include <core/sql/connection_proxy.h>
-#include <filesystem>
 #include <spdlog/spdlog.h>
 #include <sqlite3.h>
 
@@ -8,25 +7,24 @@ namespace core::sql::pool
 {
     data_source::data_source(std::string path, std::size_t pool_size) : path(path),
                                                                         pool_size(pool_size),
+                                                                        connection_mutex(),
                                                                         logger(spdlog::get("jpod"))
     {
-        logger->info("SQLITE {}", sqlite3_libversion());
-        logger->info("IS THREAD SAFE {}", sqlite3_threadsafe() ? "ON" : "OFF");
+        logger->trace("SQLITE {}", sqlite3_libversion());
+        logger->trace("IS THREAD SAFE {}", sqlite3_threadsafe() ? "ON" : "OFF");
     }
 
     core::sql::connection_proxy data_source::connection()
     {
-        if (connection_mutex.try_lock())
+        std::unique_lock<std::mutex> lock(connection_mutex, std::try_to_lock);
+        for (auto &[key, value] : available)
         {
-            for (auto &[key, value] : available)
-            {
-                core::sql::connection_proxy proxy{key, this};
-                auto node = available.extract(key);
-                busy.insert(std::move(node));
-                connection_mutex.unlock();
-                return proxy;
-            }
+            core::sql::connection_proxy proxy{key, this};
+            auto node = available.extract(key);
+            busy.insert(std::move(node));
+            return proxy;
         }
+
         return core::sql::connection_proxy{nullptr, nullptr};
     }
 
@@ -43,14 +41,11 @@ namespace core::sql::pool
 
     void data_source::back_to_pool(in::connection *instance)
     {
-        if (connection_mutex.try_lock())
+        std::unique_lock<std::mutex> lock(connection_mutex, std::try_to_lock);
+        if (auto result = busy.find(instance); result != busy.end())
         {
-            if (auto result = busy.find(instance); result != busy.end())
-            {
-                auto node = busy.extract(result);
-                available.insert(std::move(node));
-            }
-            connection_mutex.unlock();
+            auto node = busy.extract(result);
+            available.insert(std::move(node));
         }
     }
 
