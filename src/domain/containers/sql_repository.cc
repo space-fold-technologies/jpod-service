@@ -141,7 +141,7 @@ namespace domain::containers
         statement.bind(1, properties.identifier);
         statement.bind(2, properties.name);
         statement.bind(3, pack_container_internals(internals));
-        statement.bind(4, "shutdown");
+        statement.bind(4, std::string("shutdown"));
         statement.bind(5, properties.image_identifier);
         if (auto result_code = statement.execute(); result_code < 0)
         {
