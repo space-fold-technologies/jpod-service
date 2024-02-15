@@ -45,7 +45,9 @@ namespace core::configurations
             config["networking"]["ip-v6-cidr"].as<std::string>(),
             config["images"]["path"].as<std::string>(),
             config["containers"]["path"].as<std::string>(),
-            config["database"]["path"].as<std::string>()};
+            config["database"]["path"].as<std::string>(),
+            config["database"]["pool-size"].as<int>()
+            };
     }
 }
 

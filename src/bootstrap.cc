@@ -39,6 +39,7 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
 }
 void bootstrap::setup()
 {
+  data_source->initialize();
   client = std::make_shared<http::asio_client>(context, 4);
   runtime = std::make_shared<domain::containers::runtime>(
       context,
@@ -47,6 +48,7 @@ void bootstrap::setup()
       {
         return this->create_container_monitor();
       });
+  
   core::sql::migration_handler handler(*data_source, "migrations");
   handler.migrate();
   setup_handlers();
