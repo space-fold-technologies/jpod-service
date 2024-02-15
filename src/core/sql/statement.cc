@@ -43,26 +43,33 @@ namespace core::sql
   {
     if (auto result_code = sqlite3_bind_int(this->instance, index, value); result_code != SQLITE_OK)
     {
-      logger->error("INT BIND FAILED: {}",  sqlite3_errstr(result_code));
+      logger->error("INT BIND FAILED: {}", sqlite3_errstr(result_code));
     }
   }
   void statement::bind(const int index, const int64_t value) noexcept
   {
-    if(auto result_code = sqlite3_bind_int64(this->instance, index, value); result_code != SQLITE_OK)
+    if (auto result_code = sqlite3_bind_int64(this->instance, index, value); result_code != SQLITE_OK)
     {
-      logger->error("INT-64 BIND FAILED: {}",  sqlite3_errstr(result_code));
+      logger->error("INT-64 BIND FAILED: {}", sqlite3_errstr(result_code));
     }
   }
   void statement::bind(const int index, const double value) noexcept
   {
-    if(auto result_code = sqlite3_bind_double(this->instance, index, value); result_code != SQLITE_OK)
+    if (auto result_code = sqlite3_bind_double(this->instance, index, value); result_code != SQLITE_OK)
     {
-      logger->error("DOUBLE BIND FAILED: {}",  sqlite3_errstr(result_code));
+      logger->error("DOUBLE BIND FAILED: {}", sqlite3_errstr(result_code));
     }
   }
   void statement::bind(const int index, const std::vector<uint8_t> &content) noexcept
   {
     if (auto result_code = sqlite3_bind_blob(this->instance, index, content.data(), content.size(), SQLITE_STATIC); result_code != SQLITE_OK)
+    {
+      logger->error("BLOB BIND FAILED: {}", sqlite3_errstr(result_code));
+    }
+  }
+  void statement::bind(const int index, bool value) noexcept
+  {
+    if (auto result_code = sqlite3_bind_int(this->instance, index, value); result_code != SQLITE_OK)
     {
       logger->error("BLOB BIND FAILED: {}", sqlite3_errstr(result_code));
     }

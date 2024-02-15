@@ -4,10 +4,10 @@
 #include <cmrc/cmrc.hpp>
 #include <core/sql/data_source.h>
 #include <core/sql/migrations.h>
-#include <optional>
 #include <domain/images/sql_repository.h>
 #include <sole.hpp>
 #include <spdlog/spdlog.h>
+#include <optional>
 
 CMRC_DECLARE(resources);
 

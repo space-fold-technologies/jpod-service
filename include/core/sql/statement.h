@@ -37,6 +37,7 @@ namespace core::sql
         void bind(const int index, const int value) noexcept;
         void bind(const int index, const int64_t value) noexcept;
         void bind(const int index, const double value) noexcept;
+        void bind(const int index, bool value) noexcept;
         void bind(const int index, const std::vector<uint8_t>& content) noexcept;
         void clear() noexcept;
         int execute() noexcept;
