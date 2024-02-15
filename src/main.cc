@@ -13,14 +13,31 @@
 #endif
 #endif
 #include <cmrc/cmrc.hpp>
+#include <CLI/CLI.hpp>
+
 CMRC_DECLARE(resources);
 
 auto main(int argc, char *argv[]) -> int
 {
+  CLI::App parser{"jpod-daemon"};
+  std::optional<std::string> configuration_path;
+  std::optional<core::configurations::setting_properties> configuration;
+  parser.add_option("-c,--configuration", configuration_path, "yaml configuration for application");
+  CLI11_PARSE(parser, argc, argv);
   auto console = spdlog::stdout_color_mt("jpod");
-  auto fs = cmrc::resources::get_filesystem();
-  auto file = fs.open("configurations/settings.yml");
-  auto configuration = core::configurations::read_from_array(std::string(file.begin(), file.end()));
+  std::error_code error;
+  if (!configuration_path)
+  {
+    auto fs = cmrc::resources::get_filesystem();
+    auto file = fs.open("configurations/settings.yml");
+    configuration = core::configurations::read_from_array(std::string(file.begin(), file.end()));
+  }
+  else if (configuration = core::configurations::read_from_path(*configuration_path, error); error)
+  {
+    console->error("ERR: {}", error.message());
+    return EXIT_FAILURE;
+  }
+
   if (configuration.has_value())
   {
     asio::io_context context;

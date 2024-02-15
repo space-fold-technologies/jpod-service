@@ -1,6 +1,6 @@
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-find_package(tl-expected REQUIRED CONFIG)
+find_package(CLI11 CONFIG REQUIRED)
 find_package(asio REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED CONFIG)
 find_package(sole REQUIRED)
@@ -82,7 +82,6 @@ target_link_libraries(daemon
                        spdlog::spdlog_header_only
                        asio::asio
                        range-v3::range-v3
-                       tl::expected
                        sole::sole
                        msgpack-cxx
                        libzip::zip
@@ -93,6 +92,7 @@ target_link_libraries(daemon
                        PUBLIC 
                        OpenSSL::Crypto 
                        OpenSSL::SSL
+                       CLI11::CLI11
                        )
  
                   

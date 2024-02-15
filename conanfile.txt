@@ -12,6 +12,7 @@ libzip/1.10.1
 sqlite3/3.42.0
 zstd/1.5.5
 yaml-cpp/0.8.0
+cli11/2.4.1
 
 [generators]
 cmake_find_package_multi
