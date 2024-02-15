@@ -38,6 +38,8 @@ auto main(int argc, char *argv[]) -> int
             running = false;
           }
         });
+    console->info("setting up");
+    app->setup();
     console->info("remote shell started");
     app->start();
     while (running)
