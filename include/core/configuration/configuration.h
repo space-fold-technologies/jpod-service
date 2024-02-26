@@ -1,5 +1,5 @@
-#ifndef __DAEMON_CONFIGURATION__
-#define __DAEMON_CONFIGURATION__
+#ifndef __DAEMON_CORE_CONFIGURATION__
+#define __DAEMON_CORE_CONFIGURATION__
 
 #include <yaml-cpp/yaml.h>
 
@@ -51,4 +51,4 @@ namespace core::configurations
     }
 }
 
-#endif //__DAEMON_CONFIGURATION__
+#endif //__DAEMON_CORE_CONFIGURATION__

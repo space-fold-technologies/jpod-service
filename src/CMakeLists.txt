@@ -5,7 +5,7 @@ find_package(asio REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED CONFIG)
 find_package(sole REQUIRED)
 find_package(range-v3 REQUIRED CONFIG)
-find_package(libzip REQUIRED CONFIG)
+find_package(LibArchive REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
@@ -84,7 +84,7 @@ target_link_libraries(daemon
                        range-v3::range-v3
                        sole::sole
                        msgpack-cxx
-                       libzip::zip
+                       LibArchive::LibArchive
                        zstd::libzstd_static
                        yaml-cpp::yaml-cpp
                        SQLite::SQLite3

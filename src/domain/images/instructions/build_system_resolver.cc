@@ -1,6 +1,5 @@
 #include <domain/images/instructions/build_system_resolver.h>
 #include <domain/images/instructions/compression_errors.h>
-#include <zip.h>
 #include <iostream>
 #include <fstream>
 #include <array>
@@ -68,77 +67,77 @@ namespace domain::images::instructions
         progress_frame frame{};
         frame.entry_name = identifier;
         frame.sub_entry_name = "extracting fs.zip";
-        if (archive_ptr archive = initialize_archive(image_fs_archive, error); error)
-        {
-            callback(error, frame);
-        }
-        else
-        {
-            auto archive_entry_count = zip_get_num_entries(archive.get(), 0);
-            for (auto archive_entry_index = 0; archive_entry_index < archive_entry_count; ++archive_entry_index)
-            {
-                if (const auto *entry_name = zip_get_name(archive.get(), archive_entry_index, 0); entry_name == nullptr)
-                {
-                    callback(make_compression_error_code(ZIP_ER_NOENT), frame);
-                }
-                else
-                {
-                    fs::path full_path = output_folder / fs::path(std::string(entry_name));
-                    if (!fs::create_directories(full_path.parent_path(), error))
-                    {
-                        callback(error, frame);
-                    }
-                    else if (auto out_file = std::ofstream(full_path, std::ios::binary); !out_file)
-                    {
-                        callback(std::make_error_code(std::errc::io_error), frame);
-                    }
-                    else if (auto *input_file = zip_fopen(archive.get(), entry_name, 0); input_file == nullptr)
-                    {
-                        callback(std::make_error_code(std::errc::io_error), frame);
-                    }
-                    else
-                    {
-                        std::array<char, BUFFER_SIZE> buffer;
-                        zip_int64_t bytes_read = 0;
-                        frame.sub_entry_name = std::string(entry_name);
-                        do
-                        {
-                            bytes_read = zip_fread(input_file, buffer.data(), BUFFER_SIZE);
-                            if (bytes_read > 0)
-                            {
-                                out_file.write(buffer.data(), bytes_read);
-                            }
-                        } while (bytes_read > 0);
-                        zip_fclose(input_file);
-                        out_file.close();
-                        callback(error, frame);
-                    }
-                }
-            }
-        }
+        // if (archive_ptr archive = initialize_archive(image_fs_archive, error); error)
+        // {
+        //     callback(error, frame);
+        // }
+        // else
+        // {
+        //     auto archive_entry_count = zip_get_num_entries(archive.get(), 0);
+        //     for (auto archive_entry_index = 0; archive_entry_index < archive_entry_count; ++archive_entry_index)
+        //     {
+        //         if (const auto *entry_name = zip_get_name(archive.get(), archive_entry_index, 0); entry_name == nullptr)
+        //         {
+        //             callback(make_compression_error_code(ZIP_ER_NOENT), frame);
+        //         }
+        //         else
+        //         {
+        //             fs::path full_path = output_folder / fs::path(std::string(entry_name));
+        //             if (!fs::create_directories(full_path.parent_path(), error))
+        //             {
+        //                 callback(error, frame);
+        //             }
+        //             else if (auto out_file = std::ofstream(full_path, std::ios::binary); !out_file)
+        //             {
+        //                 callback(std::make_error_code(std::errc::io_error), frame);
+        //             }
+        //             else if (auto *input_file = zip_fopen(archive.get(), entry_name, 0); input_file == nullptr)
+        //             {
+        //                 callback(std::make_error_code(std::errc::io_error), frame);
+        //             }
+        //             else
+        //             {
+        //                 std::array<char, BUFFER_SIZE> buffer;
+        //                 zip_int64_t bytes_read = 0;
+        //                 frame.sub_entry_name = std::string(entry_name);
+        //                 do
+        //                 {
+        //                     bytes_read = zip_fread(input_file, buffer.data(), BUFFER_SIZE);
+        //                     if (bytes_read > 0)
+        //                     {
+        //                         out_file.write(buffer.data(), bytes_read);
+        //                     }
+        //                 } while (bytes_read > 0);
+        //                 zip_fclose(input_file);
+        //                 out_file.close();
+        //                 callback(error, frame);
+        //             }
+        //         }
+        //     }
+        // }
     }
 
-    archive_ptr build_system_resolver::initialize_archive(const fs::path &image_fs_archive, std::error_code &error)
-    {
-        int error_no;
-        // get the general folder path for the images ending in fs.zip
-        if (auto ptr = zip_open(image_fs_archive.generic_string().c_str(), 0, &error_no); ptr == NULL)
-        {
-            zip_error_t zip_error;
-            zip_error_init_with_code(&zip_error, error_no);
-            logger->error("cannot open filesystem archive {}", zip_error_strerror(&zip_error));
-            zip_error_fini(&zip_error);
-            error = make_compression_error_code(error_no);
-            return {nullptr, nullptr};
-        }
-        else
-        {
-            return {ptr, [](zip_t *ctx)
-                    {
-                        zip_close(ctx);
-                    }};
-        }
-    }
+    // archive_ptr build_system_resolver::initialize_archive(const fs::path &image_fs_archive, std::error_code &error)
+    // {
+    //     int error_no;
+    //     // get the general folder path for the images ending in fs.zip
+    //     if (auto ptr = zip_open(image_fs_archive.generic_string().c_str(), 0, &error_no); ptr == NULL)
+    //     {
+    //         zip_error_t zip_error;
+    //         zip_error_init_with_code(&zip_error, error_no);
+    //         logger->error("cannot open filesystem archive {}", zip_error_strerror(&zip_error));
+    //         zip_error_fini(&zip_error);
+    //         error = make_compression_error_code(error_no);
+    //         return {nullptr, nullptr};
+    //     }
+    //     else
+    //     {
+    //         return {ptr, [](zip_t *ctx)
+    //                 {
+    //                     zip_close(ctx);
+    //                 }};
+    //     }
+    // }
     build_system_resolver::~build_system_resolver()
     {
     }

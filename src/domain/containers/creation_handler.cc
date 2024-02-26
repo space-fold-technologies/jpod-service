@@ -9,7 +9,7 @@
 #include <vector>
 #include <spdlog/spdlog.h>
 #include <sole.hpp>
-#include <zip.h>
+
 namespace dmi = domain::images::instructions;
 namespace domain::containers
 {
@@ -76,48 +76,48 @@ namespace domain::containers
     }
     std::error_code creation_handler::extract_filesystem()
     {
-        frame.entry_name = identifier;
-        frame.sub_entry_name = "extracting fs.zip";
-        std::error_code error;
-        auto archive_entry_count = zip_get_num_entries(archive_ptr, 0);
-        for (auto archive_entry_index = 0; archive_entry_index < archive_entry_count; ++archive_entry_index)
-        {
-            if (const auto *entry_name = zip_get_name(archive_ptr, archive_entry_index, 0); entry_name == nullptr)
-            {
-                return fetch_decompression_error_code();
-            }
-            else
-            {
-                fs::path full_path = container_directory / fs::path(std::string(entry_name));
-                if (!fs::create_directories(full_path.parent_path(), error))
-                {
-                    return fetch_decompression_error_code();
-                }
-                else if (auto out_file = std::ofstream(full_path, std::ios::binary); !out_file)
-                {
-                    return std::make_error_code(std::errc::io_error);
-                }
-                else if (auto *input_file = zip_fopen(archive_ptr, entry_name, 0); input_file == nullptr)
-                {
-                    return std::make_error_code(std::errc::io_error);
-                }
-                else
-                {
-                    std::vector<char> buffer(BUFFER_SIZE);
-                    zip_int64_t bytes_read = 0;
-                    do
-                    {
-                        bytes_read = zip_fread(input_file, buffer.data(), BUFFER_SIZE);
-                        if (bytes_read > 0)
-                        {
-                            out_file.write(buffer.data(), bytes_read);
-                        }
-                    } while (bytes_read > 0);
-                    zip_fclose(input_file);
-                    out_file.close();
-                }
-            }
-        }
+        // frame.entry_name = identifier;
+        // frame.sub_entry_name = "extracting fs.zip";
+        // std::error_code error;
+        // auto archive_entry_count = zip_get_num_entries(archive_ptr, 0);
+        // for (auto archive_entry_index = 0; archive_entry_index < archive_entry_count; ++archive_entry_index)
+        // {
+        //     if (const auto *entry_name = zip_get_name(archive_ptr, archive_entry_index, 0); entry_name == nullptr)
+        //     {
+        //         return fetch_decompression_error_code();
+        //     }
+        //     else
+        //     {
+        //         fs::path full_path = container_directory / fs::path(std::string(entry_name));
+        //         if (!fs::create_directories(full_path.parent_path(), error))
+        //         {
+        //             return fetch_decompression_error_code();
+        //         }
+        //         else if (auto out_file = std::ofstream(full_path, std::ios::binary); !out_file)
+        //         {
+        //             return std::make_error_code(std::errc::io_error);
+        //         }
+        //         else if (auto *input_file = zip_fopen(archive_ptr, entry_name, 0); input_file == nullptr)
+        //         {
+        //             return std::make_error_code(std::errc::io_error);
+        //         }
+        //         else
+        //         {
+        //             std::vector<char> buffer(BUFFER_SIZE);
+        //             zip_int64_t bytes_read = 0;
+        //             do
+        //             {
+        //                 bytes_read = zip_fread(input_file, buffer.data(), BUFFER_SIZE);
+        //                 if (bytes_read > 0)
+        //                 {
+        //                     out_file.write(buffer.data(), bytes_read);
+        //                 }
+        //             } while (bytes_read > 0);
+        //             zip_fclose(input_file);
+        //             out_file.close();
+        //         }
+        //     }
+        // }
         return {};
     }
     fs::path creation_handler::fetch_image_archive(std::string &image_identifier, std::error_code &error)
@@ -137,60 +137,57 @@ namespace domain::containers
         {
             return error;
         }
-        else if (auto image_fs_archive = fetch_image_archive(identifier, error); error)
-        {
-            return error;
-        }
-        else if (archive_ptr = zip_open(image_fs_archive.c_str(), 0, &error_no); archive_ptr == NULL)
-        {
-            zip_error_t error;
-            zip_error_init_with_code(&error, error_no);
-            logger->error("cannot open file system archive for :{} {}", image_identifier, zip_error_strerror(&error));
-            zip_error_fini(&error);
-            return dmi::make_compression_error_code(error_no);
-        }
-        else
-        {
-            zip_register_progress_callback_with_state(
-                archive_ptr,
-                PROGRESSION_PRECISION,
-                &creation_handler::on_progress_update,
-                nullptr,
-                this);
-            return error;
-        }
+        // else if (auto image_fs_archive = fetch_image_archive(identifier, error); error)
+        // {
+        //     return error;
+        // }
+        // else if (archive_ptr = zip_open(image_fs_archive.c_str(), 0, &error_no); archive_ptr == NULL)
+        // {
+        //     zip_error_t error;
+        //     zip_error_init_with_code(&error, error_no);
+        //     logger->error("cannot open file system archive for :{} {}", image_identifier, zip_error_strerror(&error));
+        //     zip_error_fini(&error);
+        //     return dmi::make_compression_error_code(error_no);
+        // }
+        // else
+        // {
+        //     zip_register_progress_callback_with_state(
+        //         archive_ptr,
+        //         PROGRESSION_PRECISION,
+        //         &creation_handler::on_progress_update,
+        //         nullptr,
+        //         this);
+        //     return error;
+        // }
+        return {};
     }
-    std::error_code creation_handler::fetch_decompression_error_code()
-    {
-        std::error_code err;
-        zip_error_t *error = zip_get_error(archive_ptr);
+    // std::error_code creation_handler::fetch_decompression_error_code()
+    // {
+    //     std::error_code err;
+    //     zip_error_t *error = zip_get_error(archive_ptr);
 
-        if (zip_error_code_zip(error) != ZIP_ER_OK)
-        {
-            err = dmi::make_compression_error_code(error->zip_err);
-        }
-        else
-        {
-            err = std::make_error_code(static_cast<std::errc>(zip_error_code_system(error)));
-        }
-        zip_error_fini(error);
-        return err;
-    }
-    void creation_handler::on_progress_update(zip_t *zip_ctx, double progress, void *user_data)
-    {
-        auto self = static_cast<creation_handler *>(user_data);
-        self->frame.percentage = progress;
-        self->send_progress("container-creation", pack_progress_frame(self->frame));
-    }
+    //     if (zip_error_code_zip(error) != ZIP_ER_OK)
+    //     {
+    //         err = dmi::make_compression_error_code(error->zip_err);
+    //     }
+    //     else
+    //     {
+    //         err = std::make_error_code(static_cast<std::errc>(zip_error_code_system(error)));
+    //     }
+    //     zip_error_fini(error);
+    //     return err;
+    // }
+    // void creation_handler::on_progress_update(zip_t *zip_ctx, double progress, void *user_data)
+    // {
+    //     auto self = static_cast<creation_handler *>(user_data);
+    //     self->frame.percentage = progress;
+    //     self->send_progress("container-creation", pack_progress_frame(self->frame));
+    // }
     void creation_handler::on_connection_closed(const std::error_code &error) {}
 
     creation_handler::~creation_handler()
     {
-        if (archive_ptr != nullptr)
-        {
-            zip_close(archive_ptr);
-            archive_ptr = nullptr;
-        }
+       
     }
 
 }

@@ -111,22 +111,37 @@ namespace core::connections
         operation_target target;
         request_operation operation;
         std::vector<uint8_t> payload;
-        bool is_request;
     };
 
-    inline void write_bit_field(uint8_t *header, uint8_t value, int position, int width)
+     inline void bit_field_write(char bit, char width, uint8_t value, uint8_t *header)
     {
-        uint8_t mask = ((1 << width) - 1) << position;
-        *header &= ~mask;
-        *header |= (value << position) & mask;
+        uint8_t mask;
+        mask = 0;
+        while (width--)
+        {
+            mask = mask << 1;
+            mask |= 1;
+            value = value << bit;
+            mask = mask << bit;
+            mask ^= 0xFF;
+            *header &= mask;
+            *header |= value;
+        }
     }
-
-    inline uint8_t read_bit_field(uint8_t header, int position, int width)
+   
+    inline uint8_t bit_field_read(char bit, char width, uint8_t header)
     {
-        uint8_t mask = (1 << width) - 1;
-        uint8_t shifted = header >> position;
-        uint8_t value = shifted & mask;
-        return value;
+        uint8_t mask;
+
+        mask = 0;
+        while (width--)
+        {
+            mask = mask << 1;
+            mask |= 1;
+        }
+
+        header = header >> bit;
+        return (header & mask);
     }
 
     inline std::vector<uint8_t> encode_frame(operation_target target, response_operation operation, bool is_request, const std::vector<uint8_t> &data)
@@ -134,11 +149,9 @@ namespace core::connections
         std::vector<uint8_t> header;
         std::size_t length = data.size();
         header.assign(2 + (length >= 126 ? 2 : 0) + (length >= 65536 ? 6 : 0), 0);
-        // write_bit_field(&header[0], static_cast<uint8_t>(is_request), 0, 1);
+        bit_field_write(5, 3, static_cast<uint8_t>(target), &header[0]);
+        bit_field_write(0, 5, static_cast<uint8_t>(operation), &header[0]); 
 
-        // write_bit_field(&header[0], static_cast<uint8_t>(operation), 7, 4);
-        header[0] = ((static_cast<uint8_t>(operation) & 15) | ((uint8_t)is_request << 7));
-        write_bit_field(&header[0], static_cast<uint8_t>(target), 3, 3);
         if (length < 126)
         {
             header[1] = (length & 0xff) | 0;
@@ -169,9 +182,8 @@ namespace core::connections
     inline frame decode_frame(const std::vector<uint8_t> &data)
     {
         frame frm;
-        frm.target = static_cast<operation_target>(read_bit_field(data.at(0), 3, 3));
-        frm.operation = static_cast<request_operation>(read_bit_field(data.at(0), 7, 4));
-        frm.is_request = static_cast<bool>(read_bit_field(data.at(0), 0, 1));
+        frm.target = static_cast<operation_target>(bit_field_read(5, 3, data.at(0)));
+        frm.operation = static_cast<request_operation>(bit_field_read(0, 5, data.at(0)));
         std::size_t boundary = data.at(1) & 0x7F;
         std::size_t content_length = 0;
         std::size_t num_bytes = 0;

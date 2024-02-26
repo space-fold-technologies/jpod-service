@@ -43,8 +43,8 @@ namespace domain::containers
         fs::path fetch_image_archive(std::string &image_identifier, std::error_code &error);
         std::error_code initialize_decompression(std::string &image_identifier);
         std::error_code extract_filesystem();
-        std::error_code fetch_decompression_error_code();
-        static void on_progress_update(zip_t *zip_ctx, double progress, void *user_data);
+        // std::error_code fetch_decompression_error_code();
+        // static void on_progress_update(zip_t *zip_ctx, double progress, void *user_data);
 
     private:
         std::string identifier;

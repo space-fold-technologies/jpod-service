@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <functional>
 #include <system_error>
 #include <filesystem>
 
@@ -14,20 +15,17 @@ namespace spdlog
     class logger;
 };
 
-struct zip;
-typedef zip zip_t;
-struct zip_file;
-typedef zip_file zip_file_t;
+struct archive;
 
 namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
-    struct archive_entry
-    {
-        zip_file_t *file;
-        std::size_t size;
-        std::string name;
-    };
+    // struct archive_entry
+    // {
+    //     zip_file_t *file;
+    //     std::size_t size;
+    //     std::string name;
+    // };
     class import_resolver;
     class instruction_listener;
     class extraction_instruction : public instruction
@@ -45,13 +43,14 @@ namespace domain::images::instructions
     private:
         std::error_code initialize();
         std::error_code fetch_error_code();
-        std::optional<archive_entry> fetch_archive_entry(std::error_code& error);
+        static void progress_callback(void *ctx);
+        // std::optional<archive_entry> fetch_archive_entry(std::error_code& error);
 
     private:
         const std::string &identifier;
         import_resolver &resolver;
         fs::path image_archive;
-        zip_t *archive_ptr;
+        std::unique_ptr<archive, std::function<void(archive *)>> archive_ptr;
         progress_frame frame;
         std::vector<uint8_t> buffer;
         std::shared_ptr<spdlog::logger> logger;
