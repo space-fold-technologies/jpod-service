@@ -6,6 +6,8 @@
 #include <domain/images/mappings.h>
 #include <domain/images/repository.h>
 #include <spdlog/spdlog.h>
+#include <archive.h>
+#include <archive_entry.h>
 
 namespace domain::images::instructions
 {
@@ -17,7 +19,6 @@ namespace domain::images::instructions
                                                                              repository(repository),
                                                                              resolver(resolver),
                                                                              archive_ptr(nullptr),
-                                                                             chunk(INFO_BUFFER_SIZE),
                                                                              logger(spdlog::get("jpod")) {}
     void import_instruction ::execute()
     {
@@ -26,124 +27,85 @@ namespace domain::images::instructions
         {
             listener.on_instruction_complete(identifier, error);
         }
-        // else if (auto entry = fetch_details_entry(error); error)
-        // {
-        //     listener.on_instruction_complete(identifier, error);
-        // }
         else
         {
-            // listener.on_instruction_initialized(identifier, name);
-            // if (auto result = extract_image_details(*entry, error); error)
-            // {
-            //     listener.on_instruction_complete(identifier, error);
-            // }
-            // else if (auto file_size = fs::file_size(resolver.image_file_path(identifier, error), error); error)
-            // {
-            //     listener.on_instruction_complete(identifier, error);
-            // }
-            // else
-            // {
-            //     image_details details;
-            //     details.identifier = identifier;
-            //     details.name = result->name;
-            //     details.tag = result->tag;
-            //     details.os = result->os;
-            //     details.variant = result->variant;
-            //     details.version = result->version;
-            //     details.registry_path = "localhost";
-            //     details.entry_point = result->entry_point;
-            //     details.size = file_size;
-            //     details.labels.insert(result->labels.begin(), result->labels.end());
-            //     details.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
-            //     details.parameters.insert(result->parameters.begin(), result->parameters.end());
-            //     for (const auto &mp : result->mount_points)
-            //     {
-            //         details.mount_points.push_back(mount_point{mp.filesystem, mp.folder, mp.options, mp.flags});
-            //     }
-            //     error = repository.save_image_details(details);
-            //     listener.on_instruction_complete(identifier, error);
-            // }
+            bool found = false;
+            archive_entry *entry;
+            while ((!found) && (archive_read_next_header(archive_ptr.get(), &entry) == ARCHIVE_OK))
+            {
+                const mode_t type = archive_entry_filetype(entry);
+                char const *current_entry_name = archive_entry_pathname(entry);
+                if ((S_ISREG(type)) && (current_entry_name == IMAGE_INFO.c_str()))
+                {
+                    std::size_t file_size = archive_entry_size(entry);
+                    std::vector<uint8_t> buffer(file_size);
+                    auto chunk_size = archive_read_data(archive_ptr.get(), buffer.data(), file_size);
+                    if (chunk_size < 0)
+                    {
+                        logger->error("{}", archive_error_string(archive_ptr.get()));
+                        listener.on_instruction_complete(identifier, make_compression_error_code(chunk_size));
+                        return;
+                    }
+                    auto details = unpack_import_details(buffer);
+                    auto error = persist_image_details(details, file_size);
+                    listener.on_instruction_complete(identifier, error);
+                    found = true;
+                }
+                else
+                {
+                    archive_read_data_skip(archive_ptr.get());
+                }
+            }
         }
     }
-    // std::optional<import_details> import_instruction::extract_image_details(details_entry &entry, std::error_code &error)
-    // {
-        // buffer.reserve(entry.size);
-        // zip_int64_t bytes_read = 0;
-        // do
-        // {
-        //     if (bytes_read = zip_fread(entry.file, chunk.data(), INFO_BUFFER_SIZE); bytes_read == -1)
-        //     {
-        //         error = fetch_error_code();
-        //         break;
-        //     }
-        //     else if (bytes_read > 0)
-        //     {
-        //         buffer.insert(buffer.end(), chunk.begin(), chunk.begin() + bytes_read);
-        //     }
-        //     logger->info("bytes transfered: {}", bytes_read);
-        // } while (bytes_read > 0);
-        // zip_fclose(entry.file);
+    std::error_code import_instruction::persist_image_details(const import_details &details, std::size_t file_size)
+    {
+        image_details image;
+        image.identifier = identifier;
+        image.name = details.name;
+        image.tag = details.tag;
+        image.os = details.os;
+        image.variant = details.variant;
+        image.version = details.version;
+        image.registry_path = "localhost";
+        image.entry_point = details.entry_point;
+        image.size = file_size;
+        image.labels.insert(details.labels.begin(), details.labels.end());
+        image.env_vars.insert(details.env_vars.begin(), details.env_vars.end());
+        image.parameters.insert(details.parameters.begin(), details.parameters.end());
+        for (const auto &mp : details.mount_points)
+        {
+            image.mount_points.push_back(mount_point{mp.filesystem, mp.folder, mp.options, mp.flags});
+        }
+        return repository.save_image_details(image);
+    }
 
-        // if (error)
-        // {
-        //     return std::nullopt;
-        // }
-        // return unpack_import_details(buffer);
-    //     return std::nullopt;
-    // }
     std::error_code import_instruction::initialize()
     {
 
-        int error_no;
         std::error_code error;
-        // if (archive_ptr = zip_open(resolver.archive_file_path().c_str(), ZIP_RDONLY, &error_no); archive_ptr == NULL)
-        // {
-        //     zip_error_t error;
-        //     zip_error_init_with_code(&error, error_no);
-        //     logger->error("cannot open zip archive {} {}", name, zip_error_strerror(&error));
-        //     zip_error_fini(&error);
-        //     return make_compression_error_code(error_no);
-        // }
+        archive_ptr = {
+            archive_read_new(),
+            [](archive *instance) -> void
+            {
+                archive_read_close(instance);
+                archive_read_free(instance);
+            }};
+        archive_read_support_filter_all(archive_ptr.get());
+        archive_read_support_format_raw(archive_ptr.get());
+        if (auto ec = archive_read_open_filename(archive_ptr.get(), resolver.archive_file_path().c_str(), INFO_BUFFER_SIZE); ec != ARCHIVE_OK)
+        {
+            logger->error("{}", archive_error_string(archive_ptr.get()));
+            return make_compression_error_code(ec);
+        }
         return {};
     }
-    // std::optional<details_entry> import_instruction::fetch_details_entry(std::error_code &error)
-    // {
-    //     zip_stat_t fs_stab;
-    //     for (zip_int64_t index = 0; index < zip_get_num_entries(archive_ptr, ZIP_FL_UNCHANGED); ++index)
-    //     {
-    //         if (zip_stat_index(archive_ptr, index, ZIP_STAT_NAME | ZIP_STAT_SIZE | ZIP_FL_UNCHANGED, &fs_stab) != -1)
-    //         {
-    //             if (strstr(fs_stab.name, IMAGE_INFO.c_str()) != NULL)
-    //             {
-    //                 return std::optional(details_entry{
-    //                     zip_fopen_index(archive_ptr, index, ZIP_FL_UNCHANGED),
-    //                     fs_stab.size,
-    //                     std::string(fs_stab.name)});
-    //             }
-    //         }
-    //         else
-    //         {
-    //             error = fetch_error_code();
-    //         }
-    //     }
-    //     return std::nullopt;
-    // }
-    std::error_code import_instruction::fetch_error_code()
+    import_instruction ::~import_instruction()
     {
-        std::error_code err;
-        // zip_error_t *error = zip_get_error(archive_ptr);
-
-        // if (zip_error_code_zip(error) != ZIP_ER_OK)
-        // {
-        //     err = make_compression_error_code(error->zip_err);
-        // }
-        // else
-        // {
-        //     err = std::make_error_code(static_cast<std::errc>(zip_error_code_system(error)));
-        // }
-        // zip_error_fini(error);
-        logger->error("cannot operate on archive {} {}", name, err.message());
-        return err;
+        if (archive_ptr != nullptr)
+        {
+            archive_ptr.reset();
+            archive_ptr = nullptr;
+        }
     }
-    import_instruction ::~import_instruction() {}
 }

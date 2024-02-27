@@ -43,6 +43,7 @@ namespace domain::images::instructions
                     std::ofstream archive_stream(image_archive / fs::path(FILE_SYSTEM_ARCHIVE), std::ios::binary | std::ios::app);
                     frame.entry_name = identifier;
                     frame.sub_entry_name = fmt::format("file system extraction {}", current_entry_name);
+                    found = true;
                     do
                     {
                         chunk_size = archive_read_data(archive_ptr.get(), buffer.data(), FS_BUFFER_SIZE);
@@ -63,12 +64,9 @@ namespace domain::images::instructions
                     } while (chunk_size > 0);
                     archive_stream.close();
                 }
-                if (found)
-                {
-                    listener.on_instruction_complete(identifier, {});
-                }
                 else
                 {
+                    archive_read_data_skip(archive_ptr.get());
                 }
             }
         }
