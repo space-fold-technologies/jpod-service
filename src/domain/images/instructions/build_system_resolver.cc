@@ -4,6 +4,8 @@
 #include <fstream>
 #include <array>
 #include <spdlog/spdlog.h>
+#include <archive.h>
+#include <archive_entry.h>
 
 namespace domain::images::instructions
 {
@@ -66,78 +68,95 @@ namespace domain::images::instructions
         std::error_code error;
         progress_frame frame{};
         frame.entry_name = identifier;
-        frame.sub_entry_name = "extracting fs.zip";
-        // if (archive_ptr archive = initialize_archive(image_fs_archive, error); error)
-        // {
-        //     callback(error, frame);
-        // }
-        // else
-        // {
-        //     auto archive_entry_count = zip_get_num_entries(archive.get(), 0);
-        //     for (auto archive_entry_index = 0; archive_entry_index < archive_entry_count; ++archive_entry_index)
-        //     {
-        //         if (const auto *entry_name = zip_get_name(archive.get(), archive_entry_index, 0); entry_name == nullptr)
-        //         {
-        //             callback(make_compression_error_code(ZIP_ER_NOENT), frame);
-        //         }
-        //         else
-        //         {
-        //             fs::path full_path = output_folder / fs::path(std::string(entry_name));
-        //             if (!fs::create_directories(full_path.parent_path(), error))
-        //             {
-        //                 callback(error, frame);
-        //             }
-        //             else if (auto out_file = std::ofstream(full_path, std::ios::binary); !out_file)
-        //             {
-        //                 callback(std::make_error_code(std::errc::io_error), frame);
-        //             }
-        //             else if (auto *input_file = zip_fopen(archive.get(), entry_name, 0); input_file == nullptr)
-        //             {
-        //                 callback(std::make_error_code(std::errc::io_error), frame);
-        //             }
-        //             else
-        //             {
-        //                 std::array<char, BUFFER_SIZE> buffer;
-        //                 zip_int64_t bytes_read = 0;
-        //                 frame.sub_entry_name = std::string(entry_name);
-        //                 do
-        //                 {
-        //                     bytes_read = zip_fread(input_file, buffer.data(), BUFFER_SIZE);
-        //                     if (bytes_read > 0)
-        //                     {
-        //                         out_file.write(buffer.data(), bytes_read);
-        //                     }
-        //                 } while (bytes_read > 0);
-        //                 zip_fclose(input_file);
-        //                 out_file.close();
-        //                 callback(error, frame);
-        //             }
-        //         }
-        //     }
-        // }
+        frame.sub_entry_name = "extracting fs.tar.gz";
+        if (auto in = initialize_reader(image_fs_archive, error); error)
+        {
+            callback(error, frame);
+        }
+        else
+        {
+            archive_entry *entry;
+            archive_ptr out = initialize_writer();
+            while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
+            {
+                const char *entry_name = archive_entry_pathname(entry);
+                const mode_t type = archive_entry_filetype(entry);
+                fs::path full_path = output_folder / fs::path(std::string(entry_name));
+                archive_entry_set_pathname(entry, full_path.generic_string().c_str());
+                // printf("extracting %s\n", currentFile);
+                if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
+                {
+                    logger->error("{}", archive_error_string(out.get()));
+                }
+                else if (archive_entry_size(entry) > 0)
+                {
+                    if (error = copy_entry(in.get(), out.get()); error)
+                    {
+                        callback(error, frame);
+                    }
+                }
+            }
+        }
     }
 
-    // archive_ptr build_system_resolver::initialize_archive(const fs::path &image_fs_archive, std::error_code &error)
-    // {
-    //     int error_no;
-    //     // get the general folder path for the images ending in fs.zip
-    //     if (auto ptr = zip_open(image_fs_archive.generic_string().c_str(), 0, &error_no); ptr == NULL)
-    //     {
-    //         zip_error_t zip_error;
-    //         zip_error_init_with_code(&zip_error, error_no);
-    //         logger->error("cannot open filesystem archive {}", zip_error_strerror(&zip_error));
-    //         zip_error_fini(&zip_error);
-    //         error = make_compression_error_code(error_no);
-    //         return {nullptr, nullptr};
-    //     }
-    //     else
-    //     {
-    //         return {ptr, [](zip_t *ctx)
-    //                 {
-    //                     zip_close(ctx);
-    //                 }};
-    //     }
-    // }
+    std::error_code build_system_resolver::copy_entry(struct archive *in, struct archive *out)
+    {
+        int ec;
+        const void *buffer;
+        std::size_t size;
+        la_int64_t offset;
+        while ((ec = archive_read_data_block(in, &buffer, &size, &offset)) == ARCHIVE_OK)
+        {
+            if (ec = archive_write_data_block(out, buffer, size, offset); ec != ARCHIVE_OK)
+            {
+                logger->error("{}", archive_error_string(out));
+                return make_compression_error_code(ec);
+            }
+        }
+        if (ec = archive_write_finish_entry(out); ec != ARCHIVE_OK)
+        {
+            logger->error("{}", archive_error_string(out));
+            return make_compression_error_code(ec);
+        }
+        return {};
+    }
+
+    archive_ptr build_system_resolver::initialize_reader(const fs::path &image_fs_archive, std::error_code &error)
+    {
+        archive_ptr arch = {
+            archive_read_new(),
+            [](archive *instance) -> void
+            {
+                archive_read_close(instance);
+                archive_read_free(instance);
+            }};
+        archive_read_support_filter_all(arch.get());
+        archive_read_support_format_raw(arch.get());
+        if (auto ec = archive_read_open_filename(arch.get(), image_fs_archive.c_str(), BUFFER_SIZE); ec != ARCHIVE_OK)
+        {
+            logger->error("{}", archive_error_string(arch.get()));
+            error = make_compression_error_code(ec);
+            return {};
+        }
+        return arch;
+    }
+    archive_ptr build_system_resolver::initialize_writer()
+    {
+        archive_ptr arch = {
+            archive_write_disk_new(),
+            [](archive *instance) -> void
+            {
+                archive_write_close(instance);
+                archive_write_free(instance);
+            }};
+        int flags = ARCHIVE_EXTRACT_TIME;
+        flags |= ARCHIVE_EXTRACT_PERM;
+        flags |= ARCHIVE_EXTRACT_ACL;
+        flags |= ARCHIVE_EXTRACT_FFLAGS;
+        archive_write_disk_set_options(arch.get(), flags);
+        archive_write_disk_set_standard_lookup(arch.get());
+        return arch;
+    }
     build_system_resolver::~build_system_resolver()
     {
     }
