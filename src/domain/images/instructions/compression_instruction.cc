@@ -46,13 +46,13 @@ namespace domain::images::instructions
             {
                 fs::path relative_path = fs::relative(entry.path(), image_filesystem_directory);
                 archive_entry_set_pathname(archive_entry_ptr.get(), (relative_path / "").c_str());
-                archive_write_header(archive_ptr.get(), archive_entry_ptr.get());
                 struct stat file_info;
                 stat(entry.path().c_str(), &file_info);
                 archive_entry_copy_stat(archive_entry_ptr.get(), &file_info);
-                if (archive_entry_set_size(archive_entry_ptr.get(), fs::file_size(entry, error)); error)
+                if (auto ec = archive_write_header(archive_ptr.get(), archive_entry_ptr.get()); ec != ARCHIVE_OK)
                 {
-                    listener.on_instruction_complete(identifier, error);
+                    logger->error("{}", archive_error_string(archive_ptr.get()));
+                    listener.on_instruction_complete(identifier, make_compression_error_code(ec));
                     return;
                 }
                 if (entry.is_regular_file())
@@ -77,10 +77,6 @@ namespace domain::images::instructions
                     } while (length > 0);
                     file.close();
                     archive_entry_set_mtime(archive_entry_ptr.get(), time(nullptr), 0L);
-                }
-                else if (entry.is_directory())
-                {
-                   
                 }
                 archive_entry_clear(archive_entry_ptr.get());
             }
@@ -110,6 +106,7 @@ namespace domain::images::instructions
         }
         else if (auto ec = archive_write_open_filename(archive_ptr.get(), fs::path(image_folder / fs::path("fs.tar.gz")).c_str()); ec != ARCHIVE_OK)
         {
+            logger->error("{}", archive_error_string(archive_ptr.get()));
             return make_compression_error_code(ec);
         }
         return {};
