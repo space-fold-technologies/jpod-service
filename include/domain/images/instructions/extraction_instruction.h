@@ -20,17 +20,11 @@ struct archive;
 namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
-    // struct archive_entry
-    // {
-    //     zip_file_t *file;
-    //     std::size_t size;
-    //     std::string name;
-    // };
     class import_resolver;
     class instruction_listener;
     class extraction_instruction : public instruction
     {
-        const std::string FILE_SYSTEM_ARCHIVE = "fs.zip";
+        const std::string FILE_SYSTEM_ARCHIVE = "fs.tar.gz";
         const std::size_t FS_BUFFER_SIZE = 4096 * 5;
 
     public:
@@ -42,9 +36,6 @@ namespace domain::images::instructions
 
     private:
         std::error_code initialize();
-        std::error_code fetch_error_code();
-        static void progress_callback(void *ctx);
-        // std::optional<archive_entry> fetch_archive_entry(std::error_code& error);
 
     private:
         const std::string &identifier;

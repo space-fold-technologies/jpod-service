@@ -23,43 +23,54 @@ namespace domain::images::instructions
     }
     void extraction_instruction::execute()
     {
-        // zip_stat_t fs_stats = {};
         if (auto error = initialize(); error)
         {
             listener.on_instruction_complete(identifier, error);
         }
-        // else if (auto entry = fetch_archive_entry(error); error)
-        // {
-        //     listener.on_instruction_complete(identifier, error);
-        // }
         else
         {
-            // listener.on_instruction_initialized(identifier, name);
-            // std::ofstream archive_stream(image_archive/fs::path("fs.zip"), std::ios::binary | std::ios::app);
-            // frame.entry_name = identifier;
-            // frame.sub_entry_name = fmt::format("file system extraction {}", entry->name);
-            // frame.percentage = 0;
-            // zip_int64_t bytes_read = 0;
-            // zip_int64_t current_read = 0;
-            // std::error_code error;
-            // do
-            // {
-            //     if (bytes_read = zip_fread(entry->file, buffer.data(), FS_BUFFER_SIZE); bytes_read == -1)
-            //     {
-            //         error = fetch_error_code();
-            //         break;
-            //     }
-            //     else if (bytes_read > 0)
-            //     {
-            //         archive_stream.write(reinterpret_cast<const char *>(buffer.data()), bytes_read);
-            //         current_read += bytes_read;
-            //         frame.percentage = current_read / entry->size;
-            //         listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
-            //     }
-            // } while (bytes_read > 0);
-            // zip_fclose(entry->file);
-            // archive_stream.close();
-            // listener.on_instruction_complete(identifier, error);
+            bool found = false;
+            archive_entry *entry;
+            while ((!found) && (archive_read_next_header(archive_ptr.get(), &entry) == ARCHIVE_OK))
+            {
+                const mode_t type = archive_entry_filetype(entry);
+                char const *current_entry_name = archive_entry_pathname(entry);
+                if ((S_ISREG(type)) && (current_entry_name == FILE_SYSTEM_ARCHIVE.c_str()))
+                {
+                    std::size_t chunk_size = 0L;
+                    std::size_t current_read = 0L;
+                    std::size_t total_size = archive_entry_size(entry);
+                    std::ofstream archive_stream(image_archive / fs::path(FILE_SYSTEM_ARCHIVE), std::ios::binary | std::ios::app);
+                    frame.entry_name = identifier;
+                    frame.sub_entry_name = fmt::format("file system extraction {}", current_entry_name);
+                    do
+                    {
+                        chunk_size = archive_read_data(archive_ptr.get(), buffer.data(), FS_BUFFER_SIZE);
+                        if (chunk_size < 0)
+                        {
+                            logger->error("{}", archive_error_string(archive_ptr.get()));
+                            listener.on_instruction_complete(identifier, make_compression_error_code(chunk_size));
+                            return;
+                        }
+                        else if (chunk_size > 0)
+                        {
+                            archive_stream.write(reinterpret_cast<const char *>(buffer.data()), chunk_size);
+                            current_read += chunk_size;
+                            frame.percentage = current_read / total_size;
+                            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
+                        }
+
+                    } while (chunk_size > 0);
+                    archive_stream.close();
+                }
+                if (found)
+                {
+                    listener.on_instruction_complete(identifier, {});
+                }
+                else
+                {
+                }
+            }
         }
     }
     std::error_code extraction_instruction::initialize()
@@ -72,77 +83,27 @@ namespace domain::images::instructions
                 archive_read_close(instance);
                 archive_read_free(instance);
             }};
-        archive_read_extract_set_progress_callback(archive_ptr.get(), &extraction_instruction::progress_callback, this);
-
+        archive_read_support_filter_all(archive_ptr.get());
+        archive_read_support_format_raw(archive_ptr.get());
         if (image_archive = resolver.generate_image_path(identifier, error); error)
         {
             return error;
         }
-        else if (archive_read_open_filename(archive_ptr.get(), resolver.archive_file_path().c_str(), 4096) != ARCHIVE_OK)
+        else if (auto ec = archive_read_open_filename(archive_ptr.get(), resolver.archive_file_path().c_str(), FS_BUFFER_SIZE); ec != ARCHIVE_OK)
         {
+            logger->error("{}", archive_error_string(archive_ptr.get()));
+            return make_compression_error_code(ec);
         }
-        else
-        {
-        }
-        // else if (archive_ptr = zip_open(resolver.archive_file_path().c_str(), ZIP_RDONLY, &error_no); archive_ptr == NULL)
-        // {
-        //     zip_error_t error;
-        //     zip_error_init_with_code(&error, error_no);
-        //     logger->error("cannot open zip archive {} {}", name, zip_error_strerror(&error));
-        //     zip_error_fini(&error);
-        //     return make_compression_error_code(error_no);
-        // }
         return {};
     }
-    void extraction_instruction::progress_callback(void *ctx)
-    {
-    }
-    // std::optional<archive_entry> extraction_instruction::fetch_archive_entry(std::error_code &error)
-    // {
-    //     zip_stat_t fs_stab;
-    //     for (zip_int64_t index = 0; index < zip_get_num_entries(archive_ptr, ZIP_FL_UNCHANGED); ++index)
-    //     {
-    //         if (zip_stat_index(archive_ptr, index, ZIP_STAT_NAME | ZIP_STAT_SIZE | ZIP_FL_UNCHANGED, &fs_stab) != -1)
-    //         {
-    //             if (strstr(fs_stab.name, FILE_SYSTEM_ARCHIVE.c_str()) != NULL)
-    //             {
-    //                 return std::optional(archive_entry{
-    //                     zip_fopen_index(archive_ptr, index, ZIP_FL_UNCHANGED),
-    //                     fs_stab.size,
-    //                     std::string(fs_stab.name)});
-    //             }
-    //         }
-    //         else
-    //         {
-    //             error = fetch_error_code();
-    //         }
-    //     }
-    //     return std::nullopt;
-    // }
-    std::error_code extraction_instruction::fetch_error_code()
-    {
-        // std::error_code err;
-        // zip_error_t *error = zip_get_error(archive_ptr);
 
-        // if (zip_error_code_zip(error) != ZIP_ER_OK)
-        // {
-        //     err = make_compression_error_code(error->zip_err);
-        // }
-        // else
-        // {
-        //     err = std::make_error_code(static_cast<std::errc>(zip_error_code_system(error)));
-        // }
-        // zip_error_fini(error);
-        // logger->error("cannot operate on archive {} {}", name, err.message());
-        // return err;
-        return {};
-    }
     extraction_instruction::~extraction_instruction()
     {
         buffer.clear();
-        // if (archive_ptr != NULL)
-        // {
-        //     archive_ptr = nullptr;
-        // }
+        if (archive_ptr != nullptr)
+        {
+            archive_ptr.reset();
+            archive_ptr = nullptr;
+        }
     }
 }
