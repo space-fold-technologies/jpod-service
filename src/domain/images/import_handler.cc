@@ -23,10 +23,8 @@ namespace domain::images
         auto order = unpack_import_order(payload);
         identifier = sole::uuid4().str();
         local_file_path = fs::path(order.archive_path);
-        logger->info("PATH TO ARCHIVE: {}", local_file_path.generic_string());
         tasks.push_back(std::make_shared<extraction_instruction>(identifier, *this, *this));
         tasks.push_back(std::make_shared<import_instruction>(identifier, *repository, *this, *this));
-        logger->info("INSTRUCTIONS ADDED");
         run_steps();
     }
     void import_handler::on_connection_closed(const std::error_code &error)
