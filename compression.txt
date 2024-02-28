@@ -51,4 +51,5 @@ https://github.com/castedmo/moor/blob/master/moor/archive_writer.cpp
 https://github.com/libarchive/libarchive
 https://cpp.hotexamples.com/examples/-/-/archive_error_string/cpp-archive_error_string-function-examples.html
 https://github.com/Devil7DK/SimpleShits/commit/2859df5855ae26c63240a0ea99bf5f015d810b66
+https://github.com/Devil7DK/SimpleShits/tree/master
 https://groups.google.com/g/libarchive-discuss/c/0MWyuZafnpM

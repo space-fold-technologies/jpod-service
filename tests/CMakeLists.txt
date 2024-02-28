@@ -27,5 +27,5 @@ cmrc_add_resource_library(
     WHENCE resources
     ALIAS archives::rc
     PREFIX archives 
-    resources/dummy.zip 
+    resources/dummy.tar.gz
 )

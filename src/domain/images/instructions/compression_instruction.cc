@@ -58,14 +58,14 @@ namespace domain::images::instructions
                 if (entry.is_regular_file())
                 {
                     std::vector<char> buffer(8096);
-                    // Copy here
-                    std::ifstream file(entry, std::ios::binary | std::ios::ate);
+                    std::ifstream file(entry, std::ios::binary);
                     if (!file.is_open())
                     {
                         listener.on_instruction_complete(identifier, std::make_error_code(std::errc::io_error));
                         return;
                     }
                     std::size_t length = 0;
+                    frame.feed = fmt::format("compressing {}", relative_path.generic_string());
                     do
                     {
                         file.read(buffer.data(), buffer.size());
@@ -73,6 +73,8 @@ namespace domain::images::instructions
                         if (length > 0)
                         {
                             archive_write_data(archive_ptr.get(), buffer.data(), length);
+                            frame.percentage = length / file_info.st_size;
+                            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                         }
                     } while (length > 0);
                     file.close();
@@ -80,6 +82,7 @@ namespace domain::images::instructions
                 }
                 archive_entry_clear(archive_entry_ptr.get());
             }
+            listener.on_instruction_complete(identifier, {});
         }
     }
     std::error_code compression_instruction::initialize()

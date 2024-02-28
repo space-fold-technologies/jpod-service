@@ -31,11 +31,24 @@ namespace domain::images::instructions
         {
             bool found = false;
             archive_entry *entry;
-            while ((!found) && (archive_read_next_header(archive_ptr.get(), &entry) == ARCHIVE_OK))
+            int ec = 0;
+            listener.on_instruction_initialized(identifier, this->name);
+            do
             {
+                ec = archive_read_next_header(archive_ptr.get(), &entry);
+                if (ec != ARCHIVE_OK)
+                {
+                    if (ec == ARCHIVE_EOF)
+                    {
+                        listener.on_instruction_complete(identifier, std::make_error_code(std::errc::no_such_file_or_directory));
+                        return;
+                    }
+                    listener.on_instruction_complete(identifier, make_compression_error_code(ec));
+                    return;
+                }
                 const mode_t type = archive_entry_filetype(entry);
                 char const *current_entry_name = archive_entry_pathname(entry);
-                if ((S_ISREG(type)) && (current_entry_name == IMAGE_INFO.c_str()))
+                if ((S_ISREG(type)) && std::strcmp(current_entry_name, IMAGE_INFO.c_str()) == 0)
                 {
                     std::size_t file_size = archive_entry_size(entry);
                     std::vector<uint8_t> buffer(file_size);
@@ -51,11 +64,9 @@ namespace domain::images::instructions
                     listener.on_instruction_complete(identifier, error);
                     found = true;
                 }
-                else
-                {
-                    archive_read_data_skip(archive_ptr.get());
-                }
-            }
+                archive_read_data_skip(archive_ptr.get());
+
+            } while (!found && ec == ARCHIVE_OK);
         }
     }
     std::error_code import_instruction::persist_image_details(const import_details &details, std::size_t file_size)
@@ -92,7 +103,7 @@ namespace domain::images::instructions
                 archive_read_free(instance);
             }};
         archive_read_support_filter_all(archive_ptr.get());
-        archive_read_support_format_raw(archive_ptr.get());
+        archive_read_support_format_tar(archive_ptr.get());
         if (auto ec = archive_read_open_filename(archive_ptr.get(), resolver.archive_file_path().c_str(), INFO_BUFFER_SIZE); ec != ARCHIVE_OK)
         {
             logger->error("{}", archive_error_string(archive_ptr.get()));

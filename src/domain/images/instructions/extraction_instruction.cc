@@ -31,11 +31,24 @@ namespace domain::images::instructions
         {
             bool found = false;
             archive_entry *entry;
-            while ((!found) && (archive_read_next_header(archive_ptr.get(), &entry) == ARCHIVE_OK))
+            int ec = 0;
+            listener.on_instruction_initialized(identifier, this->name);
+            do
             {
+                ec = archive_read_next_header(archive_ptr.get(), &entry);
+                if (ec != ARCHIVE_OK)
+                {
+                    if (ec == ARCHIVE_EOF)
+                    {
+                        listener.on_instruction_complete(identifier, std::make_error_code(std::errc::no_such_file_or_directory));
+                        return;
+                    }
+                    listener.on_instruction_complete(identifier, make_compression_error_code(ec));
+                    return;
+                }
                 const mode_t type = archive_entry_filetype(entry);
                 char const *current_entry_name = archive_entry_pathname(entry);
-                if ((S_ISREG(type)) && (current_entry_name == FILE_SYSTEM_ARCHIVE.c_str()))
+                if ((S_ISREG(type)) && std::strcmp(current_entry_name, FILE_SYSTEM_ARCHIVE.c_str()) == 0)
                 {
                     std::size_t chunk_size = 0L;
                     std::size_t current_read = 0L;
@@ -43,13 +56,11 @@ namespace domain::images::instructions
                     std::ofstream archive_stream(image_archive / fs::path(FILE_SYSTEM_ARCHIVE), std::ios::binary | std::ios::app);
                     frame.entry_name = identifier;
                     frame.sub_entry_name = fmt::format("file system extraction {}", current_entry_name);
-                    found = true;
                     do
                     {
                         chunk_size = archive_read_data(archive_ptr.get(), buffer.data(), FS_BUFFER_SIZE);
                         if (chunk_size < 0)
                         {
-                            logger->error("{}", archive_error_string(archive_ptr.get()));
                             listener.on_instruction_complete(identifier, make_compression_error_code(chunk_size));
                             return;
                         }
@@ -62,13 +73,12 @@ namespace domain::images::instructions
                         }
 
                     } while (chunk_size > 0);
+                    found = true;
                     archive_stream.close();
                 }
-                else
-                {
-                    archive_read_data_skip(archive_ptr.get());
-                }
-            }
+                archive_read_data_skip(archive_ptr.get());
+            } while (!found && ec == ARCHIVE_OK);
+            listener.on_instruction_complete(identifier, {});
         }
     }
     std::error_code extraction_instruction::initialize()
@@ -82,7 +92,8 @@ namespace domain::images::instructions
                 archive_read_free(instance);
             }};
         archive_read_support_filter_all(archive_ptr.get());
-        archive_read_support_format_raw(archive_ptr.get());
+        archive_read_support_format_tar(archive_ptr.get());
+
         if (image_archive = resolver.generate_image_path(identifier, error); error)
         {
             return error;

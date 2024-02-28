@@ -25,7 +25,7 @@ namespace domain::images::instructions
     class extraction_instruction : public instruction
     {
         const std::string FILE_SYSTEM_ARCHIVE = "fs.tar.gz";
-        const std::size_t FS_BUFFER_SIZE = 4096 * 5;
+        const std::size_t FS_BUFFER_SIZE = 10240;
 
     public:
         explicit extraction_instruction(const std::string &identifier,

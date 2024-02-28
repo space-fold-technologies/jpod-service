@@ -27,7 +27,7 @@ TEST_CASE("extraction instruction case")
         {
             std::string id = sole::uuid4().str();
             fs::path image_target_path = fs::path(create_folder(fmt::format("{}", id)));
-            When(Method(resolver, archive_file_path)).Return(from_archives("archives/dummy.zip"));
+            When(Method(resolver, archive_file_path)).Return(from_archives("archives/dummy.tar.gz"));
             When(Method(resolver, generate_image_path).Using(id, Any())).AlwaysReturn(image_target_path);
             extraction_instruction instruction(id, resolver.get(), listener.get());
             THEN("the file system image will be extracted out of the archive")
@@ -37,7 +37,7 @@ TEST_CASE("extraction instruction case")
                 Verify(Method(listener, on_instruction_initialized).Using(id, "EXTRACTION"));
                 Verify(Method(listener, on_instruction_data_received).Using(id, Any())).AtLeastOnce();
                 Verify(Method(listener, on_instruction_complete).Using(id, Eq(error))).Once();
-                REQUIRE(fs::is_regular_file(image_target_path / fs::path("fs.zip")));
+                REQUIRE(fs::is_regular_file(image_target_path / fs::path("fs.tar.gz")));
             }
         }
     }

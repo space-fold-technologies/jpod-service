@@ -45,7 +45,7 @@ TEST_CASE("compression instruction case")
                 Verify(Method(listener, on_instruction_initialized).Using(id, "ARCHIVE"));
                 Verify(Method(listener, on_instruction_data_received)).AtLeastOnce();
                 Verify(Method(listener, on_instruction_complete).Using(id, Eq(error))).Once();
-                REQUIRE(fs::exists(image_target_path / fs::path("fs.zip")));
+                REQUIRE(fs::exists(image_target_path / fs::path("fs.tar.gz")));
             }
         }
     }
