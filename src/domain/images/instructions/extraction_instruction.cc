@@ -53,7 +53,9 @@ namespace domain::images::instructions
                     std::size_t chunk_size = 0L;
                     std::size_t current_read = 0L;
                     std::size_t total_size = archive_entry_size(entry);
-                    std::ofstream archive_stream(image_archive / fs::path(FILE_SYSTEM_ARCHIVE), std::ios::binary | std::ios::app);
+                    
+                    logger->info("writing to : {}", image_archive.generic_string());
+                    std::ofstream archive_stream(image_archive, std::ios::binary | std::ios::app);
                     frame.entry_name = identifier;
                     frame.sub_entry_name = fmt::format("file system extraction {}", current_entry_name);
                     do

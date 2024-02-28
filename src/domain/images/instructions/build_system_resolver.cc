@@ -54,7 +54,7 @@ namespace domain::images::instructions
     fs::path build_system_resolver::generate_image_path(const std::string &identifier, std::error_code &error)
     {
         // generate a folder in a pre-fixed path that has the ${identifier} as the final folder
-        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.zip");
+        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.tar.gz");
         if (!fs::create_directories(image_fs_archive.parent_path(), error))
         {
             logger->error("FS GEN ERR : {}", error.message());
@@ -63,7 +63,7 @@ namespace domain::images::instructions
     }
     void build_system_resolver::extract_image(const std::string &identifier, const std::string &image_identifier, extraction_callback callback)
     {
-        fs::path image_fs_archive = image_folder / fs::path(image_identifier) / fs::path("fs.zip");
+        fs::path image_fs_archive = image_folder / fs::path(image_identifier) / fs::path("fs.tar.gz");
         fs::path output_folder = temporary_folder / fs::path(identifier);
         std::error_code error;
         progress_frame frame{};

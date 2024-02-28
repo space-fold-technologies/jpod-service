@@ -21,7 +21,10 @@ namespace core::connections
     class connection_acceptor
     {
     public:
-        connection_acceptor(asio::io_context &context, std::shared_ptr<core::commands::command_handler_registry> command_handler_registry);
+        connection_acceptor(
+            asio::io_context &context, 
+            std::string socket_path,
+        std::shared_ptr<core::commands::command_handler_registry> command_handler_registry);
         virtual ~connection_acceptor();
         void start();
         void stop();
@@ -31,6 +34,7 @@ namespace core::connections
 
     private:
         asio::io_context &context;
+        std::string socket_path;
         std::shared_ptr<core::commands::command_handler_registry> command_handler_registry;
         std::map<std::string, std::shared_ptr<connection>> connections;
         asio::local::stream_protocol::acceptor acceptor;

@@ -42,6 +42,10 @@ namespace domain::containers
     class container_monitor;
     class runtime;
 };
+namespace spdlog
+{
+    class logger;
+};
 using namespace core::commands;
 using namespace core::connections;
 using namespace core::configurations;
@@ -64,16 +68,18 @@ private:
         domain::containers::terminal_listener &listener);
     std::shared_ptr<domain::containers::container_monitor> create_container_monitor();
 
-        private : std::shared_ptr<command_handler_registry> registry;
+private:
+    asio::io_context &context;
+    std::shared_ptr<command_handler_registry> registry;
     std::unique_ptr<connection_acceptor> acceptor;
     std::unique_ptr<core::sql::pool::data_source> data_source;
     std::shared_ptr<domain::images::image_repository> image_repository;
     std::shared_ptr<domain::containers::container_repository> container_repository;
     std::shared_ptr<domain::containers::runtime> runtime;
     std::shared_ptr<domain::images::http::client> client;
-    asio::io_context &context;
     fs::path containers_folder;
     fs::path images_folder;
+    std::shared_ptr<spdlog::logger> logger;
 };
 
 #endif // __DAEMON_BOOTSTRAP__

@@ -1,0 +1,1 @@
+INSERT INTO registry_tb(name, uri, path) VALUES("localhost", "127.0.0.1", "localhost");

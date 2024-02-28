@@ -11,7 +11,9 @@
 namespace domain::images
 {
     import_handler::import_handler(core::connections::connection &connection,
+                                   fs::path &image_folder,
                                    std::shared_ptr<image_repository> repository) : command_handler(connection),
+                                                                                   image_folder(image_folder),
                                                                                    repository(std::move(repository)),
                                                                                    logger(spdlog::get("jpod"))
     {
@@ -21,14 +23,20 @@ namespace domain::images
         auto order = unpack_import_order(payload);
         identifier = sole::uuid4().str();
         local_file_path = fs::path(order.archive_path);
+        logger->info("PATH TO ARCHIVE: {}", local_file_path.generic_string());
         tasks.push_back(std::make_shared<extraction_instruction>(identifier, *this, *this));
         tasks.push_back(std::make_shared<import_instruction>(identifier, *repository, *this, *this));
+        logger->info("INSTRUCTIONS ADDED");
         run_steps();
     }
     void import_handler::on_connection_closed(const std::error_code &error)
     {
+        logger->info("connection closed");
     }
-    void import_handler::on_instruction_initialized(std::string id, std::string name) {}
+    void import_handler::on_instruction_initialized(std::string id, std::string name)
+    {
+        logger->info("id:{} initialized :{}", id, name);
+    }
     void import_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
     {
         send_frame(content);
@@ -64,20 +72,20 @@ namespace domain::images
     }
     fs::path import_handler::image_file_path(const std::string &identifier, std::error_code &error)
     {
-        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.zip");
+        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.tar.gz");
         if (!fs::is_directory(image_fs_archive.parent_path(), error))
         {
-            logger->error("FS GEN ERR : {}", error.message());
+            logger->error("fs gen err : {}", error.message());
         }
         return image_fs_archive;
     }
     fs::path import_handler::generate_image_path(const std::string &identifier, std::error_code &error)
     {
         // generate a folder in a pre-fixed path that has the ${identifier} as the final folder
-        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.zip");
+        fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.tar.gz");
         if (!fs::create_directories(image_fs_archive.parent_path(), error))
         {
-            logger->error("FS GEN ERR : {}", error.message());
+            logger->error("fs gen err, failed to create path: {} err : {}",image_fs_archive.generic_string(), error.message());
         }
         return image_fs_archive;
     }

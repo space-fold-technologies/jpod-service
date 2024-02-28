@@ -8,10 +8,13 @@ namespace fs = std::filesystem;
 
 namespace core::connections
 {
-    connection_acceptor::connection_acceptor(asio::io_context &context, std::shared_ptr<core::commands::command_handler_registry> command_handler_registry) : context(context),
-                                                                                                                                                              command_handler_registry(command_handler_registry),
-                                                                                                                                                              acceptor(context),
-                                                                                                                                                              logger(spdlog::get("jpod"))
+    connection_acceptor::connection_acceptor(
+        asio::io_context &context,
+        std::string socket_path,
+        std::shared_ptr<core::commands::command_handler_registry> command_handler_registry) : context(context), socket_path(std::move(socket_path)),
+                                                                                              command_handler_registry(command_handler_registry),
+                                                                                              acceptor(context),
+                                                                                              logger(spdlog::get("jpod"))
     {
     }
 
@@ -19,12 +22,11 @@ namespace core::connections
     {
         if (!acceptor.is_open())
         {
-            auto domain_communication_file = std::string("/home/william/Projects/demonstration/unix.socket.jpod");
-            if (fs::exists(domain_communication_file))
+            if (fs::exists(socket_path))
             {
-                fs::remove(domain_communication_file);
+                fs::remove(socket_path);
             }
-            asio::local::stream_protocol::endpoint endpoint(domain_communication_file);
+            asio::local::stream_protocol::endpoint endpoint(socket_path);
             acceptor.open(endpoint.protocol());
             acceptor.set_option(asio::local::stream_protocol::acceptor::reuse_address(true));
             acceptor.bind(endpoint);

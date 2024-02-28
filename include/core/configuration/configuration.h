@@ -17,6 +17,7 @@ namespace core::configurations
         std::string images_folder;
         std::string containers_folder;
         std::string database_path;
+        std::string domain_socket;
         int pool_size;
     };
 
@@ -34,6 +35,7 @@ namespace core::configurations
             config["images"]["path"].as<std::string>(),
             config["containers"]["path"].as<std::string>(),
             config["database"]["path"].as<std::string>(),
+            config["domain-socket"].as<std::string>(),
             config["database"]["pool-size"].as<int>()};
     }
 
@@ -46,6 +48,7 @@ namespace core::configurations
             config["images"]["path"].as<std::string>(),
             config["containers"]["path"].as<std::string>(),
             config["database"]["path"].as<std::string>(),
+            config["domain-socket"].as<std::string>(),
             config["database"]["pool-size"].as<int>()
             };
     }

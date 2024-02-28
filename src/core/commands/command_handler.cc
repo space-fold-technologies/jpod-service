@@ -21,18 +21,14 @@ namespace core::commands
     }
     void command_handler::send_frame(const std::vector<uint8_t> &payload)
     {
-        logger->info("payload data size: {}", payload.size());
         auto content = encode_frame(operation_target::client, response_operation::frame, false, payload);
-        logger->info("payload frame size: {}", content.size());
         connection.write(content);
     }
     void command_handler::send_success(const std::string& message)
     {
-        logger->info("sending success");
         auto payload = success_payload{message};
         auto success = pack_success_payload(payload);
         auto content = encode_frame(operation_target::client, response_operation::success,false, success);
-        logger->info("payload frame size: {}", content.size());
         connection.write(content);
     }
     void command_handler::send_progress(const std::string& operation, const std::vector<uint8_t>& data)
@@ -40,7 +36,6 @@ namespace core::commands
         progress_payload order{operation, data};
         auto progress = pack_progress_payload(order);
         auto content = encode_frame(operation_target::client, response_operation::progress,false, progress);
-        logger->info("payload frame size: {}", content.size());
         connection.write(content);
     }
     void command_handler::send_close(const std::vector<uint8_t> &payload)

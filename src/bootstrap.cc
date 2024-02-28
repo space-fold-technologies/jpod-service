@@ -24,17 +24,22 @@
 #include <domain/containers/freebsd/freebsd_terminal.h>
 #endif
 
+#include <spdlog/spdlog.h>
+
 using namespace domain::images;
 using namespace domain::containers;
 
 bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : context(context),
                                                                                registry(std::make_shared<command_handler_registry>()),
-                                                                               acceptor(std::make_unique<connection_acceptor>(context, registry)),
+                                                                               acceptor(std::make_unique<connection_acceptor>(context, settings.domain_socket, registry)),
                                                                                data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
                                                                                image_repository(std::make_shared<domain::images::sql_image_repository>(*data_source)),
                                                                                container_repository(std::make_shared<domain::containers::sql_container_repository>(*data_source)),
                                                                                runtime(nullptr),
-                                                                               client(nullptr)
+                                                                               client(nullptr),
+                                                                               containers_folder(settings.containers_folder),
+                                                                               images_folder(settings.images_folder),
+                                                                               logger(spdlog::get("jpod"))
 {
 }
 void bootstrap::setup()
@@ -48,7 +53,7 @@ void bootstrap::setup()
       {
         return this->create_container_monitor();
       });
-  
+
   core::sql::migration_handler handler(*data_source, "migrations");
   handler.migrate();
   setup_handlers();
@@ -84,7 +89,7 @@ void bootstrap::setup_handlers()
       request_operation::import,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<import_handler>(conn, image_repository);
+        return std::make_shared<import_handler>(conn, images_folder, image_repository);
       });
   registry->add_handler(
       operation_target::container,
