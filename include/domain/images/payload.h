@@ -21,39 +21,6 @@ namespace domain::images
         return result.get().as<image_term_order>();
     }
 
-    struct summary_entry
-    {
-        std::string identifier;
-        std::string repository;
-        std::string tag;
-        std::size_t size;
-        time_point<system_clock, milliseconds> created_at;
-        MSGPACK_DEFINE(identifier, repository, tag, size, created_at)
-    };
-
-    struct summary
-    {
-        std::string name;
-        std::vector<summary_entry> entries;
-        MSGPACK_DEFINE(name, entries)
-    };
-
-    inline std::vector<uint8_t> pack_summary(summary &order)
-    {
-        msgpack::sbuffer buffer;
-        msgpack::pack(buffer, order);
-        std::vector<uint8_t> output(buffer.size());
-        std::memcpy(output.data(), buffer.data(), buffer.size());
-        return output;
-    }
-
-    inline summary unpack_summary(const std::vector<uint8_t> &content)
-    {
-        msgpack::object_handle result;
-        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
-        return result.get().as<summary>();
-    }
-
     enum class step_type : int
     {
         from = 0,
