@@ -77,13 +77,13 @@ namespace domain::images
     struct image_summary
     {
         std::vector<image_summary_entry> entries;
-        MSGPACK_DEFINE(entries)
+        MSGPACK_DEFINE_ARRAY(entries)
     };
 
     inline std::vector<uint8_t> pack_image_entries(std::vector<image_summary_entry> &entries)
     {
         msgpack::sbuffer buffer;
-        msgpack::pack(buffer, entries);
+        msgpack::pack(buffer, image_summary{entries});
         std::vector<uint8_t> output(buffer.size());
         std::memcpy(output.data(), buffer.data(), buffer.size());
         return output;
