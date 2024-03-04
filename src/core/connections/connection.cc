@@ -71,7 +71,10 @@ namespace core::connections
     }
     void connection::on_error(const std::error_code &error)
     {
-        command_handler->on_connection_closed(error);
+        if (command_handler)
+        {
+            command_handler->on_connection_closed(error);
+        }
         removal_callback(identifier);
         if (error != asio::error::eof)
         {

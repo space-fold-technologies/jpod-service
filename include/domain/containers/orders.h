@@ -13,7 +13,7 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::string network_properties;
 
-        MSGPACK_DEFINE(tagged_image, name, port_map, env_vars)
+        MSGPACK_DEFINE(tagged_image, name, port_map, env_vars, network_properties)
     };
 
     inline container_creation_order unpack_container_creation_order(const std::vector<uint8_t> &content)

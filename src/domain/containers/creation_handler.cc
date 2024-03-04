@@ -26,6 +26,7 @@ namespace domain::containers
     void creation_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_creation_order(payload);
+        logger->info("TAGGED IMAGE: {} NAME: {} PORTS-MAP: {} ENV-VARS: {} network-properties: {}", order.tagged_image, order.name, order.port_map.size(), order.env_vars.size(), order.network_properties);
         if (auto query = dmi::resolve_tagged_image_details(order.tagged_image); !query)
         {
             send_error(dmi::make_error_code(dmi::error_code::invalid_order_issued));
