@@ -10,23 +10,30 @@
 #include <fstream>
 #include <vector>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 #include <sole.hpp>
 
 namespace dmi = domain::images::instructions;
 namespace domain::containers
 {
-    creation_handler::creation_handler(core::connections::connection &connection, const creation_configuration &configuration, std::shared_ptr<container_repository> repository) : command_handler(connection),
-                                                                                                                                                                                   identifier(sole::uuid4().str()),
-                                                                                                                                                                                   configuration(configuration),
-                                                                                                                                                                                   repository(std::move(repository)),
-                                                                                                                                                                                   logger(spdlog::get("jpod"))
+    creation_handler::creation_handler(
+        core::connections::connection &connection,
+        const fs::path& containers_folder,
+        const fs::path& images_folder, 
+        std::shared_ptr<container_repository> repository) : command_handler(connection),
+                                                            identifier(sole::uuid4().str()),
+                                                            containers_folder(containers_folder),
+                                                            images_folder(images_folder),
+                                                            repository(std::move(repository)),
+                                                            frame{},
+                                                            progress{nullptr},
+                                                            logger(spdlog::get("jpod"))
     {
     }
 
     void creation_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_creation_order(payload);
-        logger->info("TAGGED IMAGE: {} NAME: {} PORTS-MAP: {} ENV-VARS: {} network-properties: {}", order.tagged_image, order.name, order.port_map.size(), order.env_vars.size(), order.network_properties);
         if (auto query = dmi::resolve_tagged_image_details(order.tagged_image); !query)
         {
             send_error(dmi::make_error_code(dmi::error_code::invalid_order_issued));
@@ -67,7 +74,7 @@ namespace domain::containers
     }
     fs::path creation_handler::generate_container_folder(const std::string &identifier, std::error_code &error)
     {
-        fs::path target = fs::path(configuration.containers_folder) / fs::path(identifier);
+        fs::path target = containers_folder / fs::path(identifier);
         if (!fs::exists(target))
         {
             if (!fs::create_directories(target, error))
@@ -82,19 +89,18 @@ namespace domain::containers
         frame.entry_name = identifier;
         frame.sub_entry_name = "extracting fs.tar.gz";
         std::error_code error;
-        archive_entry *entry;
-        while (archive_read_next_header(input.get(), &entry) == ARCHIVE_OK)
+        while (archive_read_next_header(input.get(), &progress.entry) == ARCHIVE_OK)
         {
-            const char *entry_name = archive_entry_pathname(entry);
-            const mode_t type = archive_entry_filetype(entry);
+            const char *entry_name = archive_entry_pathname(progress.entry);
+            const mode_t type = archive_entry_filetype(progress.entry);
             fs::path full_path = container_directory / fs::path(std::string(entry_name));
-            archive_entry_set_pathname(entry, full_path.generic_string().c_str());
-            if (auto ec = archive_write_header(output.get(), entry); ec != ARCHIVE_OK)
+            archive_entry_set_pathname(progress.entry, full_path.generic_string().c_str());
+            if (auto ec = archive_write_header(output.get(), progress.entry); ec != ARCHIVE_OK)
             {
                 logger->error("{}", archive_error_string(output.get()));
                 return dmi::make_compression_error_code(ec);
             }
-            else if (archive_entry_size(entry) > 0)
+            else if (archive_entry_size(progress.entry) > 0)
             {
                 if (error = copy_entry(input.get(), output.get()); error)
                 {
@@ -106,7 +112,7 @@ namespace domain::containers
     }
     fs::path creation_handler::fetch_image_archive(std::string &image_identifier, std::error_code &error)
     {
-        fs::path target = fs::path(configuration.images_folder) / fs::path(image_identifier) / fs::path("fs.zip");
+        fs::path target = images_folder / fs::path(image_identifier) / fs::path("fs.tar.gz");
         if (!fs::exists(target, error))
         {
             return {};
@@ -119,9 +125,10 @@ namespace domain::containers
         std::error_code error;
         if (container_directory = generate_container_folder(identifier, error); error)
         {
+            logger->error("failed to create container folder");
             return error;
         }
-        else if (auto image_fs_archive = fetch_image_archive(identifier, error); error)
+        else if (auto image_fs_archive = fetch_image_archive(image_identifier, error); error)
         {
             return error;
         }
@@ -135,7 +142,8 @@ namespace domain::containers
                     archive_read_free(instance);
                 }};
             archive_read_support_filter_all(input.get());
-            archive_read_support_format_raw(input.get());
+            archive_read_support_format_tar(input.get());
+            archive_read_extract_set_progress_callback(output.get(), &creation_handler::on_progress_update, this);
             if (auto ec = archive_read_open_filename(input.get(), image_fs_archive.generic_string().c_str(), BUFFER_SIZE); ec != ARCHIVE_OK)
             {
                 logger->error("{}", archive_error_string(input.get()));
@@ -148,6 +156,7 @@ namespace domain::containers
                     archive_write_close(instance);
                     archive_write_free(instance);
                 }};
+            
             int flags = ARCHIVE_EXTRACT_TIME;
             flags |= ARCHIVE_EXTRACT_PERM;
             flags |= ARCHIVE_EXTRACT_ACL;
@@ -177,6 +186,19 @@ namespace domain::containers
             return dmi::make_compression_error_code(ec);
         }
         return {};
+    }
+    void creation_handler::on_progress_update(void *ctx)
+    {
+        auto self = static_cast<creation_handler*>(ctx);
+        auto frame = self->frame;
+        frame.percentage = archive_file_count(self->output.get()) / archive_file_count(self->input.get());
+        frame.feed = fmt::format(
+            "Current: {} ({} bytes)", 
+            archive_entry_pathname(self->progress.entry), 
+            archive_entry_size(self->progress.entry));
+        // then send a feed update over
+        self->logger->info("got an update");
+        self->send_progress("creating-fs", pack_progress_frame(frame));
     }
     void creation_handler::on_connection_closed(const std::error_code &error) {}
 

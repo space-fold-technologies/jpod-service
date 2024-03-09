@@ -57,8 +57,8 @@ auto main(int argc, char *argv[]) -> int
         });
     console->info("setting up");
     app->setup();
-    console->info("remote shell started");
     app->start();
+    console->info("daemon started");
     while (running)
     {
       context.run();

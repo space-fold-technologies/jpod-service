@@ -96,8 +96,7 @@ void bootstrap::setup_handlers()
       request_operation::build,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        creation_configuration cfg{containers_folder, images_folder};
-        return std::make_shared<creation_handler>(conn, cfg, container_repository);
+        return std::make_shared<creation_handler>(conn, this->containers_folder, this->images_folder, container_repository);
       });
   registry->add_handler(
       operation_target::container,

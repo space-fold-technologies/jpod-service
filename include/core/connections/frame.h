@@ -7,18 +7,20 @@
 #include <string>
 #include <cstring>
 #include <array>
+#include <spdlog/spdlog.h>
 
 namespace core::connections
 {
 
+    static constexpr uint8_t _header_operation_mask = 0b00011111;
+    static constexpr uint8_t _header_target_mask = 0b11100000;
     enum class operation_target : std::uint8_t
     {
-        image,
-        container,
-        registry,
-        plugin,
-        client,
-        control_node
+        image = 0b00000000,
+        container = 0b00100000,
+        registry = 0b01000000,
+        plugin = 0b01100000,
+        client = 0b10000000
     };
 
     inline std::map<operation_target, std::string> operation_target_map =
@@ -27,8 +29,7 @@ namespace core::connections
             {operation_target::container, "container-operation"},
             {operation_target::registry, "registry-operation"},
             {operation_target::plugin, "plugin-operation"},
-            {operation_target::client, "client-operation"},
-            {operation_target::control_node, "control-node-operation"}};
+            {operation_target::client, "client-operation"}};
 
     inline std::string &operation_string_value(operation_target target)
     {
@@ -47,12 +48,12 @@ namespace core::connections
         removal = 0x02,
         push = 0x03,
         pull = 0x04,
-        build = 0x06,
-        import = 0x07,
-        authorize = 0x08,
-        start = 0x09,
-        shell = 0x0A,
-        logs = 0x0B
+        build = 0x05,
+        import = 0x06,
+        authorize = 0x07,
+        start = 0x08,
+        shell = 0x09,
+        logs = 0x0A
 
     };
 
@@ -67,7 +68,7 @@ namespace core::connections
             {request_operation::import, "import-sub-operation"},
             {request_operation::authorize, "authorize-sub-operation"},
             {request_operation::shell, "shell-sub-operation"},
-            {request_operation::start, "container-start-sub-operation"},
+            {request_operation::start, "start-sub-operation"},
             {request_operation::logs, "logs-sub-operation"}};
 
     inline std::string &request_operation_value(request_operation operation)
@@ -113,44 +114,12 @@ namespace core::connections
         std::vector<uint8_t> payload;
     };
 
-     inline void bit_field_write(char bit, char width, uint8_t value, uint8_t *header)
-    {
-        uint8_t mask;
-        mask = 0;
-        while (width--)
-        {
-            mask = mask << 1;
-            mask |= 1;
-            value = value << bit;
-            mask = mask << bit;
-            mask ^= 0xFF;
-            *header &= mask;
-            *header |= value;
-        }
-    }
-   
-    inline uint8_t bit_field_read(char bit, char width, uint8_t header)
-    {
-        uint8_t mask;
-
-        mask = 0;
-        while (width--)
-        {
-            mask = mask << 1;
-            mask |= 1;
-        }
-
-        header = header >> bit;
-        return (header & mask);
-    }
-
-    inline std::vector<uint8_t> encode_frame(operation_target target, response_operation operation, bool is_request, const std::vector<uint8_t> &data)
+    inline std::vector<uint8_t> encode_frame(operation_target target, response_operation operation, const std::vector<uint8_t> &data)
     {
         std::vector<uint8_t> header;
         std::size_t length = data.size();
         header.assign(2 + (length >= 126 ? 2 : 0) + (length >= 65536 ? 6 : 0), 0);
-        bit_field_write(5, 3, static_cast<uint8_t>(target), &header[0]);
-        bit_field_write(0, 5, static_cast<uint8_t>(operation), &header[0]); 
+        header[0] = (static_cast<uint8_t>(operation) & _header_operation_mask) | (static_cast<uint8_t>(target) & _header_target_mask);
 
         if (length < 126)
         {
@@ -182,8 +151,8 @@ namespace core::connections
     inline frame decode_frame(const std::vector<uint8_t> &data)
     {
         frame frm;
-        frm.target = static_cast<operation_target>(bit_field_read(5, 3, data.at(0)));
-        frm.operation = static_cast<request_operation>(bit_field_read(0, 5, data.at(0)));
+        frm.target = static_cast<operation_target>(data.at(0) & _header_target_mask);
+        frm.operation = static_cast<request_operation>(data.at(0) & _header_operation_mask);
         std::size_t boundary = data.at(1) & 0x7F;
         std::size_t content_length = 0;
         std::size_t num_bytes = 0;

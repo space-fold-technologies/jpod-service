@@ -13,23 +13,25 @@ namespace spdlog
 };
 
 struct archive;
+struct archive_entry;
 using archive_ptr = std::unique_ptr<archive, std::function<void(archive *)>>;
 namespace fs = std::filesystem;
 namespace domain::containers
 {
-    struct creation_configuration
+    struct entry_progress
     {
-        std::string containers_folder;
-        std::string images_folder;
+        archive_entry *entry;
     };
     class container_repository;
     class creation_handler : public core::commands::command_handler
     {
-        const double PROGRESSION_PRECISION = 0.5;
-        const int BUFFER_SIZE = 4096;
+        const int BUFFER_SIZE = 10240;
 
     public:
-        creation_handler(core::connections::connection &connection, const creation_configuration &configuration, std::shared_ptr<container_repository> repository);
+        creation_handler(core::connections::connection &connection,
+                         const fs::path &containers_folder,
+                         const fs::path &images_folder,
+                         std::shared_ptr<container_repository> repository);
         virtual ~creation_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
         void on_connection_closed(const std::error_code &error) override;
@@ -40,15 +42,18 @@ namespace domain::containers
         std::error_code initialize_decompression(std::string &image_identifier);
         std::error_code extract_filesystem();
         std::error_code copy_entry(struct archive *in, struct archive *out);
+        static void on_progress_update(void *ctx);
 
     private:
         std::string identifier;
-        const creation_configuration &configuration;
-        std::shared_ptr<container_repository> repository;
+        const fs::path &containers_folder;
+        const fs::path &images_folder;
         fs::path container_directory;
+        std::shared_ptr<container_repository> repository;
         archive_ptr input;
         archive_ptr output;
         domain::images::progress_frame frame;
+        entry_progress progress;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

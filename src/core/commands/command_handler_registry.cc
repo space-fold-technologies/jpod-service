@@ -13,7 +13,6 @@ namespace core::commands
         auto key = fmt::format("{}|{}",
                                operation_string_value(target),
                                request_operation_value(operation));
-        logger->info("added provider with key: {}", key);
         providers.emplace(key, provider);
     }
     std::optional<command_handler_provider> command_handler_registry::fetch(operation_target target, request_operation operation)
@@ -21,7 +20,6 @@ namespace core::commands
         auto key = fmt::format("{}|{}",
                                operation_string_value(target),
                                request_operation_value(operation));
-        logger->info("fetching provider with key: {}", key);
         if (auto position = providers.find(key); position != providers.end())
         {
             return position->second;
