@@ -5,6 +5,7 @@
 #include <domain/containers/orders.h>
 #include <asio/io_context.hpp>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 
 namespace domain::containers
 {
@@ -49,7 +50,7 @@ namespace domain::containers
                     entry.flags});
             }
             runtime_ptr->create_container(std::move(details));
-            send_success("container started");
+            send_success(fmt::format("container started: {}", result->identifier));
         }
     }
     void start_handler::on_connection_closed(const std::error_code &error)

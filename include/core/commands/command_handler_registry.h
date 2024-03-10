@@ -28,6 +28,7 @@ namespace core::commands
         virtual ~command_handler_registry();
         void add_handler(operation_target target, request_operation operation, command_handler_provider provider);
         std::optional<command_handler_provider> fetch(operation_target target, request_operation operation);
+        std::string key(operation_target target, request_operation operation);
 
     private:
         std::map<std::string, command_handler_provider> providers;

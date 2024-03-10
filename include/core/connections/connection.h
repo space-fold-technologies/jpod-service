@@ -51,12 +51,12 @@ namespace core::connections
     private:
         std::string identifier;
         asio::local::stream_protocol::socket socket;
-        // asio::streambuf stream_buffer;
         std::vector<uint8_t> buffer;
         std::deque<std::vector<uint8_t>> sending_queue;
         std::shared_ptr<core::commands::command_handler_registry> command_handler_registry;
         removal_trigger_callback removal_callback;
         std::shared_ptr<core::commands::command_handler> command_handler;
+        std::string command_handler_key;
         std::shared_ptr<spdlog::logger> logger;
     };
 };

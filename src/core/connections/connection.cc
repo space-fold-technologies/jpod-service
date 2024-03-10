@@ -33,19 +33,23 @@ namespace core::connections
             asio::buffer(buffer),
             [this](const std::error_code &err, std::size_t bytes_transferred)
             {
-                logger->info("reading in");
-                if (!err)
+                                if (!err)
                 {
                     if (bytes_transferred > 0)
                     {
                         logger->info("received about {} bytes", bytes_transferred);
                         auto frame = decode_frame(buffer);
-                        if (!command_handler)
+                        if (!command_handler || command_handler_key != command_handler_registry->key(frame.target, frame.operation))
                         {
                             if (auto result = command_handler_registry->fetch(frame.target, frame.operation); result.has_value())
                             {
                                 auto provider = result.value();
+                                if(command_handler)
+                                {
+                                    command_handler.reset();
+                                }
                                 command_handler = provider(*this);
+                                command_handler_key = command_handler_registry->key(frame.target, frame.operation);
                             }
                         }
                         if (command_handler)
