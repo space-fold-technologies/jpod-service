@@ -18,10 +18,6 @@ using archive_ptr = std::unique_ptr<archive, std::function<void(archive *)>>;
 namespace fs = std::filesystem;
 namespace domain::containers
 {
-    struct entry_progress
-    {
-        archive_entry *entry;
-    };
     class container_repository;
     class creation_handler : public core::commands::command_handler
     {
@@ -42,7 +38,6 @@ namespace domain::containers
         std::error_code initialize_decompression(std::string &image_identifier);
         std::error_code extract_filesystem();
         std::error_code copy_entry(struct archive *in, struct archive *out);
-        static void on_progress_update(void *ctx);
 
     private:
         std::string identifier;
@@ -53,7 +48,6 @@ namespace domain::containers
         archive_ptr input;
         archive_ptr output;
         domain::images::progress_frame frame;
-        entry_progress progress;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

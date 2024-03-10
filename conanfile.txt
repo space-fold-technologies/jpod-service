@@ -23,3 +23,7 @@ cmake_find_package_multi
 spdlog:header_only=True
 libarchive:with_iconv=False
 libarchive:with_zstd=True
+libarchive:with_lzma=True
+libarchive:with_zlib=True
+libarchive:with_lzo=True
+libarchive:with_xattr=True
