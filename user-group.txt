@@ -1,0 +1,20 @@
+# OLD (DOCUMENTED WAY)
+pw groupadd ${GROUP-NAME}
+pw useradd ${USER} -s ${SHELL} -g ${GROUP-NAME}
+
+#add user to existing group 
+pw usermod ${USER} -G ${GROUP-NAME}
+
+# CURRENT (2023)
+CREATE GROUP           : pw group add ${GROUP-NAME}
+SHOW USERS IN GROUP    : pw group show  ${GROUP-NAME}
+ADD USER TO GROUP      : pw group mod ${GROUP-NAME} -m ${USER}
+REMOVE USER FROM GROUP : pw group mod ${GROUP-NAME} -d ${USER}
+DELETE USER            : pw group del ${USER}
+DELETE GROUP           : pw user del ${GROUP-NAME}
+
+https://ryanwinter.org/manage-users-and-groups-in-freebsd/
+
+# ADD FOLDER OWNERSHIP TO GROUP 
+sudo chown -R :${GROUP-NAME}
+sudo chmod -R g=rwx /path-to-folder
