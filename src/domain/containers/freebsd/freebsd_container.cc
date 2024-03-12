@@ -37,13 +37,9 @@ namespace domain::containers::freebsd
         {
             listener.container_failed(details.identifier, std::move(error));
         }
-        else
+        else if (!details.entry_point.empty())
         {
-            if (!details.entry_point.empty())
-            {
-                error = start_process_in_jail(); // having an entry point should be optional
-            }
-            if (error)
+            if (error = start_process_in_jail(); error)
             {
                 listener.container_failed(details.identifier, error);
             }
@@ -51,6 +47,11 @@ namespace domain::containers::freebsd
             {
                 listener.container_initialized(details.identifier);
             }
+            listener.container_initialized(details.identifier);
+        }
+        else
+        {
+            listener.container_initialized(details.identifier);
         }
     }
     void freebsd_container::start()
@@ -152,10 +153,6 @@ namespace domain::containers::freebsd
                 setenv(entry.first.c_str(), entry.second.c_str(), 1);
             }
             auto target_shell = getenv("SHELL");
-            if (target_shell == NULL)
-            {
-                target_shell = _PATH_BSHELL;
-            }
             if (auto err = execlp(target_shell, details.entry_point.c_str(), NULL); err < 0)
             {
                 perror("execlp failed");

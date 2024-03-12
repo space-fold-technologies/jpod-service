@@ -10,6 +10,7 @@
 #include <domain/images/sql_repository.h>
 #include <domain/images/http/asio_client.h>
 // container headers
+#include <domain/containers/in_memory_monitor.h>
 #include <domain/containers/virtual_terminal.h>
 #include <domain/containers/sql_repository.h>
 #include <domain/containers/creation_handler.h>
@@ -145,7 +146,8 @@ std::unique_ptr<virtual_terminal> bootstrap::create_virtual_terminal(
 
 std::shared_ptr<domain::containers::container_monitor> bootstrap::create_container_monitor()
 {
-  return {};
+  // we will need to implement a container monitor of some kind
+  return std::make_shared<in_memory_monitor>();
 }
 
 bootstrap::~bootstrap()

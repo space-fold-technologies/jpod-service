@@ -68,6 +68,7 @@ add_executable(daemon
                 domain/containers/shell_handler.cc
                 domain/containers/removal_handler.cc
                 domain/containers/sql_repository.cc
+                domain/containers/in_memory_monitor.cc
                 #containers::freebsd
                 domain/containers/freebsd/freebsd_container.cc
                 domain/containers/freebsd/freebsd_terminal.cc
