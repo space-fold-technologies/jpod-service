@@ -64,6 +64,7 @@ add_executable(daemon
                 domain/containers/list_handler.cc
                 domain/containers/creation_handler.cc
                 domain/containers/start_handler.cc
+                domain/containers/stop_handler.cc
                 domain/containers/logging_handler.cc
                 domain/containers/shell_handler.cc
                 domain/containers/removal_handler.cc

@@ -52,8 +52,9 @@ namespace core::connections
         import = 0x06,
         authorize = 0x07,
         start = 0x08,
-        shell = 0x09,
-        logs = 0x0A
+        stop = 0x09,
+        shell = 0x0A,
+        logs = 0x0B
 
     };
 
