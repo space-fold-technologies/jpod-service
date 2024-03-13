@@ -5,10 +5,12 @@
 #include <domain/images/payload.h>
 #include <domain/images/mappings.h>
 #include <domain/images/repository.h>
+#include <filesystem>
 #include <spdlog/spdlog.h>
 #include <archive.h>
 #include <archive_entry.h>
 
+namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
     import_instruction::import_instruction(const std::string &identifier,
@@ -31,6 +33,7 @@ namespace domain::images::instructions
         {
             bool found = false;
             archive_entry *entry;
+            progress_frame frame;
             int ec = 0;
             listener.on_instruction_initialized(identifier, this->name);
             do
@@ -48,6 +51,7 @@ namespace domain::images::instructions
                 }
                 const mode_t type = archive_entry_filetype(entry);
                 char const *current_entry_name = archive_entry_pathname(entry);
+
                 if ((S_ISREG(type)) && std::strcmp(current_entry_name, IMAGE_INFO.c_str()) == 0)
                 {
                     std::size_t file_size = archive_entry_size(entry);
@@ -59,9 +63,29 @@ namespace domain::images::instructions
                         listener.on_instruction_complete(identifier, make_compression_error_code(chunk_size));
                         return;
                     }
+                    frame.percentage = 75;
+                    frame.feed = "extracted image meta-data";
+                    listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                     auto details = unpack_import_details(buffer);
-                    auto error = persist_image_details(details, file_size);
-                    listener.on_instruction_complete(identifier, error);
+                    if (auto path = resolver.image_file_path(identifier, error); error)
+                    {
+                        listener.on_instruction_complete(identifier, error);
+                    }
+                    else if (auto image_size = fs::file_size(path, error); error)
+                    {
+                        listener.on_instruction_complete(identifier, error);
+                    }
+                    else
+                    {
+                        error = persist_image_details(details, image_size);
+                        if (!error)
+                        {
+                            frame.percentage = 100;
+                            frame.feed = "persisted image details";
+                            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
+                        }
+                        listener.on_instruction_complete(identifier, error);
+                    }
                     found = true;
                 }
                 archive_read_data_skip(archive_ptr.get());

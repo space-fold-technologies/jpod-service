@@ -51,13 +51,12 @@ namespace domain::images::instructions
                 if ((S_ISREG(type)) && std::strcmp(current_entry_name, FILE_SYSTEM_ARCHIVE.c_str()) == 0)
                 {
                     std::size_t chunk_size = 0L;
-                    std::size_t current_read = 0L;
-                    std::size_t total_size = archive_entry_size(entry);
-                    
+                    frame.percentage = 25;
+                    logger->info("total size to write: {}", archive_entry_size(entry));
                     logger->info("writing to : {}", image_archive.generic_string());
+                    frame.feed = fmt::format("archive of size ({}) bytes", archive_entry_size(entry));
+                    listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                     std::ofstream archive_stream(image_archive, std::ios::binary | std::ios::app);
-                    frame.entry_name = identifier;
-                    frame.sub_entry_name = fmt::format("file system extraction {}", current_entry_name);
                     do
                     {
                         chunk_size = archive_read_data(archive_ptr.get(), buffer.data(), FS_BUFFER_SIZE);
@@ -69,9 +68,6 @@ namespace domain::images::instructions
                         else if (chunk_size > 0)
                         {
                             archive_stream.write(reinterpret_cast<const char *>(buffer.data()), chunk_size);
-                            current_read += chunk_size;
-                            frame.percentage = current_read / total_size;
-                            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                         }
 
                     } while (chunk_size > 0);
@@ -80,6 +76,9 @@ namespace domain::images::instructions
                 }
                 archive_read_data_skip(archive_ptr.get());
             } while (!found && ec == ARCHIVE_OK);
+            frame.feed = std::string("image archive extracted");
+            frame.percentage = 50;
+            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
             listener.on_instruction_complete(identifier, {});
         }
     }

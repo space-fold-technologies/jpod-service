@@ -37,7 +37,7 @@ namespace domain::images
     }
     void import_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
     {
-        send_frame(content);
+        send_progress("image", content);
     }
     void import_handler::on_instruction_complete(std::string id, std::error_code err)
     {
@@ -61,7 +61,7 @@ namespace domain::images
         else
         {
             logger->info("finished importing image");
-            send_success("image import complete");
+            send_success(fmt::format("image import complete with ID: {}", identifier));
         }
     }
     fs::path import_handler::archive_file_path()
@@ -83,7 +83,7 @@ namespace domain::images
         fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.tar.gz");
         if (!fs::create_directories(image_fs_archive.parent_path(), error))
         {
-            logger->error("fs gen err, failed to create path: {} err : {}",image_fs_archive.generic_string(), error.message());
+            logger->error("fs gen err, failed to create path: {} err : {}", image_fs_archive.generic_string(), error.message());
         }
         return image_fs_archive;
     }

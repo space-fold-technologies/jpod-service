@@ -109,7 +109,7 @@ namespace domain::images::instructions
         domain::images::progress_frame frame{};
         frame.entry_name = "";
         frame.sub_entry_name = "";
-        frame.percentage = 1.0;
+        frame.percentage = 100;
         callback({}, frame);
     };
     inline auto fox_soft_registry = std::optional<domain::images::registry_access_details>{domain::images::registry_access_details{"https://registry.fox-soft.pods.com", "xfrnzzfhere%*#)@"}};

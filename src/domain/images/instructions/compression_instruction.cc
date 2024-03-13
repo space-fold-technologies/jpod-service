@@ -49,6 +49,7 @@ namespace domain::images::instructions
                 struct stat file_info;
                 stat(entry.path().c_str(), &file_info);
                 archive_entry_copy_stat(archive_entry_ptr.get(), &file_info);
+                //frame.total = file_info.st_size;
                 if (auto ec = archive_write_header(archive_ptr.get(), archive_entry_ptr.get()); ec != ARCHIVE_OK)
                 {
                     logger->error("{}", archive_error_string(archive_ptr.get()));
@@ -73,7 +74,6 @@ namespace domain::images::instructions
                         if (length > 0)
                         {
                             archive_write_data(archive_ptr.get(), buffer.data(), length);
-                            frame.percentage = length / file_info.st_size;
                             listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                         }
                     } while (length > 0);

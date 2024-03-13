@@ -59,7 +59,7 @@ namespace domain::images::instructions
                         if (!error)
                         {
                             listener.on_instruction_data_received(identifier, pack_progress_frame(progress));
-                            if (progress.percentage == 1.0)
+                            if (static_cast<int>(progress.percentage) == 100)
                             {
                                 listener.on_instruction_complete(identifier, {});
                             }
@@ -157,7 +157,7 @@ namespace domain::images::instructions
                     }
                     else
                     {
-                        frame.percentage = status.current / status.total;
+                        frame.percentage = (status.current * 100) / status.total;
                         // we will need to pack a progress frame for this
                         listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                         if (status.complete)
@@ -182,7 +182,7 @@ namespace domain::images::instructions
                 else
                 {
                     listener.on_instruction_data_received(identifier, pack_progress_frame(progress));
-                    if (progress.percentage == 1.0)
+                    if (static_cast<int>(progress.percentage) == 100)
                     {
                         save_image_details(meta);
                     }

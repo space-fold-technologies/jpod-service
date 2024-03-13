@@ -107,6 +107,8 @@ namespace domain::containers
                 {
                     return error;
                 }
+                frame.feed = fmt::format("unpacked: {}", std::string(entry_name));
+                send_progress("container", pack_progress_frame(frame));
             }
         }
         return {};

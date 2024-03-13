@@ -120,9 +120,8 @@ namespace domain::images
         std::string entry_name;
         std::string sub_entry_name;
         std::string feed;
-        double percentage;
-
-        MSGPACK_DEFINE(entry_name, sub_entry_name, percentage)
+        uint8_t percentage;
+        MSGPACK_DEFINE(entry_name, sub_entry_name, feed, percentage)
     };
 
     inline std::vector<uint8_t> pack_progress_frame(progress_frame &order)

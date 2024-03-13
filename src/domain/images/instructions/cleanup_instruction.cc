@@ -45,7 +45,7 @@ namespace domain::images::instructions
             }
             else
             {
-                frame.percentage = (counter++) / targets.size();
+                frame.percentage = ((counter++) * 100) / targets.size(); 
                 frame.feed = fmt::format("removed: {} ", removed_total);
                 logger->info("nuked :{}", frame.feed);
                 listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
