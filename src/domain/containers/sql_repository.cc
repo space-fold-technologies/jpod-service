@@ -255,6 +255,27 @@ namespace domain::containers
             return result.fetch<int32_t>("is_running") > 0;
         }
     }
+    bool sql_container_repository::exists(const std::string &query)
+    {
+        std::string sql("SELECT "
+                        "COUNT(*) AS is_running "
+                        "FROM container_tb AS c "
+                        "WHERE c.name = ? "
+                        "OR c.identifier = ?");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        statement.bind(1, query);
+        statement.bind(2, query);
+
+        if (auto result = statement.execute_query(); !result.has_next())
+        {
+            return false;
+        }
+        else
+        {
+            return result.fetch<int32_t>("is_running") > 0;
+        }
+    }
     std::error_code sql_container_repository::register_status(const std::string &identifier, const std::string &status)
     {
         std::string sql("UPDATE "

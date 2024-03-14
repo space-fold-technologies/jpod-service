@@ -22,6 +22,7 @@ namespace domain::containers
         std::error_code save(const container_properties &properties) override;
         std::vector<container_summary_entry> fetch_match(const std::string &query, const std::string &status) override;
         bool is_running(const std::string &query) override;
+        bool exists(const std::string &query) override;
         std::error_code register_status(const std::string &identifier, const std::string &status) override;
         std::error_code remove(const std::string &query) override;
 

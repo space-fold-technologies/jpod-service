@@ -33,7 +33,11 @@ namespace domain::containers
     void creation_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_creation_order(payload);
-        if (auto query = dmi::resolve_tagged_image_details(order.tagged_image); !query)
+        if (repository->exists(order.name))
+        {
+            send_error(fmt::format("a container with the name: {} exists", order.name));
+        }
+        else if (auto query = dmi::resolve_tagged_image_details(order.tagged_image); !query)
         {
             send_error(dmi::make_error_code(dmi::error_code::invalid_order_issued));
         }
@@ -43,11 +47,11 @@ namespace domain::containers
         }
         else if (auto error = initialize_decompression(details->identifier); error)
         {
-            send_error(error);
+            send_error(fmt::format("decompression of image failed: {}", error.message()));
         }
         else if (error = extract_filesystem(); error)
         {
-            send_error(error);
+            send_error(fmt::format("file system extraction failed: {}", error.message()));
         }
         else
         {
@@ -63,7 +67,7 @@ namespace domain::containers
             properties.network_properties = order.network_properties;
             if (auto error = repository->save(properties); error)
             {
-                send_error(error);
+                send_error(fmt::format("container creation failed: {}", error.message()));
             }
             else
             {
@@ -194,5 +198,4 @@ namespace domain::containers
     creation_handler::~creation_handler()
     {
     }
-
 }
