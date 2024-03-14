@@ -73,6 +73,7 @@ namespace domain::containers::freebsd
                              }
                          }); });
     }
+
     void freebsd_container::register_listener(std::shared_ptr<container_listener> operation_listener)
     {
         if (auto pos = operation_listeners.find(operation_listener->type()); pos != operation_listeners.end())
@@ -339,16 +340,19 @@ namespace domain::containers::freebsd
 
     freebsd_container::~freebsd_container()
     {
-        if (file_descriptor > 0 && process_identifier > 0)
-        {
-            close(file_descriptor);
-            waitpid(process_identifier, nullptr, 0);
-        }
         if (int jail_id = jail_getid(details.identifier.c_str()); jail_id > 0)
         {
             logger->info("SHUTTING DOWN JAIL ID {} ALIAS {}", jail_id, details.identifier);
             jail_remove(jail_id);
         }
+        if (file_descriptor > 0 && process_identifier > 0)
+        {
+            logger->info("closing file descriptor ");
+            close(file_descriptor);
+            logger->info("waiting for the end of process");
+            waitpid(process_identifier, nullptr, 0);
+        }
+        
         if (auto error = unmount_file_systems(); error)
         {
             on_operation_failure(error);
