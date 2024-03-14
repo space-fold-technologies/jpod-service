@@ -27,10 +27,13 @@ namespace domain::containers
         {
             monitors.emplace(identifier, container_monitor_provider());
         }
-        auto monitor = monitors.at(identifier);
-        auto container = containers.at(identifier); // might have to use something specific to asio like asio::post
-        container->register_listener(monitor);
-        container->start();
+        if (auto pos = containers.find(identifier); pos != containers.end())
+        {
+            auto container = pos->second;
+            auto monitor = monitors.at(identifier);
+            container->register_listener(monitor);
+            container->start();
+        }
     }
     void runtime::container_started(const std::string &identifier)
     {

@@ -11,6 +11,9 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <vector>
+#include <spdlog/spdlog.h>
+#include <algorithm>
+#include <cctype>
 
 namespace domain::containers::freebsd
 {
@@ -86,16 +89,20 @@ namespace domain::containers::freebsd
         jailparam parameter;
         if (jailparam_init(&parameter, key.c_str()) != 0)
         {
-            // logger->error("FAILED TO INIT KEY:{} VALUE:{} ERR:{}", key, value, jail_errmsg); will need a std::error_code equivalent of jail errors(might have already written it)
+            spdlog::get("jpod")->error("FAILED TO INIT KEY:{} VALUE:{} ERR:{}", key, value, jail_errmsg); // will need a std::error_code equivalent of jail errors(might have already written it)
             return;
         }
         else
         {
-            if (!value.empty())
+            auto value_copy = std::string(value);
+            value_copy.erase(std::remove_if(value_copy.begin(), value_copy.end(), ::isspace), value_copy.end());
+            if (!value_copy.empty())
             {
-                if (jailparam_import(&parameter, value.c_str()) != 0)
+
+                if (jailparam_import(&parameter, value_copy.c_str()) != 0)
                 {
-                    // logger->error("FAILED TO ADD KEY:{} VALUE:{} ERR:{}", key, value, jail_errmsg);
+                    spdlog::get("jpod")->error("FAILED TO ADD KEY:{} VALUE:{} ERR:{}", key, value, jail_errmsg);
+
                     return;
                 }
             }

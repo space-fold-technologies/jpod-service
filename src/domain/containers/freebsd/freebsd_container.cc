@@ -31,11 +31,11 @@ namespace domain::containers::freebsd
     {
         if (auto error = mount_file_systems(); error)
         {
-            listener.container_failed(details.identifier, std::move(error));
+            listener.container_failed(details.identifier, error);
         }
         else if (auto error = create_jail(); error)
         {
-            listener.container_failed(details.identifier, std::move(error));
+            listener.container_failed(details.identifier, error);
         }
         else if (!details.entry_point.empty())
         {
@@ -109,7 +109,8 @@ namespace domain::containers::freebsd
         }
         if (int jail_id = jailparam_set(&parameters[0], parameters.size(), JAIL_CREATE); jail_id == -1)
         {
-            logger->error("failure in creating jail: {}", jail_errmsg);
+            logger->error("failure in creating jail: JAIL ERR: {} SYS-ERR: {}", jail_errmsg, errno);
+            return std::error_code{errno, std::system_category()};
         }
         jailparam_free(&parameters[0], parameters.size());
         return error;

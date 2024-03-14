@@ -164,7 +164,7 @@ namespace domain::images
         }
         for (const auto &node : parsed_content["parameters"])
         {
-            details.parameters.emplace(node.first.as<std::string>(), node.second.as<std::string>(" "));
+            details.parameters.emplace(node.first.as<std::string>(), node.second.as<std::string>());
         }
         for (const auto &node : parsed_content["mount_points"])
         {
