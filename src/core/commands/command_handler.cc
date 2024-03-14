@@ -19,7 +19,7 @@ namespace core::commands
         auto payload = encode_frame(operation_target::client, response_operation::failure, pack_error_payload(error));
         connection.write(payload);
     }
-    void send_error(const std::string &err)
+    void command_handler::send_error(const std::string &err)
     {
         auto error = error_payload{err};
         auto payload = encode_frame(operation_target::client, response_operation::failure, pack_error_payload(error));

@@ -28,7 +28,7 @@ namespace domain::containers
         if (auto result = repository->first_match(order.term); !result.has_value())
         {
             // have to come up with custom errors for containers
-            send_error(std::make_error_code(std::errc::no_such_process));
+            send_error(fmt::format("no matching container for : {}", order.term));
         }
         else
         {
