@@ -19,6 +19,7 @@
 #include <domain/containers/shell_handler.h>
 #include <domain/containers/list_handler.h>
 #include <domain/containers/stop_handler.h>
+#include <domain/containers/removal_handler.h>
 #include <domain/containers/runtime.h>
 #include <asio/io_context.hpp>
 
@@ -140,6 +141,13 @@ void bootstrap::setup_handlers()
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         return std::make_shared<container_list_handler>(conn, container_repository);
+      });
+  registry->add_handler(
+      operation_target::container,
+      request_operation::removal,
+      [this](connection &conn) -> std::shared_ptr<command_handler>
+      {
+        return std::make_shared<container_removal_handler>(conn, runtime, container_repository, containers_folder);
       });
 }
 

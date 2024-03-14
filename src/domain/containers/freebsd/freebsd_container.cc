@@ -65,6 +65,7 @@ namespace domain::containers::freebsd
                          {
                              if (!err)
                              {
+                                 listener.container_started(details.identifier);
                                  read_from_shell();
                              }
                              else
@@ -352,10 +353,11 @@ namespace domain::containers::freebsd
             logger->info("waiting for the end of process");
             waitpid(process_identifier, nullptr, 0);
         }
-        
+
         if (auto error = unmount_file_systems(); error)
         {
             on_operation_failure(error);
         }
+        listener.container_stopped(details.identifier);
     }
 }

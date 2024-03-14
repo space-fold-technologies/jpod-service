@@ -36,6 +36,18 @@ namespace domain::containers
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_term_order>();
     }
+    struct container_remove_order
+    {
+        std::string term;
+        bool force;
+        MSGPACK_DEFINE(term, force)
+    };
+     inline container_remove_order unpack_container_remove_order(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_remove_order>();
+    }
     namespace shell
     {
         constexpr uint8_t start_session = 0x00;
