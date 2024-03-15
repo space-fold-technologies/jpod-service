@@ -76,7 +76,11 @@ namespace domain::containers
     }
     std::shared_ptr<container> runtime::fetch_container(const std::string &identifier)
     {
-        return containers.at(identifier);
+        if (auto pos = containers.find(identifier); pos != containers.end())
+        {
+            return pos->second;
+        }
+        return {};
     }
     runtime::~runtime()
     {
