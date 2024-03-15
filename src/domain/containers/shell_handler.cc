@@ -5,6 +5,7 @@
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/split.hpp>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 
 namespace domain::containers
 {
@@ -23,27 +24,28 @@ namespace domain::containers
         auto order = unpack_container_shell_order(payload);
         switch (order.type)
         {
-        case shell::start_session:
+        case shell_order_type::start_session:
         {
-            if (auto result = repository->first_identifier_match(std::string(order.data.begin(), order.data.end())); !result)
+            auto identifier = std::string(order.data.begin(), order.data.end());
+            if (auto result = repository->first_identifier_match(identifier); !result)
             {
-                // TODO: have to come up with custom errors for containers
-                send_error(std::make_error_code(std::errc::no_such_process));
+                send_error(fmt::format("no matching container found for name: {}", identifier));
             }
             else
             {
                 terminal = provider(*result, *this);
                 if (auto error = terminal->initialize(); error)
                 {
-                    send_error(error);
+                    send_error(fmt::format("failed to initialize terminal: {}", error.message()));
                 }
                 else
                 {
                     terminal->start();
+                    logger->info("terminal for: {} started", identifier);
                 }
             }
         }
-        case shell::terminal_size:
+        case shell_order_type::terminal_size:
         {
             auto value = std::string(order.data.begin(), order.data.end());
             auto parts = value | ranges::views::split(':') | ranges::to<std::vector<std::string>>();
@@ -52,7 +54,7 @@ namespace domain::containers
             terminal->resize(columns, rows);
             send_success("terminal session resized");
         }
-        case shell::terminal_feed:
+        case shell_order_type::terminal_feed:
         {
             terminal->write(order.data);
             break;
