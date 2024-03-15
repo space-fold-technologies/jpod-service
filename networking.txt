@@ -1,0 +1,186 @@
+In order to be able to perform docker style networking, a bridge will have to be created 
+Then an epair{$n<a:b>} will need created, the interfaces will then be turned on once all information is set into them
+
+:docker specific information 
+https://www.aquasec.com/cloud-native-academy/docker-container/docker-networking/#:~:text=When%20Docker%20is%20installed%2C%20a,a%20custom%20network%20is%20specified.
+:replicating docker style networking for freebsd jails 
+https://samuel.karp.dev/blog/2022/12/docker-style-networking-for-freebsd-jails-with-runj/
+
+
+
+#include <err.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+
+#include <net/ethernet.h>
+#include <net/if.h>
+#if defined(__DragonFly__)
+#include <net/bridge/if_bridgevar.h>
+#elif defined(__FreeBSD__)
+#include <net/if_bridgevar.h>
+#endif
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+
+int
+create_socket(int domain)
+{
+	int s;
+
+	if ((s = socket(domain, SOCK_DGRAM, 0)) == -1)
+		err(1, "socket");
+
+	return s;
+}
+
+
+char *
+create_if(int s, const char *type)
+{
+	struct ifreq ifr;
+
+	/* For the bridge creation request */
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, IF_NAMESIZE, "%s", type);
+
+	if (ioctl(s, SIOCIFCREATE2, &ifr) < 0) {
+		perror("SIOCIFCREATE2");
+		return NULL;
+	}
+
+	printf("if=%s created\n", ifr.ifr_name);
+	return strndup(ifr.ifr_name, IF_NAMESIZE);
+}
+
+int
+destroy_if(int s, const char *ifname)
+{
+	struct ifreq ifr;
+
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, IF_NAMESIZE, "%s", ifname);
+
+	if (ioctl(s, SIOCIFDESTROY, &ifr) < 0) {
+		perror("SIOCIFDESTROY");
+		return -1;
+	}
+	printf("if=%s destroyed\n", ifr.ifr_name);
+
+	return 0;
+}
+
+int
+add2bridge(int s, const char *bifname, const char *ifname)
+{
+	struct ifreq ifr;
+	struct ifbreq ifbr;
+	struct ifdrv ifd;
+	int flags;
+
+	memset(&ifbr, 0, sizeof(ifbr));
+	memset(&ifr, 0, sizeof(ifr));
+	memset(&ifd, 0, sizeof(ifd));
+
+	snprintf(ifbr.ifbr_ifsname, IF_NAMESIZE, "%s", ifname);
+	snprintf(ifr.ifr_name, IF_NAMESIZE, "%s", ifname);
+
+	/* Set the interface UP */
+	flags = IFF_UP;
+	ifr.ifr_flags |= flags & 0xFFFF;
+	ifr.ifr_flagshigh |= flags >> 16;
+	if (ioctl(s, SIOCSIFFLAGS, &ifr) < 0) {
+		perror("SIOCSIFFLAGS");
+		return -1;
+	}
+
+#if 0
+	/* Get bridge priority */
+	snprintf(ifd.ifd_name, IF_NAMESIZE, "%s", bifname);
+	ifd.ifd_cmd = BRDGGPRI;
+	ifd.ifd_len = sizeof(ifbr);
+	ifd.ifd_data = &ifbr;
+
+	if (ioctl(s, SIOCGDRVSPEC, &ifd) < 0) {
+		if (errno != EEXIST) {
+			perror("SIOCGDRVSPEC");
+			return -1;
+		}
+	}
+#endif
+	/* Add the tap to the bridge */
+	memset(&ifd, 0, sizeof(ifd));
+	snprintf(ifd.ifd_name, IF_NAMESIZE, "%s", bifname);
+	ifd.ifd_cmd = BRDGADD;
+	ifd.ifd_len = sizeof(ifbr);
+	ifd.ifd_data = &ifbr;
+
+	if (ioctl(s, SIOCSDRVSPEC, &ifd) < 0) {
+		if (errno != EEXIST) {
+			perror("SIOCSDRVSPEC");
+			return -1;
+		}
+	}
+	printf("Added %s to %s\n", ifname, bifname);
+	return 0;
+}
+
+void
+test(int domain)
+{
+	char *bif_name, *tif_name;
+	char *dom_name;
+
+	int s;
+
+	bif_name = tif_name = NULL;
+
+	switch(domain) {
+	case PF_LOCAL:
+		dom_name = strndup("PF_LOCAL", 12);
+		break;
+	case PF_INET:
+		dom_name = strndup("PF_INET", 12);
+		break;
+	default:
+		return;
+	}
+
+	printf("------ Trying with domain=%s\n", dom_name);
+	s = create_socket(domain);
+	free(dom_name);
+
+	if ((bif_name = create_if(s, "bridge")) == NULL)
+		errx(1, "Failed to create bridge interface");
+	if ((tif_name = create_if(s, "tap")) == NULL) {
+		destroy_if(s, tif_name);
+		errx(1, "Failed to create tap interface");
+	}
+
+	/* Add to the bridge */
+	if (add2bridge(s, bif_name, tif_name) == -1)
+		goto cleanup;
+
+cleanup:
+	/* Cleanup the interfaces created */
+	destroy_if(s, bif_name);
+	destroy_if(s, tif_name);
+
+	if (bif_name)
+		free(bif_name);
+	if (tif_name)
+		free(tif_name);
+	close(s);
+
+}
+int
+main(int argc, char *argv[])
+{
+	test(PF_LOCAL);
+	test(PF_INET);
+
+	return 0;
+}
