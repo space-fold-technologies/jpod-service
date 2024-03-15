@@ -1,0 +1,55 @@
+#include <archive.h>
+#include <archive_entry.h>
+#include <filesystem>
+#include <string>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+void write_archive(const std::string& archivename, const std::vector<std::string>& files) {
+    struct archive* a = archive_write_new();
+    archive_write_add_filter_gzip(a); // Add gzip compression
+    archive_write_set_format_cpio(a); // Set cpio format
+    archive_write_open_filename(a, archivename.c_str());
+
+    for (const std::string& file : files) {
+        struct archive_entry* entry = archive_entry_new();
+        archive_entry_set_pathname(entry, file);
+        struct stat st;
+        stat(file.c_str(), &st);
+        archive_entry_set_size(entry, st.st_size);
+        archive_entry_set_filetype(entry, AE_IFREG); // Regular file
+        archive_entry_set_perm(entry, 0644); // Permissions
+
+        archive_write_header(a, entry);
+
+        int fd = open(file.c_str(), O_RDONLY);
+        char buff[8192];
+        int len = read(fd, buff, sizeof(buff));
+        while (len > 0) {
+            archive_write_data(a, buff, len);
+            len = read(fd, buff, sizeof(buff));
+        }
+        close(fd);
+
+        archive_entry_free(entry);
+    }
+
+    archive_write_close(a);
+    archive_write_free(a);
+}
+
+int main() {
+    std::vector<std::string> files_to_compress = { /* List of file paths */ };
+    write_archive("my_archive.cpio.gz", files_to_compress);
+    return 0;
+}
+
+
+// for extra grass 
+https://github.com/castedmo/moor/blob/master/moor/archive_writer.cpp
+https://github.com/libarchive/libarchive
+https://cpp.hotexamples.com/examples/-/-/archive_error_string/cpp-archive_error_string-function-examples.html
+https://github.com/Devil7DK/SimpleShits/commit/2859df5855ae26c63240a0ea99bf5f015d810b66
+https://github.com/Devil7DK/SimpleShits/tree/master
+https://groups.google.com/g/libarchive-discuss/c/0MWyuZafnpM

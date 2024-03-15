@@ -21,39 +21,6 @@ namespace domain::images
         return result.get().as<image_term_order>();
     }
 
-    struct summary_entry
-    {
-        std::string identifier;
-        std::string repository;
-        std::string tag;
-        std::size_t size;
-        time_point<system_clock, milliseconds> created_at;
-        MSGPACK_DEFINE(identifier, repository, tag, size, created_at)
-    };
-
-    struct summary
-    {
-        std::string name;
-        std::vector<summary_entry> entries;
-        MSGPACK_DEFINE(name, entries)
-    };
-
-    inline std::vector<uint8_t> pack_summary(summary &order)
-    {
-        msgpack::sbuffer buffer;
-        msgpack::pack(buffer, order);
-        std::vector<uint8_t> output(buffer.size());
-        std::memcpy(output.data(), buffer.data(), buffer.size());
-        return output;
-    }
-
-    inline summary unpack_summary(const std::vector<uint8_t> &content)
-    {
-        msgpack::object_handle result;
-        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
-        return result.get().as<summary>();
-    }
-
     enum class step_type : int
     {
         from = 0,
@@ -153,9 +120,8 @@ namespace domain::images
         std::string entry_name;
         std::string sub_entry_name;
         std::string feed;
-        double percentage;
-
-        MSGPACK_DEFINE(entry_name, sub_entry_name, percentage)
+        uint8_t percentage;
+        MSGPACK_DEFINE(entry_name, sub_entry_name, feed, percentage)
     };
 
     inline std::vector<uint8_t> pack_progress_frame(progress_frame &order)
@@ -198,7 +164,7 @@ namespace domain::images
         }
         for (const auto &node : parsed_content["parameters"])
         {
-            details.parameters.emplace(node.first.as<std::string>(), node.second.as<std::string>(" "));
+            details.parameters.emplace(node.first.as<std::string>(), node.second.as<std::string>());
         }
         for (const auto &node : parsed_content["mount_points"])
         {

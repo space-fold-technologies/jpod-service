@@ -16,10 +16,16 @@ namespace domain::containers
     }
     void runtime::create_container(operation_details details)
     {
+        if (details.identifier.empty())
+        {
+            return;
+        }
+        logger->info("adding container: {}", details.identifier);
+        auto key = std::string(details.identifier);
 #if defined(__FreeBSD__) // this is probably not going to be that bad right ?
-        containers.emplace(details.identifier, std::make_shared<freebsd::freebsd_container>(context, std::move(details), *this));
+        containers.emplace(key, std::make_shared<freebsd::freebsd_container>(context, std::move(details), *this));
 #endif
-        containers.at(details.identifier)->initialize(); // might have to use something specific to asio like asio::post
+        containers.at(key)->initialize(); // might have to use something specific to asio like asio::post
     }
     void runtime::container_initialized(const std::string &identifier)
     {
@@ -27,10 +33,13 @@ namespace domain::containers
         {
             monitors.emplace(identifier, container_monitor_provider());
         }
-        auto monitor = monitors.at(identifier);
-        auto container = containers.at(identifier); // might have to use something specific to asio like asio::post
-        container->register_listener(monitor);
-        container->start();
+        if (auto pos = containers.find(identifier); pos != containers.end())
+        {
+            auto container = pos->second;
+            auto monitor = monitors.at(identifier);
+            container->register_listener(monitor);
+            container->start();
+        }
     }
     void runtime::container_started(const std::string &identifier)
     {
@@ -48,14 +57,21 @@ namespace domain::containers
     }
     void runtime::remove_container(std::string &identifier)
     {
+        for (const auto &entry : containers)
+        {
+            logger->info("container-id: {}", entry.first);
+        }
         if (auto pos = containers.find(identifier); pos != containers.end())
         {
+            if (auto pos = monitors.find(identifier); pos != monitors.end())
+            {
+                monitors.erase(pos);
+            }
             containers.erase(pos);
         }
-
-        if (auto pos = monitors.find(identifier); pos != monitors.end())
+        else
         {
-            monitors.erase(pos);
+            logger->error("no such container found");
         }
     }
     std::shared_ptr<container> runtime::fetch_container(const std::string &identifier)

@@ -3,6 +3,7 @@
 
 #include <domain/images/instructions/instruction.h>
 #include <system_error>
+#include <functional>
 #include <optional>
 #include <memory>
 #include <vector>
@@ -12,25 +13,14 @@ namespace spdlog
     class logger;
 };
 
-struct zip;
-typedef zip zip_t;
-struct zip_file;
-typedef zip_file zip_file_t;
-
 namespace domain::images
 {
     class image_repository;
     struct import_details;
 }
-
+struct archive;
 namespace domain::images::instructions
 {
-    struct details_entry
-    {
-        zip_file_t *file;
-        std::size_t size;
-        std::string name;
-    };
     class import_resolver;
     class instruction_listener;
     class import_instruction : public instruction
@@ -48,18 +38,13 @@ namespace domain::images::instructions
 
     private:
         std::error_code initialize();
-        std::error_code fetch_error_code();
-        std::optional<details_entry> fetch_details_entry(std::error_code& error);
-        std::optional<import_details> extract_image_details(details_entry& entry, std::error_code &error);
-
+        std::error_code persist_image_details(const import_details& details, std::size_t file_size);
 
     private:
         const std::string &identifier;
         image_repository &repository;
         import_resolver &resolver;
-        zip_t *archive_ptr;
-        std::vector<uint8_t> buffer;
-        std::vector<uint8_t> chunk;
+        std::unique_ptr<archive, std::function<void(archive *)>> archive_ptr;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

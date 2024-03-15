@@ -31,19 +31,15 @@ namespace domain::containers::freebsd
     {
         if (auto error = mount_file_systems(); error)
         {
-            listener.container_failed(details.identifier, std::move(error));
+            listener.container_failed(details.identifier, error);
         }
         else if (auto error = create_jail(); error)
         {
-            listener.container_failed(details.identifier, std::move(error));
+            listener.container_failed(details.identifier, error);
         }
-        else
+        else if (!details.entry_point.empty())
         {
-            if (!details.entry_point.empty())
-            {
-                error = start_process_in_jail(); // having an entry point should be optional
-            }
-            if (error)
+            if (error = start_process_in_jail(); error)
             {
                 listener.container_failed(details.identifier, error);
             }
@@ -51,6 +47,11 @@ namespace domain::containers::freebsd
             {
                 listener.container_initialized(details.identifier);
             }
+            listener.container_initialized(details.identifier);
+        }
+        else
+        {
+            listener.container_initialized(details.identifier);
         }
     }
     void freebsd_container::start()
@@ -64,6 +65,7 @@ namespace domain::containers::freebsd
                          {
                              if (!err)
                              {
+                                 listener.container_started(details.identifier);
                                  read_from_shell();
                              }
                              else
@@ -72,6 +74,7 @@ namespace domain::containers::freebsd
                              }
                          }); });
     }
+
     void freebsd_container::register_listener(std::shared_ptr<container_listener> operation_listener)
     {
         if (auto pos = operation_listeners.find(operation_listener->type()); pos != operation_listeners.end())
@@ -108,7 +111,8 @@ namespace domain::containers::freebsd
         }
         if (int jail_id = jailparam_set(&parameters[0], parameters.size(), JAIL_CREATE); jail_id == -1)
         {
-            logger->error("failure in creating jail: {}", jail_errmsg);
+            logger->error("failure in creating jail: JAIL ERR: {} SYS-ERR: {}", jail_errmsg, errno);
+            return std::error_code{errno, std::system_category()};
         }
         jailparam_free(&parameters[0], parameters.size());
         return error;
@@ -152,10 +156,6 @@ namespace domain::containers::freebsd
                 setenv(entry.first.c_str(), entry.second.c_str(), 1);
             }
             auto target_shell = getenv("SHELL");
-            if (target_shell == NULL)
-            {
-                target_shell = _PATH_BSHELL;
-            }
             if (auto err = execlp(target_shell, details.entry_point.c_str(), NULL); err < 0)
             {
                 perror("execlp failed");
@@ -341,19 +341,23 @@ namespace domain::containers::freebsd
 
     freebsd_container::~freebsd_container()
     {
-        if (file_descriptor > 0 && process_identifier > 0)
-        {
-            close(file_descriptor);
-            waitpid(process_identifier, nullptr, 0);
-        }
         if (int jail_id = jail_getid(details.identifier.c_str()); jail_id > 0)
         {
             logger->info("SHUTTING DOWN JAIL ID {} ALIAS {}", jail_id, details.identifier);
             jail_remove(jail_id);
         }
+        if (file_descriptor > 0 && process_identifier > 0)
+        {
+            logger->info("closing file descriptor ");
+            close(file_descriptor);
+            logger->info("waiting for the end of process");
+            waitpid(process_identifier, nullptr, 0);
+        }
+
         if (auto error = unmount_file_systems(); error)
         {
             on_operation_failure(error);
         }
+        listener.container_stopped(details.identifier);
     }
 }

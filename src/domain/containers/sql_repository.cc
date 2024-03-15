@@ -141,7 +141,7 @@ namespace domain::containers
         statement.bind(1, properties.identifier);
         statement.bind(2, properties.name);
         statement.bind(3, pack_container_internals(internals));
-        statement.bind(4, "shutdown");
+        statement.bind(4, std::string("shutdown"));
         statement.bind(5, properties.image_identifier);
         if (auto result_code = statement.execute(); result_code < 0)
         {
@@ -245,6 +245,27 @@ namespace domain::containers
         statement.bind(1, "active");
         statement.bind(2, query);
         statement.bind(3, query);
+
+        if (auto result = statement.execute_query(); !result.has_next())
+        {
+            return false;
+        }
+        else
+        {
+            return result.fetch<int32_t>("is_running") > 0;
+        }
+    }
+    bool sql_container_repository::exists(const std::string &query)
+    {
+        std::string sql("SELECT "
+                        "COUNT(*) AS is_running "
+                        "FROM container_tb AS c "
+                        "WHERE c.name = ? "
+                        "OR c.identifier = ?");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        statement.bind(1, query);
+        statement.bind(2, query);
 
         if (auto result = statement.execute_query(); !result.has_next())
         {

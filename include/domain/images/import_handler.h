@@ -26,6 +26,7 @@ namespace domain::images
     public:
         import_handler(
             core::connections::connection &connection,
+            fs::path &image_folder,
             std::shared_ptr<image_repository> repository);
         virtual ~import_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
@@ -43,7 +44,7 @@ namespace domain::images
     private:
         std::string identifier;
         fs::path local_file_path;
-        fs::path image_folder;
+        fs::path &image_folder;
         std::deque<task> tasks;
         std::shared_ptr<image_repository> repository;
         std::shared_ptr<spdlog::logger> logger;

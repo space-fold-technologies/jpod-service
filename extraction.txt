@@ -1,0 +1,49 @@
+#include <archive.h>
+#include <archive_entry.h>
+
+void extractFile(const char* archivePath, const char* destination) {
+    struct archive* ina = archive_read_new();
+    struct archive_entry* entry;
+    archive_read_support_format_all(ina);
+    archive_read_open_filename(ina, archivePath, 10240);
+
+    struct archive* ext = archive_write_disk_new();
+    // Set any additional options for extraction if needed (e.g., permissions).
+
+    for (;;) {
+        int r = archive_read_next_header(ina, &entry);
+        if (r == ARCHIVE_EOF)
+            break;
+        if (r < ARCHIVE_OK)
+            fprintf(stderr, "%s\n", archive_error_string(ina));
+
+        // Modify the entry's pathname to the desired output path
+        const char* currentFile = archive_entry_pathname(entry);
+        std::string fullOutputPath = destination + currentFile;
+        archive_entry_set_pathname(entry, fullOutputPath.c_str());
+
+        // Write the entry to disk
+        r = archive_write_header(ext, entry);
+        if (r < ARCHIVE_OK)
+            fprintf(stderr, "%s\n", archive_error_string(ext));
+
+        // Copy data from input to output
+        // Implement your own copy_data() function here
+
+        // Finish writing the entry
+        archive_write_finish_entry(ext);
+    }
+
+    // Cleanup
+    archive_read_close(ina);
+    archive_read_free(ina);
+    archive_write_close(ext);
+    archive_write_free(ext);
+}
+
+int main() {
+    const char* archivePath = "your_archive.tar";
+    const char* destination = "/path/to/extracted/files/";
+    extractFile(archivePath, destination);
+    return 0;
+}

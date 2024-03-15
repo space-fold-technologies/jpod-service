@@ -2,10 +2,6 @@
 #include <domain/images/repository.h>
 #include <domain/images/payload.h>
 #include <spdlog/spdlog.h>
-#include <sole.hpp>
-#include <range/v3/algorithm/for_each.hpp>
-
-using namespace std::chrono;
 
 namespace domain::images
 {

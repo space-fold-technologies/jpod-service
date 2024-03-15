@@ -1,11 +1,11 @@
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-find_package(tl-expected REQUIRED CONFIG)
+find_package(CLI11 CONFIG REQUIRED)
 find_package(asio REQUIRED CONFIG)
 find_package(OpenSSL REQUIRED CONFIG)
 find_package(sole REQUIRED)
 find_package(range-v3 REQUIRED CONFIG)
-find_package(libzip REQUIRED CONFIG)
+find_package(LibArchive REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
@@ -64,10 +64,12 @@ add_executable(daemon
                 domain/containers/list_handler.cc
                 domain/containers/creation_handler.cc
                 domain/containers/start_handler.cc
+                domain/containers/stop_handler.cc
                 domain/containers/logging_handler.cc
                 domain/containers/shell_handler.cc
                 domain/containers/removal_handler.cc
                 domain/containers/sql_repository.cc
+                domain/containers/in_memory_monitor.cc
                 #containers::freebsd
                 domain/containers/freebsd/freebsd_container.cc
                 domain/containers/freebsd/freebsd_terminal.cc
@@ -82,10 +84,9 @@ target_link_libraries(daemon
                        spdlog::spdlog_header_only
                        asio::asio
                        range-v3::range-v3
-                       tl::expected
                        sole::sole
                        msgpack-cxx
-                       libzip::zip
+                       LibArchive::LibArchive
                        zstd::libzstd_static
                        yaml-cpp::yaml-cpp
                        SQLite::SQLite3
@@ -93,6 +94,7 @@ target_link_libraries(daemon
                        PUBLIC 
                        OpenSSL::Crypto 
                        OpenSSL::SSL
+                       CLI11::CLI11
                        )
  
                   

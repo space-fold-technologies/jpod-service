@@ -29,6 +29,8 @@ cmrc_add_resource_library(
     WHENCE resources
     ALIAS resource::rc
     resources/migrations/initial-tables.sql 
+    resources/migrations/local-registry.sql 
+    resources/configurations/settings.yml
 )
 
 include_directories(include)

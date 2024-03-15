@@ -27,7 +27,7 @@ TEST_CASE("import instruction case")
         WHEN("the path is given to the import instruction")
         {
             std::string id = sole::uuid4().str();
-            auto archive_path = from_archives("archives/dummy.zip");
+            auto archive_path = from_archives("archives/dummy.tar.gz");
             fs::path image_target_path = fs::path(create_folder(fmt::format("{}", id)));
             When(Method(resolver, archive_file_path)).Return(archive_path);
             When(Method(resolver, image_file_path)).Return(archive_path);

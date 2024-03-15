@@ -5,16 +5,15 @@
 #include <map>
 #include <memory>
 
-struct zip;
-typedef zip zip_t;
 namespace spdlog
 {
     class logger;
 };
+struct archive;
 namespace domain::images::instructions
 {
-    const int BUFFER_SIZE = 4096;
-    typedef std::unique_ptr<zip_t, void (*)(zip_t *)> archive_ptr;
+    const int BUFFER_SIZE = 10240;
+    using archive_ptr = std::unique_ptr<archive, std::function<void(archive *)>>;
     class build_system_resolver : public directory_resolver
     {
     public:
@@ -29,7 +28,9 @@ namespace domain::images::instructions
         void extract_image(const std::string &identifier, const std::string &image_identifier, extraction_callback callback) override;
 
     private:
-        archive_ptr initialize_archive(const fs::path& image_fs_archive, std::error_code& error);
+        archive_ptr initialize_reader(const fs::path &image_fs_archive, std::error_code &error);
+        archive_ptr initialize_writer();
+        std::error_code copy_entry(struct archive* in, struct archive* out);
 
     private:
         std::string local_directory;

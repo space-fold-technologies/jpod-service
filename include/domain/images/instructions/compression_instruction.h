@@ -3,19 +3,19 @@
 
 #include <domain/images/instructions/instruction.h>
 #include <domain/images/payload.h>
+#include <system_error>
+#include <functional>
+#include <filesystem>
 #include <memory>
 #include <map>
-#include <filesystem>
-#include <system_error>
 
 namespace spdlog
 {
     class logger;
 };
 
-struct zip;
-typedef zip zip_t;
-
+struct archive;
+struct archive_entry;
 namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
@@ -23,6 +23,7 @@ namespace domain::images::instructions
     class instruction_listener;
     const double PROGRESSION_PRECISION = 0.5;
     const int OPERATION_FAILED = -1;
+
     class compression_instruction : public instruction
     {
     public:
@@ -35,15 +36,14 @@ namespace domain::images::instructions
 
     private:
         std::error_code initialize();
-        std::error_code fetch_error_code();
-        static void on_progress_update(zip_t *zip_ctx, double progress, void *user_data);
 
     private:
         const std::string &identifier;
         directory_resolver &resolver;
         fs::path image_filesystem_directory;
         fs::path image_folder;
-        zip_t *archive_ptr;
+        std::unique_ptr<archive, std::function<void(archive *)>> archive_ptr;
+        std::unique_ptr<archive_entry, std::function<void(archive_entry *)>> archive_entry_ptr;
         progress_frame frame;
         std::shared_ptr<spdlog::logger> logger;
     };

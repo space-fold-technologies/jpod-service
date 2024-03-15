@@ -5,6 +5,7 @@
 #include <domain/containers/orders.h>
 #include <asio/io_context.hpp>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 
 namespace domain::containers
 {
@@ -27,7 +28,7 @@ namespace domain::containers
         if (auto result = repository->first_match(order.term); !result.has_value())
         {
             // have to come up with custom errors for containers
-            send_error(std::make_error_code(std::errc::no_such_process));
+            send_error(fmt::format("no matching container for : {}", order.term));
         }
         else
         {
@@ -49,7 +50,7 @@ namespace domain::containers
                     entry.flags});
             }
             runtime_ptr->create_container(std::move(details));
-            send_success("container started");
+            send_success(fmt::format("container started: {}", result->identifier));
         }
     }
     void start_handler::on_connection_closed(const std::error_code &error)

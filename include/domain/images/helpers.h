@@ -23,7 +23,8 @@ namespace domain::images::instructions
         std::string tagged_name = "";
         if (tagged_image.find_last_of("/") == std::string::npos)
         {
-            query.registry = "default";
+            query.registry = "localhost";
+            tagged_name = tagged_image;
         }
         else
         {

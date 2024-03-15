@@ -26,6 +26,7 @@ namespace core::commands
     protected:
         command_handler(core::connections::connection &connection);
         void send_error(const std::error_code &err);
+        void send_error(const std::string &err);
         void send_frame(const std::vector<uint8_t> &payload);
         void send_success(const std::string& message);
         void send_progress(const std::string& operation, const std::vector<uint8_t>& data);

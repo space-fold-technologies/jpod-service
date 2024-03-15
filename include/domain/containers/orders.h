@@ -13,7 +13,7 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::string network_properties;
 
-        MSGPACK_DEFINE(tagged_image, name, port_map, env_vars)
+        MSGPACK_DEFINE(tagged_image, name, port_map, env_vars, network_properties)
     };
 
     inline container_creation_order unpack_container_creation_order(const std::vector<uint8_t> &content)
@@ -35,6 +35,18 @@ namespace domain::containers
         msgpack::object_handle result;
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_term_order>();
+    }
+    struct container_remove_order
+    {
+        std::string term;
+        bool force;
+        MSGPACK_DEFINE(term, force)
+    };
+     inline container_remove_order unpack_container_remove_order(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_remove_order>();
     }
     namespace shell
     {

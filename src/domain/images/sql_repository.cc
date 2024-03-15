@@ -275,7 +275,7 @@ namespace domain::images
         }
         else
         {
-            return result.fetch<int32_t>("has_containers") > 0;
+            return result.fetch<bool>("has_containers");
         }
     }
     std::error_code sql_image_repository::remove(const std::string &query)

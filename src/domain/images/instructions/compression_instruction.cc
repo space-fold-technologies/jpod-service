@@ -4,9 +4,13 @@
 #include <domain/images/instructions/instruction_listener.h>
 #include <domain/images/mappings.h>
 #include <spdlog/spdlog.h>
+#include <archive.h>
+#include <archive_entry.h>
 #include <filesystem>
+#include <sys/stat.h>
 #include <fmt/format.h>
-#include <zip.h>
+#include <fstream>
+
 namespace domain::images::instructions
 {
     compression_instruction::compression_instruction(
@@ -31,61 +35,70 @@ namespace domain::images::instructions
         {
             listener.on_instruction_initialized(identifier, this->name);
             frame.entry_name = identifier;
-            frame.sub_entry_name = "fs.zip";
+            frame.sub_entry_name = "fs.tar.gz";
+            archive_entry_ptr = {
+                archive_entry_new(),
+                [](archive_entry *instance) -> void
+                {
+                    archive_entry_free(instance);
+                }};
             for (const auto &entry : std::filesystem::recursive_directory_iterator(image_filesystem_directory))
             {
+                fs::path relative_path = fs::relative(entry.path(), image_filesystem_directory);
+                archive_entry_set_pathname(archive_entry_ptr.get(), (relative_path / "").c_str());
+                struct stat file_info;
+                stat(entry.path().c_str(), &file_info);
+                archive_entry_copy_stat(archive_entry_ptr.get(), &file_info);
+                //frame.total = file_info.st_size;
+                if (auto ec = archive_write_header(archive_ptr.get(), archive_entry_ptr.get()); ec != ARCHIVE_OK)
+                {
+                    logger->error("{}", archive_error_string(archive_ptr.get()));
+                    listener.on_instruction_complete(identifier, make_compression_error_code(ec));
+                    return;
+                }
                 if (entry.is_regular_file())
                 {
-                    fs::path relative_path = fs::relative(entry.path(), image_filesystem_directory);
-                    if (zip_source_t *source = zip_source_file(archive_ptr, entry.path().c_str(), 0, ZIP_LENGTH_TO_END); source == nullptr)
+                    std::vector<char> buffer(8096);
+                    std::ifstream file(entry, std::ios::binary);
+                    if (!file.is_open())
                     {
-                        listener.on_instruction_complete(identifier, fetch_error_code());
+                        listener.on_instruction_complete(identifier, std::make_error_code(std::errc::io_error));
                         return;
                     }
-                    else
+                    std::size_t length = 0;
+                    frame.feed = fmt::format("compressing {}", relative_path.generic_string());
+                    do
                     {
-                        if (auto index = zip_file_add(archive_ptr, (relative_path / "").c_str(), source, ZIP_FL_OVERWRITE); index == OPERATION_FAILED)
+                        file.read(buffer.data(), buffer.size());
+                        length = file.gcount();
+                        if (length > 0)
                         {
-                            listener.on_instruction_complete(identifier, fetch_error_code());
-                            zip_source_free(source);
-                            return;
+                            archive_write_data(archive_ptr.get(), buffer.data(), length);
+                            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
                         }
-                        else if (zip_set_file_compression(archive_ptr, index, ZIP_CM_ZSTD, 9) == OPERATION_FAILED)
-                        {
-                            listener.on_instruction_complete(identifier, fetch_error_code());
-                            zip_source_free(source);
-                            return;
-                        }
-                        else
-                        {
-                            zip_file_set_mtime(archive_ptr, index, time(nullptr), 0);
-                        }
-                    }
+                    } while (length > 0);
+                    file.close();
+                    archive_entry_set_mtime(archive_entry_ptr.get(), time(nullptr), 0L);
                 }
-                else if (entry.is_directory())
-                {
-                    const auto &file_path = entry.path();
-                    const auto &relative_path = std::filesystem::relative(file_path, image_filesystem_directory);
-                    if (zip_dir_add(archive_ptr, relative_path.c_str(), ZIP_FL_ENC_UTF_8) == OPERATION_FAILED)
-                    {
-                        listener.on_instruction_complete(identifier, fetch_error_code());
-                        return;
-                    }
-                }
+                archive_entry_clear(archive_entry_ptr.get());
             }
-            if (zip_close(archive_ptr) == OPERATION_FAILED)
-            {
-                listener.on_instruction_complete(identifier, fetch_error_code());
-                zip_discard(archive_ptr);
-            } else {
-                listener.on_instruction_complete(identifier, {});
-            }
+            listener.on_instruction_complete(identifier, {});
         }
     }
     std::error_code compression_instruction::initialize()
     {
         int error_no;
         std::error_code error;
+        archive_ptr = {
+            archive_write_new(),
+            [](archive *instance) -> void
+            {
+                archive_write_close(instance);
+                archive_write_free(instance);
+            }};
+        archive_write_add_filter_gzip(archive_ptr.get()); // Add gzip compression
+        archive_write_set_format_cpio(archive_ptr.get()); // Set cpio format
+        archive_write_set_format_pax_restricted(archive_ptr.get());
         if (image_filesystem_directory = resolver.destination_path(identifier, error); error)
         {
             return error;
@@ -94,53 +107,19 @@ namespace domain::images::instructions
         {
             return error;
         }
-        else if (archive_ptr = zip_open(fs::path(image_folder / fs::path("fs.zip")).c_str(), ZIP_CREATE | ZIP_EXCL | ZIP_CHECKCONS, &error_no); archive_ptr == NULL)
+        else if (auto ec = archive_write_open_filename(archive_ptr.get(), fs::path(image_folder / fs::path("fs.tar.gz")).c_str()); ec != ARCHIVE_OK)
         {
-            zip_error_t error;
-            zip_error_init_with_code(&error, error_no);
-            logger->error("cannot open zip archive {} {}", name, zip_error_strerror(&error));
-            zip_error_fini(&error);
-            return make_compression_error_code(error_no);
+            logger->error("{}", archive_error_string(archive_ptr.get()));
+            return make_compression_error_code(ec);
         }
-        else
-        {
-            zip_register_progress_callback_with_state(
-                archive_ptr,
-                PROGRESSION_PRECISION,
-                &compression_instruction::on_progress_update,
-                nullptr,
-                this);
-            return error;
-        }
-    }
-    std::error_code compression_instruction::fetch_error_code()
-    {
-        std::error_code err;
-        zip_error_t *error = zip_get_error(archive_ptr);
-
-        if (zip_error_code_zip(error) != ZIP_ER_OK)
-        {
-            err = make_compression_error_code(error->zip_err);
-        }
-        else
-        {
-            err = std::make_error_code(static_cast<std::errc>(zip_error_code_system(error)));
-        }
-        zip_error_fini(error);
-        logger->error("cannot operate on archive {} {}", name, err.message());
-        return err;
-    }
-    void compression_instruction::on_progress_update(zip_t *zip_ctx, double progress, void *user_data)
-    {
-        auto self = static_cast<compression_instruction *>(user_data);
-        self->frame.percentage = progress;
-        self->listener.on_instruction_data_received(self->identifier, pack_progress_frame(self->frame));
+        return {};
     }
 
     compression_instruction::~compression_instruction()
     {
-        if(archive_ptr != NULL) 
+        if (archive_ptr != NULL)
         {
+            archive_ptr.reset();
             archive_ptr = nullptr;
         }
     }
