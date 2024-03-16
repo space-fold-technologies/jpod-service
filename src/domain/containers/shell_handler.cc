@@ -34,7 +34,6 @@ namespace domain::containers
             else
             {
                 terminal = provider(*result, *this);
-                logger->info("opening terminal for: {}", *result);
                 if (auto error = terminal->initialize(); error)
                 {
                     send_error(fmt::format("failed to initialize terminal: {}", error.message()));
@@ -47,7 +46,6 @@ namespace domain::containers
                     }
                     else
                     {
-                        logger->info("terminal for: {} initializing", identifier);
                         send_success("terminal session initialized");
                         terminal->start();
                     }
@@ -75,12 +73,10 @@ namespace domain::containers
    
     void shell_handler::on_terminal_data_received(const std::vector<uint8_t> &content)
     {
-        logger->info("sending frame");
         send_frame(content);
     }
     void shell_handler::on_terminal_error(const std::error_code &error)
     {
-        logger->info("terminal error: {}", error.message());
         send_error(fmt::format("terminal error: {}", error.message()));
     }
     void shell_handler::on_connection_closed(const std::error_code &error)

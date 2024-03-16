@@ -26,7 +26,6 @@ namespace domain::containers::freebsd
                                                                       logger(spdlog::get("jpod")) {}
     std::error_code freebsd_terminal::initialize()
     {
-        logger->info("initializing terminal for: {}", identifier);
         disable_stdio_inheritance();
         winsize size = {24, 80, 0, 0};
         context.notify_fork(asio::io_context::fork_prepare);
@@ -52,11 +51,11 @@ namespace domain::containers::freebsd
                     std::error_code error;
                     if (auto results = fetch_user_details("", error); error)
                     {
-                        logger->error("insecure mode in effect error: {}", error.message());
+                        logger->debug("insecure mode in effect error: {}", error.message());
                     }
                     else if (!setup_environment(*results))
                     {
-                        logger->error("was not able to set up secure mode");
+                        logger->debug("was not able to set up secure mode");
                     }
                     setenv("SHELL", "/bin/sh", 1);
                     setenv("TERM", "xterm-256color", 1);
