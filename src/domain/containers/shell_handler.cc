@@ -42,6 +42,7 @@ namespace domain::containers
                 {
                     terminal->initialize();
                     logger->info("terminal for: {} initializing", identifier);
+                    return;
                 }
             }
         }
@@ -63,8 +64,7 @@ namespace domain::containers
     }
     void shell_handler::on_terminal_initialized()
     {
-        logger->info("terminal initialized");
-        send_success("terminal session created");
+        send_success("terminal session initialized");
         terminal->start();
     }
     void shell_handler::on_terminal_data_received(const std::vector<uint8_t> &content)

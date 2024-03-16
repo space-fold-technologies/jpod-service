@@ -38,34 +38,41 @@ namespace domain::containers::freebsd
         else if (pid == 0)
         {
             setsid();
+            logger->info("id: {}", identifier);
             if (int jail_id = jail_getid(identifier.c_str()); jail_id > 0)
             {
                 if (jail_attach(jail_id) == -1 || chdir("/") == -1)
                 {
                     listener.on_terminal_error(std::error_code(errno, std::system_category()));
-                    _exit(-errno);
+                    return {};
                 }
-            }
-            context.notify_fork(asio::io_context::fork_child);
-            std::error_code error;
-            if (auto results = fetch_user_details("", error); error)
-            {
-                logger->error("insecure mode in effect error: {}", error.message());
-            }
-            else if (!setup_environment(*results))
-            {
-                logger->error("was not able to set up secure mode");
-            }
-            setenv("SHELL", "/bin/sh", 1);
-            setenv("TERM", "xterm-256color", 1);
-            if (auto target_shell = getenv("SHELL"); target_shell != NULL)
-            {
-                if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0)
+                else
                 {
-                    listener.on_terminal_error(std::error_code(errno, std::system_category()));
-                    perror("execlp failed");
-                    _exit(-errno);
+                    context.notify_fork(asio::io_context::fork_child);
+                    std::error_code error;
+                    if (auto results = fetch_user_details("", error); error)
+                    {
+                        logger->error("insecure mode in effect error: {}", error.message());
+                    }
+                    else if (!setup_environment(*results))
+                    {
+                        logger->error("was not able to set up secure mode");
+                    }
+                    setenv("SHELL", "/bin/sh", 1);
+                    setenv("TERM", "xterm-256color", 1);
+                    if (auto target_shell = getenv("SHELL"); target_shell != NULL)
+                    {
+                        if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0)
+                        {
+                            listener.on_terminal_error(std::error_code(errno, std::system_category()));
+                            return {};
+                        }
+                    }
+                    return {};
                 }
+            } else {
+                listener.on_terminal_error(std::error_code(errno, std::system_category()));
+                return {};
             }
         }
         // set the file descriptor non blocking
