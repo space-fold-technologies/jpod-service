@@ -26,7 +26,6 @@ namespace domain::containers
         virtual ~shell_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
         void on_connection_closed(const std::error_code &error) override;
-        void on_terminal_initialized() override;
         void on_terminal_data_received(const std::vector<uint8_t> &content) override;
         void on_terminal_error(const std::error_code &error) override;
 

@@ -34,17 +34,26 @@ namespace domain::containers
             else
             {
                 terminal = provider(*result, *this);
+                logger->info("opening terminal for: {}", *result);
                 if (auto error = terminal->initialize(); error)
                 {
                     send_error(fmt::format("failed to initialize terminal: {}", error.message()));
                 }
                 else
                 {
-                    terminal->initialize();
-                    logger->info("terminal for: {} initializing", identifier);
-                    return;
+                    if (auto error = terminal->initialize(); error)
+                    {
+                        send_error(fmt::format("failed to start up terminal: {}", error.message()));
+                    }
+                    else
+                    {
+                        logger->info("terminal for: {} initializing", identifier);
+                        send_success("terminal session initialized");
+                        terminal->start();
+                    }
                 }
             }
+            break;
         }
         case shell_order_type::terminal_size:
         {
@@ -54,6 +63,7 @@ namespace domain::containers
             auto rows = std::stoi(parts.at(1));
             terminal->resize(columns, rows);
             send_success("terminal session resized");
+            break;
         }
         case shell_order_type::terminal_feed:
         {
@@ -62,13 +72,10 @@ namespace domain::containers
         }
         }
     }
-    void shell_handler::on_terminal_initialized()
-    {
-        send_success("terminal session initialized");
-        terminal->start();
-    }
+   
     void shell_handler::on_terminal_data_received(const std::vector<uint8_t> &content)
     {
+        logger->info("sending frame");
         send_frame(content);
     }
     void shell_handler::on_terminal_error(const std::error_code &error)
