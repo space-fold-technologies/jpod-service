@@ -56,17 +56,18 @@ namespace domain::containers::freebsd
             {
                 logger->error("was not able to set up secure mode");
             }
+            setenv("SHELL", "/bin/sh", 1);
             if (auto target_shell = getenv("SHELL"); target_shell != NULL)
             {
                 if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0)
                 {
-                    perror("execlp failed");
                     listener.on_terminal_error(std::error_code(errno, std::system_category()));
+                    perror("execlp failed");
                     _exit(-errno);
                 }
             }
         }
-
+        logger->info("setting up stuff");
         // set the file descriptor non blocking
         if (int flags = fcntl(fd, F_GETFL); flags != -1)
         {
@@ -86,6 +87,7 @@ namespace domain::containers::freebsd
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
+            logger->info("fully initialized");
             return std::error_code{};
         }
         clean();

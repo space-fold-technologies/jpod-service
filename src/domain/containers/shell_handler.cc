@@ -40,8 +40,8 @@ namespace domain::containers
                 }
                 else
                 {
-                    terminal->start();
-                    logger->info("terminal for: {} started", identifier);
+                    terminal->initialize();
+                    logger->info("terminal for: {} initializing", identifier);
                 }
             }
         }
@@ -63,7 +63,9 @@ namespace domain::containers
     }
     void shell_handler::on_terminal_initialized()
     {
+        logger->info("terminal initialized");
         send_success("terminal session created");
+        terminal->start();
     }
     void shell_handler::on_terminal_data_received(const std::vector<uint8_t> &content)
     {
@@ -71,7 +73,8 @@ namespace domain::containers
     }
     void shell_handler::on_terminal_error(const std::error_code &error)
     {
-        send_error(error);
+        logger->info("terminal error: {}", error.message());
+        send_error(fmt::format("terminal error: {}", error.message()));
     }
     void shell_handler::on_connection_closed(const std::error_code &error)
     {
