@@ -20,7 +20,6 @@ namespace domain::containers
         {
             return;
         }
-        logger->info("adding container: {}", details.identifier);
         auto key = std::string(details.identifier);
 #if defined(__FreeBSD__) // this is probably not going to be that bad right ?
         containers.emplace(key, std::make_shared<freebsd::freebsd_container>(context, std::move(details), *this));
@@ -76,7 +75,11 @@ namespace domain::containers
     }
     std::shared_ptr<container> runtime::fetch_container(const std::string &identifier)
     {
-        return containers.at(identifier);
+        if (auto pos = containers.find(identifier); pos != containers.end())
+        {
+            return pos->second;
+        }
+        return {};
     }
     runtime::~runtime()
     {

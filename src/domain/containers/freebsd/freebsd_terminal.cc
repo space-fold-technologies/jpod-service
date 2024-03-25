@@ -45,28 +45,36 @@ namespace domain::containers::freebsd
                     listener.on_terminal_error(std::error_code(errno, std::system_category()));
                     _exit(-errno);
                 }
-            }
-            context.notify_fork(asio::io_context::fork_child);
-            std::error_code error;
-            if (auto results = fetch_user_details("", error); error)
-            {
-                logger->error("insecure mode in effect error: {}", error.message());
-            }
-            else if (!setup_environment(*results))
-            {
-                logger->error("was not able to set up secure mode");
-            }
-            if (auto target_shell = getenv("SHELL"); target_shell != NULL)
-            {
-                if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0)
+                else
                 {
-                    perror("execlp failed");
-                    listener.on_terminal_error(std::error_code(errno, std::system_category()));
-                    _exit(-errno);
+                    context.notify_fork(asio::io_context::fork_child);
+                    std::error_code error;
+                    if (auto results = fetch_user_details("", error); error)
+                    {
+                        logger->debug("insecure mode in effect error: {}", error.message());
+                    }
+                    else if (!setup_environment(*results))
+                    {
+                        logger->debug("was not able to set up secure mode");
+                    }
+                    setenv("SHELL", "/bin/sh", 1);
+                    setenv("TERM", "xterm-256color", 1);
+                    if (auto target_shell = getenv("SHELL"); target_shell != NULL)
+                    {
+                        if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0) // consider substituting this with top to see if we can get anything
+                        {
+                            listener.on_terminal_error(std::error_code(errno, std::system_category()));
+                            perror("execlp failed");
+                            _exit(-errno);
+                        }
+                    }
+                    return {};
                 }
+            } else {
+                listener.on_terminal_error(std::error_code(errno, std::system_category()));
+                return {};
             }
         }
-
         // set the file descriptor non blocking
         if (int flags = fcntl(fd, F_GETFL); flags != -1)
         {
@@ -104,8 +112,7 @@ namespace domain::containers::freebsd
                          {
                              if (!error)
                              {
-                                 this->listener.on_terminal_initialized();
-                                 read_from_shell();
+                                 wait_to_read_from_shell();
                              }
                              else
                              {

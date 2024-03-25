@@ -42,21 +42,23 @@ namespace domain::containers
         bool force;
         MSGPACK_DEFINE(term, force)
     };
-     inline container_remove_order unpack_container_remove_order(const std::vector<uint8_t> &content)
+    inline container_remove_order unpack_container_remove_order(const std::vector<uint8_t> &content)
     {
         msgpack::object_handle result;
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_remove_order>();
     }
-    namespace shell
+
+    enum class shell_order_type
     {
-        constexpr uint8_t start_session = 0x00;
-        constexpr uint8_t terminal_size = 0x01;
-        constexpr uint8_t terminal_feed = 0x02;
-    }
+        start_session,
+        terminal_feed,
+        terminal_size
+    };
+
     struct container_shell_order
     {
-        uint8_t type;
+        shell_order_type type;
         std::vector<uint8_t> data;
 
         MSGPACK_DEFINE(type, data)
@@ -68,15 +70,17 @@ namespace domain::containers
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_shell_order>();
     }
-    namespace filter
+
+    enum class filter_mode
     {
-        constexpr uint8_t all = 0x00;
-        constexpr uint8_t active = 0x01;
-        constexpr uint8_t shutdown = 0x02;
+        active,
+        all,
+        shutdown
     };
+
     struct container_list_order
     {
-        uint8_t mode;
+        filter_mode mode;
         std::string query;
 
         MSGPACK_DEFINE(mode, query)
@@ -89,15 +93,16 @@ namespace domain::containers
         return result.get().as<container_list_order>();
     }
 
-    inline auto mode_value(uint8_t mode) -> std::string
+    inline auto mode_value(filter_mode mode) -> std::string
     {
 
-        if (mode == filter::active)
+        if (mode == filter_mode::active)
             return "active";
-        else if (mode == filter::shutdown)
+        else if (mode == filter_mode::shutdown)
             return "shutdown";
         return "all";
     }
 }
-
+MSGPACK_ADD_ENUM(domain::containers::shell_order_type);
+MSGPACK_ADD_ENUM(domain::containers::filter_mode);
 #endif // __DAEMON_DOMAIN_CONTAINERS_ORDERS__

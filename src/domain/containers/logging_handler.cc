@@ -3,6 +3,7 @@
 #include <domain/containers/runtime.h>
 #include <domain/containers/orders.h>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 
 namespace domain::containers
 {
@@ -22,13 +23,11 @@ namespace domain::containers
         auto order = unpack_container_term_order(payload);
         if (auto result = repository->first_identifier_match(order.term); !result)
         {
-            // TODO: have to come up with custom errors for containers
-            send_error(std::make_error_code(std::errc::no_such_process));
+            send_error(fmt::format("failed to find a container matching: {}", order.term));
         }
         else if (container_ptr = runtime_ptr->fetch_container(*result); !container_ptr)
         {
-            // TODO: have to come up with custom errors for containers
-            send_error(std::make_error_code(std::errc::no_such_process));
+            send_error(fmt::format("failed to find a container running instance for: {}", order.term));
         }
         else
         {
@@ -45,7 +44,7 @@ namespace domain::containers
     }
     void logging_handler::on_operation_failure(const std::error_code &error)
     {
-        send_error(error);
+        send_error(fmt::format("operation failure: {}", error.message()));
     }
     listener_category logging_handler::type()
     {
@@ -53,6 +52,7 @@ namespace domain::containers
     }
     void logging_handler::on_connection_closed(const std::error_code &error)
     {
+        logger->info("closing connection to logging handler");
     }
     logging_handler::~logging_handler()
     {

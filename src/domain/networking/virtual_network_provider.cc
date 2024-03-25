@@ -136,11 +136,7 @@ namespace domain::networking
             error = std::error_code(errno, std::system_category());
             return false;
         }
-        else if (rename_interface(socket, request, name, error) == -1)
-        {
-            return false;
-        }
-        return true;
+        return rename_interface(socket, request, name, error);
     }
     bool virtual_network_provider::rename_interface(const int socket, ifreq &request, const std::string &name, std::error_code &error)
     {

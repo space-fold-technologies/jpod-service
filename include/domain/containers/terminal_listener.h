@@ -10,7 +10,6 @@ namespace domain::containers
     class terminal_listener
     {
     public:
-        virtual void on_terminal_initialized() = 0;
         virtual void on_terminal_data_received(const std::vector<uint8_t> &content) = 0;
         virtual void on_terminal_error(const std::error_code &err) = 0;
     };

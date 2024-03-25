@@ -25,10 +25,12 @@ find_package(msgpack REQUIRED CONFIG)
 add_executable(daemon
                 main.cc
                 bootstrap.cc
+                # operations
                 core/commands/command_handler.cc
                 core/commands/command_handler_registry.cc
                 core/connections/connection.cc
                 core/connections/connection_acceptor.cc
+                # sql
                 core/sql/connection.cc 
                 core/sql/data_source.cc 
                 core/sql/migrations.cc 
@@ -70,13 +72,25 @@ add_executable(daemon
                 domain/containers/removal_handler.cc
                 domain/containers/sql_repository.cc
                 domain/containers/in_memory_monitor.cc
-                #containers::freebsd
-                domain/containers/freebsd/freebsd_container.cc
-                domain/containers/freebsd/freebsd_terminal.cc
-                # networking
+                #networking
                 domain/networking/asio_address_provider.cc
-                domain/networking/virtual_network_provider.cc
                 )
+
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+        message(STATUS "source files for FreeBSD OS variant.")
+        target_sources(daemon
+                       PRIVATE
+                       #containers::freebsd
+                        domain/containers/freebsd/freebsd_container.cc
+                        domain/containers/freebsd/freebsd_terminal.cc
+                        # networking::freebsd
+                        # domain/containers/freebsd/freebsd_vnet_provider.cc
+                      )   
+                
+elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR CMAKE_SYSTEM_NAME STREQUAL "Solaris" OR CMAKE_SYSTEM_NAME STREQUAL "Illumos")
+        message(STATUS "source files for Illumos OS variant.")
+                
+endif ()
 
 target_link_libraries(daemon
                        PRIVATE
