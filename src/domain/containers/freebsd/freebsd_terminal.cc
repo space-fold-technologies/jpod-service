@@ -14,9 +14,9 @@
 namespace domain::containers::freebsd
 {
     freebsd_terminal::freebsd_terminal(asio::io_context &context,
-                                       const std::string &identifier,
+                                       terminal_properties properties,
                                        terminal_listener &listener) : context(context),
-                                                                      identifier(identifier),
+                                                                      properties(std::move(properties)),
                                                                       listener(listener),
                                                                       file_descriptor(-1),
                                                                       process_identifier(-1),
@@ -27,7 +27,7 @@ namespace domain::containers::freebsd
     std::error_code freebsd_terminal::initialize()
     {
         disable_stdio_inheritance();
-        winsize size = {24, 80, 0, 0};
+        winsize size = {properties.rows, properties.columns, 0, 0};
         context.notify_fork(asio::io_context::fork_prepare);
         int fd;
         auto pid = forkpty(&fd, NULL, NULL, &size);
@@ -38,7 +38,7 @@ namespace domain::containers::freebsd
         else if (pid == 0)
         {
             setsid();
-            if (int jail_id = jail_getid(identifier.c_str()); jail_id > 0)
+            if (int jail_id = jail_getid(properties.identifier.c_str()); jail_id > 0)
             {
                 if (jail_attach(jail_id) == -1 || chdir("/") == -1)
                 {
@@ -49,7 +49,7 @@ namespace domain::containers::freebsd
                 {
                     context.notify_fork(asio::io_context::fork_child);
                     std::error_code error;
-                    if (auto results = fetch_user_details("", error); error)
+                    if (auto results = fetch_user_details(properties.user, error); error)
                     {
                         logger->debug("insecure mode in effect error: {}", error.message());
                     }
@@ -59,18 +59,38 @@ namespace domain::containers::freebsd
                     }
                     setenv("SHELL", "/bin/sh", 1);
                     setenv("TERM", "xterm-256color", 1);
-                    if (auto target_shell = getenv("SHELL"); target_shell != NULL)
+                    if (properties.interactive && properties.commands.empty())
                     {
-                        if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0) // consider substituting this with top to see if we can get anything
+                        if (auto target_shell = getenv("SHELL"); target_shell != NULL)
+                        {
+                            if (auto err = execlp(target_shell, target_shell, "-i", NULL); err < 0) // consider substituting this with top to see if we can get anything
+                            {
+                                listener.on_terminal_error(std::error_code(errno, std::system_category()));
+                                perror("execlp failed");
+                                _exit(-errno);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        std::vector<char *> args;
+                        for (const auto &entry : properties.commands)
+                        {
+                            args.push_back(const_cast<char *>(entry.c_str()));
+                        }
+                        args.push_back(nullptr);
+                        if (auto err = execvp(args[0], args.data()); err < 0) // consider substituting this with top to see if we can get anything
                         {
                             listener.on_terminal_error(std::error_code(errno, std::system_category()));
-                            perror("execlp failed");
+                            perror("execvp failed");
                             _exit(-errno);
                         }
                     }
                     return {};
                 }
-            } else {
+            }
+            else
+            {
                 listener.on_terminal_error(std::error_code(errno, std::system_category()));
                 return {};
             }
@@ -138,11 +158,7 @@ namespace domain::containers::freebsd
             asio::buffer(std::string(content.begin(), content.end())),
             [this](const std::error_code &err, std::size_t bytes_transferred)
             {
-                if (!err)
-                {
-                    this->logger->info("written to terminal");
-                }
-                else
+                if (err)
                 {
                     listener.on_terminal_error(err);
                 }

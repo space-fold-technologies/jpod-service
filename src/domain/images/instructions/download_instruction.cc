@@ -32,8 +32,6 @@ namespace domain::images::instructions
                                           resolver(resolver),
                                           logger(spdlog::get("jpod"))
     {
-        frame.entry_name = identifier;
-        frame.sub_entry_name = "downloading fs.zip";
     }
     void download_instruction::execute()
     {

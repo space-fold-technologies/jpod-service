@@ -7,5 +7,6 @@ images:
     path: '/home/william/voltron/images'
 networking:
     ip-v4-cidr: '172.23.0.1/16'
-    ip-v6-cidr: '2001:db8:1::/64'
-domain-socket: '/home/william/Projects/demonstration/unix.socket.jpod'
+    ip-v6-cidr: 'fd12:3456:789a:1::/64'
+    bridge: jc0
+domain-socket: '/home/william/Projects/updates/unix.socket.jpod'

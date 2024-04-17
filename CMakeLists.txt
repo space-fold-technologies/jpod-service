@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16...3.23)
 
-project(daemon)
+project(jcd)
 # Not ideal to use this global variable, but necessary to make sure
 # that tooling and projects use the same version
 set(CMAKE_CXX_STANDARD 17)
@@ -20,16 +20,17 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 option(BUILD_TESTS "Build Unit tests" ON)
 
 ###################################################################
-# ADDED COMPILED RESOURCES                                        #  
+# ADDED COMPILED RESOURCES                                        #
 ###################################################################
 
 cmrc_add_resource_library(
     resources
-    NAMESPACE resources 
+    NAMESPACE resources
     WHENCE resources
     ALIAS resource::rc
-    resources/migrations/initial-tables.sql 
-    resources/migrations/local-registry.sql 
+    resources/migrations/initial-tables.sql
+    resources/migrations/local-registry.sql
+    resources/migrations/network-tables.sql
     resources/configurations/settings.yml
 )
 
@@ -41,6 +42,6 @@ if(ENABLE_TESTING)
     set(PROJECT_HDRS_FOLDER "${CMAKE_CURRENT_LIST_DIR}/include")
     set(PROJECT_SRC_FOLDER "${CMAKE_CURRENT_LIST_DIR}/src")
     enable_testing()
-    message(AUTHOR_WARNING "Building Tests.")
+    message(STATUS "Building Tests.")
     add_subdirectory(tests)
 endif()

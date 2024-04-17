@@ -33,7 +33,6 @@ namespace domain::images::instructions
         {
             bool found = false;
             archive_entry *entry;
-            progress_frame frame;
             int ec = 0;
             listener.on_instruction_initialized(identifier, this->name);
             do
@@ -63,9 +62,7 @@ namespace domain::images::instructions
                         listener.on_instruction_complete(identifier, make_compression_error_code(chunk_size));
                         return;
                     }
-                    frame.percentage = 75;
-                    frame.feed = "extracted image meta-data";
-                    listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
+                    listener.on_instruction_data_received(identifier, pack_progress_frame(progress_frame{ "extracting image meta-data", 100.0f}));
                     auto details = unpack_import_details(buffer);
                     if (auto path = resolver.image_file_path(identifier, error); error)
                     {
@@ -80,9 +77,7 @@ namespace domain::images::instructions
                         error = persist_image_details(details, image_size);
                         if (!error)
                         {
-                            frame.percentage = 100;
-                            frame.feed = "persisted image details";
-                            listener.on_instruction_data_received(identifier, pack_progress_frame(frame));
+                            listener.on_instruction_data_received(identifier, pack_progress_frame(progress_frame{"persisted image details", 100.0f}));
                         }
                         listener.on_instruction_complete(identifier, error);
                     }
@@ -110,7 +105,7 @@ namespace domain::images::instructions
         image.parameters.insert(details.parameters.begin(), details.parameters.end());
         for (const auto &mp : details.mount_points)
         {
-            image.mount_points.push_back(mount_point{mp.filesystem, mp.folder, mp.options, mp.flags});
+            image.mount_points.push_back(std::move((mount_point{mp.filesystem, mp.folder, mp.options, mp.flags})));
         }
         return repository.save_image_details(image);
     }

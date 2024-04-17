@@ -37,13 +37,26 @@ namespace domain::images
     }
     void import_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
     {
-        send_progress("image", content);
+        send_progress(content);
     }
     void import_handler::on_instruction_complete(std::string id, std::error_code err)
     {
         if (err)
         {
-            send_error(err);
+            std::string message(err.message());
+            if (auto path = image_file_path(id, err); fs::exists(path, err))
+            {
+                // nuke the extracted image folder
+                if (err)
+                {
+                    message.append(fmt::format("\n{}\n", err.message()));
+                }
+                else if (fs::remove_all(path.parent_path(), err) > 0)
+                {
+                    message.append("\nremoved image \n");
+                }
+            }
+            send_error(message);
         }
         else
         {

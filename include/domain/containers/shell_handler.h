@@ -3,6 +3,7 @@
 
 #include <core/commands/command_handler.h>
 #include <domain/containers/terminal_listener.h>
+#include <domain/containers/terminal_details.h>
 #include <functional>
 #include <memory>
 
@@ -16,7 +17,7 @@ namespace domain::containers
     class container_repository;
     class virtual_terminal;
 
-    typedef std::function<std::unique_ptr<virtual_terminal>(const std::string &, terminal_listener &)> virtual_terminal_provider;
+    typedef std::function<std::unique_ptr<virtual_terminal>(terminal_properties &, terminal_listener &)> virtual_terminal_provider;
     class shell_handler : public core::commands::command_handler, public terminal_listener
     {
     public:

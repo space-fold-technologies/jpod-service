@@ -1,19 +1,13 @@
-#ifndef __DAEMON_CORE_CONNECTIONS_FRAME__
-#define __DAEMON_CORE_CONNECTIONS_FRAME__
+#ifndef __DAEMON_CORE_CONNECTIONS_DETAILS__
+#define __DAEMON_CORE_CONNECTIONS_DETAILS__
 
 #include <cstdint>
 #include <vector>
 #include <map>
 #include <string>
-#include <cstring>
-#include <array>
-#include <spdlog/spdlog.h>
 
 namespace core::connections
 {
-
-    static constexpr uint8_t _header_operation_mask = 0b00011111;
-    static constexpr uint8_t _header_target_mask = 0b11100000;
     enum class operation_target : std::uint8_t
     {
         image = 0b00000000,
@@ -107,86 +101,5 @@ namespace core::connections
         }
         return unknown_key;
     }
-
-    struct frame
-    {
-        operation_target target;
-        request_operation operation;
-        std::vector<uint8_t> payload;
-    };
-
-    inline std::vector<uint8_t> encode_frame(operation_target target, response_operation operation, const std::vector<uint8_t> &data)
-    {
-        std::vector<uint8_t> header;
-        std::size_t length = data.size();
-        header.assign(2 + (length >= 126 ? 2 : 0) + (length >= 65536 ? 6 : 0), 0);
-        header[0] = (static_cast<uint8_t>(operation) & _header_operation_mask) | (static_cast<uint8_t>(target) & _header_target_mask);
-
-        if (length < 126)
-        {
-            header[1] = (length & 0xff) | 0;
-        }
-        else if (length < 65536)
-        {
-            header[1] = 126 | 0;
-            header[2] = (length >> 8) & 0xff;
-            header[3] = (length >> 0) & 0xff;
-        }
-        else
-        {
-            header[1] = 127 | 0;
-            header[2] = (length >> 56) & 0xff;
-            header[3] = (length >> 48) & 0xff;
-            header[4] = (length >> 40) & 0xff;
-            header[5] = (length >> 32) & 0xff;
-            header[6] = (length >> 24) & 0xff;
-            header[7] = (length >> 16) & 0xff;
-            header[8] = (length >> 8) & 0xff;
-            header[9] = (length >> 0) & 0xff;
-        }
-
-        std::vector<uint8_t> frame(header.begin(), header.end());
-        frame.insert(frame.end(), data.begin(), data.end());
-        return frame;
-    }
-    inline frame decode_frame(const std::vector<uint8_t> &data)
-    {
-        frame frm;
-        frm.target = static_cast<operation_target>(data.at(0) & _header_target_mask);
-        frm.operation = static_cast<request_operation>(data.at(0) & _header_operation_mask);
-        std::size_t boundary = data.at(1) & 0x7F;
-        std::size_t content_length = 0;
-        std::size_t num_bytes = 0;
-        // find the content length and how many bytes to skip to get to it
-        if (boundary < 126)
-        {
-            content_length = boundary;
-        }
-        else if (boundary == 126)
-        {
-            num_bytes = 2;
-            std::array<uint8_t, 2> length_bytes;
-            std::memcpy(length_bytes.data(), &data[2], num_bytes);
-            for (std::size_t c = 0; c < num_bytes; c++)
-            {
-                content_length += static_cast<std::size_t>(length_bytes[c]) << (8 * (num_bytes - 1 - c));
-            }
-        }
-        else
-        {
-            num_bytes = 8;
-            std::array<uint8_t, 8> length_bytes;
-            std::memcpy(length_bytes.data(), &data[2], num_bytes);
-            for (std::size_t c = 0; c < num_bytes; c++)
-            {
-                content_length += static_cast<std::size_t>(length_bytes[c]) << (8 * (num_bytes - 1 - c));
-            }
-        }
-        frm.payload.reserve(content_length);
-        auto start_position = data.begin() + (2 + num_bytes);
-        auto end_position = data.begin() + (2 + num_bytes) + content_length;
-        frm.payload.insert(frm.payload.end(), start_position, end_position);
-        return frm;
-    }
 }
-#endif // __DAEMON_CORE_CONNECTIONS_FRAME__
+#endif // __DAEMON_CORE_CONNECTIONS_DETAILS__

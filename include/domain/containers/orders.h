@@ -102,6 +102,24 @@ namespace domain::containers
             return "shutdown";
         return "all";
     }
+
+    struct order_properties
+    {
+        std::string name;
+        std::vector<std::string> commands;
+        bool interactive;
+        std::string user;
+        uint16_t columns;
+        uint16_t rows;
+        MSGPACK_DEFINE(name, commands, interactive, user, columns, rows)
+    };
+
+    inline order_properties unpack_container_properties(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<order_properties>();
+    }
 }
 MSGPACK_ADD_ENUM(domain::containers::shell_order_type);
 MSGPACK_ADD_ENUM(domain::containers::filter_mode);

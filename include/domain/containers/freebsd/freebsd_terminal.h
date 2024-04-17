@@ -2,6 +2,7 @@
 #define __DAEMON_DOMAIN_CONTAINERS_FREEBSD_VIRTUAL_TERMINAL__
 
 #include <domain/containers/virtual_terminal.h>
+#include <domain/containers/terminal_details.h>
 #include <asio/posix/stream_descriptor.hpp>
 #include <string>
 namespace asio
@@ -27,7 +28,7 @@ namespace domain::containers::freebsd
 
     public:
         freebsd_terminal(asio::io_context &context,
-                         const std::string &identifier,
+                         terminal_properties properties,
                          terminal_listener &listener);
         virtual ~freebsd_terminal();
         std::error_code initialize() override;
@@ -43,7 +44,7 @@ namespace domain::containers::freebsd
 
     private:
         asio::io_context &context;
-        const std::string &identifier;
+        terminal_properties properties;
         terminal_listener &listener;
         int file_descriptor;
         pid_t process_identifier;

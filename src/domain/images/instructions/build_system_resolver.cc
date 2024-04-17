@@ -67,8 +67,6 @@ namespace domain::images::instructions
         fs::path output_folder = temporary_folder / fs::path(identifier);
         std::error_code error;
         progress_frame frame{};
-        frame.entry_name = identifier;
-        frame.sub_entry_name = "extracting fs.tar.gz";
         if (auto in = initialize_reader(image_fs_archive, error); error)
         {
             callback(error, frame);

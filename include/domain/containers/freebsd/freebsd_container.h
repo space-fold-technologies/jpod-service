@@ -53,6 +53,7 @@ namespace domain::containers::freebsd
         std::vector<uint8_t> buffer;
         std::unique_ptr<asio::posix::stream_descriptor> stream;
         std::shared_ptr<spdlog::logger> logger;
+        std::string network;
         std::map<listener_category, std::weak_ptr<container_listener>> operation_listeners;
     };
 }

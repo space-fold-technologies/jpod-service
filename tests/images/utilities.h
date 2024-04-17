@@ -107,8 +107,6 @@ namespace domain::images::instructions
     inline auto extraction_invoked = [](const std::string &identifier, const std::string &image_identifier, domain::images::instructions::extraction_callback callback)
     {
         domain::images::progress_frame frame{};
-        frame.entry_name = "";
-        frame.sub_entry_name = "";
         frame.percentage = 100;
         callback({}, frame);
     };

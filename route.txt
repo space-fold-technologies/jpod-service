@@ -1,0 +1,107 @@
+https://github.com/freebsd/freebsd-src/blob/main/sbin/route/route.c
+
+
+https://github.com/freebsd/freebsd-src/blob/main/sys/net/route.c
+
+https://github.com/freebsd/freebsd-src/blob/main/usr.sbin/ppp/route.c
+
+
+https://github.com/freebsd/freebsd-src/blob/main/usr.bin/netstat/route.c
+
+https://github.com/akhramov/knast/blob/master/netzwerk/src/route.rs
+
+old v1:
+//
+std::error_code freebsd_network_handler::add_route(const std::string &address)
+    {
+        // well time to eat a book, one last feature to implement
+
+        rt_msg_header header{};
+        header.rtm_type = RTM_ADD;
+        header.rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC | RTF_PINNED;
+        header.rtm_version = RTM_VERSION;
+        header.rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+        header.rtm_seq = 1;
+        std::string payload(fmt::format("address={}", address));
+        header.rtm_msglen = payload.size();
+
+        rt_message msg{header, payload.data()};
+        msg.header = header;
+        strlcpy(msg.payload, payload.c_str(), INET_ADDRSTRLEN + 12);
+        if (auto fd = socket(PF_ROUTE, SOCK_RAW, 0); fd == -1)
+        {
+            return std::error_code(errno, std::system_category());
+        }
+        else
+        {
+            // clang-format off
+            defer close_fd([fd] { close(fd); });
+            // clang-format on
+            if (write(fd, &msg, header.rtm_msglen + sizeof(rt_msg_header)) < 0)
+            {
+                logger->error("route addition failed: {}", strerror(errno));
+                return std::error_code(errno, std::system_category());
+            }
+            return {};
+        }
+    }
+
+//
+end v1
+
+old v2:
+//
+std::error_code freebsd_network_handler::add_route(const std::string &address)
+    {
+        // well time to eat a book, one last feature to implement
+
+        rt_msg_header header{};
+        header.rtm_type = RTM_ADD;
+        header.rtm_flags = RTF_UP | RTF_GATEWAY | RTF_STATIC | RTF_PINNED;
+        header.rtm_version = RTM_VERSION;
+        header.rtm_addrs = RTA_DST | RTA_GATEWAY | RTA_NETMASK;
+        header.rtm_seq = 1;
+
+        sockaddr_in first{};
+        sockaddr_in second{};
+        sockaddr_in last{};
+        first.sin_len = sizeof(sockaddr_in);
+        first.sin_family = AF_INET;
+        second.sin_len = sizeof(sockaddr_in);
+        second.sin_family = AF_INET;
+        auto formatted = fmt::format("{}\0",address);
+        if (auto result = inet_pton(AF_INET, formatted.c_str(), &second.sin_addr); result == -1)
+        {
+            return std::error_code(errno, std::system_category());
+        }
+        else if (result == 0)
+        {
+            logger->error("failing gateway address: {}",address);
+            return make_error_code(error_code::invalid_address_format);
+        }
+        last.sin_len = sizeof(sockaddr_in);
+        last.sin_family = AF_INET;
+        std::array<sockaddr_in, 3> payload{first, second, last};
+        header.rtm_msglen = sizeof(sockaddr_in) * 3;
+
+        rt_message msg{header, payload.data()};
+        msg.header = header;
+        // strlcpy(msg.payload, payload.c_str(), INET_ADDRSTRLEN + 12);
+        if (auto fd = socket(PF_ROUTE, SOCK_RAW, 0); fd == -1)
+        {
+            return std::error_code(errno, std::system_category());
+        }
+        else
+        {
+            // clang-format off
+            defer close_fd([fd] { close(fd); });
+            // clang-format on
+            if (write(fd, &msg, header.rtm_msglen) < 0)
+            {
+                logger->error("route addition failed: {}", strerror(errno));
+                return std::error_code(errno, std::system_category());
+            }
+            return {};
+        }
+    }
+// end v1

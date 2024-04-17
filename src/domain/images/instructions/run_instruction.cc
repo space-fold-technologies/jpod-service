@@ -82,7 +82,7 @@ namespace domain::images::instructions
             if (target_shell == NULL)
             {
 #if defined(__FreeBSD__)
-                target_shell = _PATH_BSHELL;
+                target_shell = _PATH_BSHELL; // need to find a better way to manage the default shell
 #endif
             }
             std::string argument = fmt::format("\"{}\"", order);

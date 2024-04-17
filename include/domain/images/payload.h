@@ -117,14 +117,12 @@ namespace domain::images
 
     struct progress_frame
     {
-        std::string entry_name;
-        std::string sub_entry_name;
         std::string feed;
-        uint8_t percentage;
-        MSGPACK_DEFINE(entry_name, sub_entry_name, feed, percentage)
+        float percentage;
+        MSGPACK_DEFINE(feed, percentage)
     };
 
-    inline std::vector<uint8_t> pack_progress_frame(progress_frame &order)
+    inline std::vector<uint8_t> pack_progress_frame(progress_frame order)
     {
         msgpack::sbuffer buffer;
         msgpack::pack(buffer, order);

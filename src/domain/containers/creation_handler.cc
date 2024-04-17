@@ -60,6 +60,7 @@ namespace domain::containers
             properties.name = order.name;
             properties.image_identifier = details->identifier;
             properties.parameters.insert(details->parameters.begin(), details->parameters.end());
+            properties.mount_points.assign(details->mount_points.begin(), details->mount_points.end());
             properties.port_map.insert(order.port_map.begin(), order.port_map.end());
             properties.env_vars.insert(details->env_vars.begin(), details->env_vars.end());
             properties.env_vars.insert(order.env_vars.begin(), order.env_vars.end());
@@ -89,8 +90,6 @@ namespace domain::containers
     }
     std::error_code creation_handler::extract_filesystem()
     {
-        frame.entry_name = identifier;
-        frame.sub_entry_name = "extracting fs.tar.gz";
         std::error_code error;
         archive_entry *entry;
         while (archive_read_next_header(input.get(), &entry) == ARCHIVE_OK)
@@ -112,7 +111,7 @@ namespace domain::containers
                     return error;
                 }
                 frame.feed = fmt::format("unpacked: {}", std::string(entry_name));
-                send_progress("container", pack_progress_frame(frame));
+                send_progress(pack_progress_frame(frame));
             }
         }
         return {};

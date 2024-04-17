@@ -26,14 +26,15 @@ namespace domain::containers
         {
         case shell_order_type::start_session:
         {
-            auto identifier = std::string(order.data.begin(), order.data.end());
-            if (auto result = repository->first_identifier_match(identifier); !result)
+            auto properties = unpack_container_properties(order.data);
+            if (auto result = repository->first_identifier_match(properties.name); !result)
             {
-                send_error(fmt::format("no matching container found for name: {}", identifier));
+                send_error(fmt::format("no matching container found for name: {}", properties.name));
             }
             else
             {
-                terminal = provider(*result, *this);
+                terminal_properties p{*result, properties.commands, properties.interactive, properties.user, properties.columns, properties.rows};
+                terminal = provider(p, *this);
                 if (auto error = terminal->initialize(); error)
                 {
                     send_error(fmt::format("failed to initialize terminal: {}", error.message()));
@@ -70,7 +71,7 @@ namespace domain::containers
         }
         }
     }
-   
+
     void shell_handler::on_terminal_data_received(const std::vector<uint8_t> &content)
     {
         send_frame(content);

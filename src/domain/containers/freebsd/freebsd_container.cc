@@ -12,6 +12,12 @@
 #include <jail.h>
 #include <termios.h>
 #include <spdlog/spdlog.h>
+#include <range/v3/view/split.hpp>
+// #include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
+#include <range/v3/range/conversion.hpp>
+
+using namespace ranges;
 
 namespace domain::containers::freebsd
 {
@@ -24,8 +30,25 @@ namespace domain::containers::freebsd
                                       process_identifier(-1),
                                       buffer(WRITE_BUFFER_SIZE),
                                       stream(nullptr),
+                                      network("default"),
                                       logger(spdlog::get("jpod"))
     {
+        /* will need to do a strip of network_properties to see if the default network
+           setup is present and if not, the default placed in
+        */
+        // auto only_network = [](const std::string &part) -> bool
+        // {
+        //     return part.find_first_of("network=") != std::string::npos;
+        // };
+        // auto parts = details.network_properties | views::split(' ') | views::filter(only_network) | to<std::vector<std::string>>();
+        auto parts = details.network_properties | views::split(' ') | to<std::vector<std::string>>();
+        for (const auto &part : parts)
+        {
+            if (auto pos = part.find_first_of("network="); pos != std::string::npos)
+            {
+                network = part.substr(pos + 1);
+            }
+        }
     }
     void freebsd_container::initialize()
     {
@@ -45,13 +68,12 @@ namespace domain::containers::freebsd
             }
             else
             {
-                listener.container_initialized(details.identifier);
+                listener.container_initialized(details.identifier, network);
             }
-            listener.container_initialized(details.identifier);
         }
         else
         {
-            listener.container_initialized(details.identifier);
+            listener.container_initialized(details.identifier, network);
         }
     }
     void freebsd_container::start()
@@ -103,6 +125,7 @@ namespace domain::containers::freebsd
         std::vector<jailparam> parameters;
         std::error_code error;
         add_parameter(parameters, std::string("name"), details.identifier);
+        add_parameter(parameters, std::string("vnet"), "");
         add_parameter(parameters, std::string("host.hostname"), details.hostname);
         add_parameter(parameters, std::string("path"), details.container_folder.generic_string().c_str());
         for (const auto &entry : details.parameters)
@@ -164,7 +187,7 @@ namespace domain::containers::freebsd
             }
             else
             {
-                listener.container_stopped(details.identifier);
+                listener.container_stopped(details.identifier, network);
             }
         }
         else
@@ -358,6 +381,6 @@ namespace domain::containers::freebsd
         {
             on_operation_failure(error);
         }
-        listener.container_stopped(details.identifier);
+        listener.container_stopped(details.identifier, network);
     }
 }

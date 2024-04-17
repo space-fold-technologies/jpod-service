@@ -1,0 +1,5 @@
+https://github.com/7aske/ccont/tree/master
+https://www.lucavall.in/
+https://cesarvr.github.io/post/2018-05-22-create-containers/
+https://blog.lizzie.io/linux-containers-in-500-loc.html
+https://medium.com/@saschagrunert/demystifying-containers-part-i-kernel-space-2c53d6979504

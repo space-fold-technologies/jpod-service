@@ -12,12 +12,54 @@ namespace domain::networking
     };
     struct ip_address
     {
-        std::string identifier;
         std::string value;
         std::string netmask;
         std::string broadcast;
         ip_address_type type;
         std::string cidr;
+    };
+
+    struct network_entry
+    {
+        std::string name;
+        std::string code;
+        std::string subnet;
+        std::string scope;
+        std::string driver;
+    };
+
+    struct network_order
+    {
+        std::string container;
+        std::string bridge;
+        std::string code;
+        std::string ip;
+        ip_address_type type;
+        std::string broadcast;
+        std::string netmask;
+        std::string gateway;
+    };
+
+    struct bridge_order
+    {
+        std::string name;
+        std::string ip;
+        std::string broadcast;
+        ip_address_type type; 
+        std::string netmask;
+    };
+
+    struct bridge_result
+    {
+        std::string code;
+        std::string container;
+        std::string members;
+    };
+    struct network_membership
+    {
+        std::string code;
+        std::string driver;
+        std::string members;
     };
 }
 #endif // __DAEMON_DOMAIN_NETWORKING_DETAILS__

@@ -89,9 +89,11 @@ namespace core::sql
       const char *error = sqlite3_errmsg(this->connection->handle());
       int code = sqlite3_errcode(this->connection->handle());
       logger->error("EXECUTION ERROR : {} CODE : {}", error, code);
+      return code;
     }
     sqlite3_mutex_leave(sqlite3_db_mutex(this->connection->handle()));
-    return sqlite3_changes(connection->handle());
+    //return sqlite3_changes(connection->handle());
+    return SQLITE_OK;
   }
 
   result_set statement::execute_query() noexcept

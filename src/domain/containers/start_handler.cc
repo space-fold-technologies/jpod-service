@@ -41,13 +41,15 @@ namespace domain::containers
             details.entry_point = result->entry_point;
             details.container_folder = containers_folder / fs::path(details.identifier);
             details.network_properties = result->network_properties;
+    
             for (const auto &entry : result->mount_points)
             {
-                details.mount_points.push_back(mount_point_entry{
+                details.mount_points.push_back(std::move(mount_point_entry{
                     entry.filesystem,
                     details.container_folder / entry.folder,
                     entry.options,
-                    entry.flags});
+                    entry.flags}));
+                auto folder = details.container_folder / entry.folder;
             }
             runtime_ptr->create_container(std::move(details));
             send_success(fmt::format("container started: {}", result->identifier));
