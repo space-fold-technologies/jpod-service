@@ -1,6 +1,8 @@
 #ifndef __DAEMON_BOOTSTRAP__
 #define __DAEMON_BOOTSTRAP__
 #include <core/configuration/configuration.h>
+#include <domain/containers/terminal_details.h>
+#include <domain/networking/details.h>
 #include <memory>
 
 namespace asio
@@ -42,10 +44,19 @@ namespace domain::containers
     class container_monitor;
     class runtime;
 };
+
+namespace domain::networking
+{
+    class network_handler;
+    class network_service;
+    class network_repository;
+};
+
 namespace spdlog
 {
     class logger;
 };
+
 using namespace core::commands;
 using namespace core::connections;
 using namespace core::configurations;
@@ -64,9 +75,10 @@ private:
 
 private:
     std::unique_ptr<domain::containers::virtual_terminal> create_virtual_terminal(
-        const std::string &identifier,
+        domain::containers::terminal_properties properties,
         domain::containers::terminal_listener &listener);
     std::shared_ptr<domain::containers::container_monitor> create_container_monitor();
+    std::unique_ptr<domain::networking::network_handler> provide_network_handler();
 
 private:
     asio::io_context &context;
@@ -75,10 +87,15 @@ private:
     std::unique_ptr<core::sql::pool::data_source> data_source;
     std::shared_ptr<domain::images::image_repository> image_repository;
     std::shared_ptr<domain::containers::container_repository> container_repository;
+    std::shared_ptr<domain::networking::network_repository> network_repository;
     std::shared_ptr<domain::containers::runtime> runtime;
     std::shared_ptr<domain::images::http::client> client;
+    std::shared_ptr<domain::networking::network_service> network_service;
+    //perhaps on
+    
     fs::path containers_folder;
     fs::path images_folder;
+    domain::networking::network_entry default_network_entry;
     std::shared_ptr<spdlog::logger> logger;
 };
 

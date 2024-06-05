@@ -27,8 +27,6 @@ namespace domain::images::instructions
     {
         std::error_code error;
         progress_frame frame;
-        frame.entry_name = identifier;
-        frame.sub_entry_name = fmt::format("{}:{} STAGES", name, targets.size());
         int counter = 0;
         listener.on_instruction_initialized(identifier, name);
         for (const auto &stage_identifier : targets)

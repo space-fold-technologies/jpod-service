@@ -10,19 +10,9 @@ find_package(SQLite3 REQUIRED CONFIG)
 find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
 find_package(msgpack REQUIRED CONFIG)
+find_package(nlohmann_json REQUIRED CONFIG)
 
-# Generic test that uses conan libs
-
-# if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DASIO_HAS_IO_URING -luring")
-# elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")  
-#     option(ASIO_HAS_KQUEUE "IO_URING SUPPORT" ON)
-# elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR CMAKE_SYSTEM_NAME STREQUAL "SunOS")
-#     message(STATUS "Building On Some solaris variant.")
-#     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DASIO_HAS_DEV_POLL")
-# endif ()
-
-add_executable(daemon
+add_executable(jcd
                 main.cc
                 bootstrap.cc
                 # operations
@@ -73,26 +63,39 @@ add_executable(daemon
                 domain/containers/sql_repository.cc
                 domain/containers/in_memory_monitor.cc
                 #networking
-                domain/networking/asio_address_provider.cc
+                domain/networking/address_provider.cc
+                domain/networking/network_service.cc
+                domain/networking/create_handler.cc 
+                domain/networking/list_handler.cc 
+                domain/networking/remove_handler.cc
+                domain/networking/sql_repository.cc
                 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
         message(STATUS "source files for FreeBSD OS variant.")
-        target_sources(daemon
+        target_sources(jcd
                        PRIVATE
                        #containers::freebsd
                         domain/containers/freebsd/freebsd_container.cc
                         domain/containers/freebsd/freebsd_terminal.cc
-                        # networking::freebsd
-                        # domain/containers/freebsd/freebsd_vnet_provider.cc
+                       # networking::freebsd
+                        domain/networking/freebsd/freebsd_network_handler.cc
                       )   
-                
+# elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+#         message(STATUS "source files for Linux Based OS variant.")
+#         target_sources(jcd
+#                         PRIVATE
+#                         #containers::linux
+#                         domain/containers/linux/linux_container.cc
+#                         domain/containers/linux/linux_terminal.cc
+#                         # networking::linux
+#                         # domain/containers/linux/linux_vnet_provider.cc
+#                         )                
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR CMAKE_SYSTEM_NAME STREQUAL "Solaris" OR CMAKE_SYSTEM_NAME STREQUAL "Illumos")
-        message(STATUS "source files for Illumos OS variant.")
-                
+        message(STATUS "source files for Illumos OS variant.")        
 endif ()
 
-target_link_libraries(daemon
+target_link_libraries(jcd
                        PRIVATE
                        fmt::fmt 
                        spdlog::spdlog_header_only
@@ -100,6 +103,7 @@ target_link_libraries(daemon
                        range-v3::range-v3
                        sole::sole
                        msgpack-cxx
+                       nlohmann_json::nlohmann_json
                        LibArchive::LibArchive
                        zstd::libzstd_static
                        yaml-cpp::yaml-cpp
@@ -114,16 +118,15 @@ target_link_libraries(daemon
                   
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 
-    target_link_libraries(daemon PRIVATE jail dl util)   
+    target_link_libraries(jcd PRIVATE jail dl util)
     
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" OR CMAKE_SYSTEM_NAME STREQUAL "Solaris" OR CMAKE_SYSTEM_NAME STREQUAL "Illumos")
     message(STATUS "Building On Solaris OS variant.")
-    
 endif ()
 
-target_include_directories(daemon
+target_include_directories(jcd
                             PUBLIC
                             ${PROJECT_HDRS_FOLDER}
                             PRIVATE "${CMAKE_BINARY_DIR}"
                             )
-install(TARGETS daemon DESTINATION bin)
+install(TARGETS jcd DESTINATION bin)

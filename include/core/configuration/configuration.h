@@ -12,6 +12,7 @@ namespace core::configurations
 {
     struct setting_properties
     {
+        std::string bridge;
         std::string ip_v4_cidr;
         std::string ip_v6_cidr;
         std::string images_folder;
@@ -30,6 +31,7 @@ namespace core::configurations
         }
         auto config = YAML::LoadFile(configuration_path.generic_string());
         return setting_properties{
+            config["networking"]["bridge"].as<std::string>(),
             config["networking"]["ip-v4-cidr"].as<std::string>(),
             config["networking"]["ip-v6-cidr"].as<std::string>(),
             config["images"]["path"].as<std::string>(),
@@ -43,14 +45,14 @@ namespace core::configurations
     {
         auto config = YAML::Load(content);
         return setting_properties{
+            config["networking"]["bridge"].as<std::string>(),
             config["networking"]["ip-v4-cidr"].as<std::string>(),
             config["networking"]["ip-v6-cidr"].as<std::string>(),
             config["images"]["path"].as<std::string>(),
             config["containers"]["path"].as<std::string>(),
             config["database"]["path"].as<std::string>(),
             config["domain-socket"].as<std::string>(),
-            config["database"]["pool-size"].as<int>()
-            };
+            config["database"]["pool-size"].as<int>()};
     }
 }
 

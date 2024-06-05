@@ -35,20 +35,18 @@ namespace core::commands
         return output;
     }
 
-    struct progress_payload
+    struct progress_frame
     {
-        std::string operation;
-        std::vector<uint8_t> content;
-        MSGPACK_DEFINE(operation, content);
+        std::string feed;
+        float percentage;
+        MSGPACK_DEFINE(feed, percentage)
     };
 
-    inline std::vector<uint8_t> pack_progress_payload(const progress_payload &order)
+    inline progress_frame unpack_progress_frame(const std::vector<uint8_t> &content)
     {
-        msgpack::sbuffer buffer;
-        msgpack::pack(buffer, order);
-        std::vector<uint8_t> output(buffer.size());
-        std::memcpy(output.data(), buffer.data(), buffer.size());
-        return output;
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<progress_frame>();
     }
 
 }

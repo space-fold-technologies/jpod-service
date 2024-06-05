@@ -8,10 +8,17 @@
 #include <spdlog/spdlog.h>
 namespace domain::containers
 {
-    runtime::runtime(asio::io_context &context, std::shared_ptr<container_repository> repository, monitor_provider container_monitor_provider) : context(context),
-                                                                                                                                                 repository(repository),
-                                                                                                                                                 container_monitor_provider(container_monitor_provider),
-                                                                                                                                                 logger(spdlog::get("jpod"))
+    runtime::runtime(
+        asio::io_context &context,
+        std::shared_ptr<container_repository> repository,
+        monitor_provider container_monitor_provider,
+        address_assigner container_address_assigner,
+        address_cleaner container_address_cleaner) : context(context),
+                                                     repository(repository),
+                                                     container_monitor_provider(container_monitor_provider),
+                                                     container_address_assigner(container_address_assigner),
+                                                     container_address_cleaner(container_address_cleaner),
+                                                     logger(spdlog::get("jpod"))
     {
     }
     void runtime::create_container(operation_details details)
@@ -26,7 +33,7 @@ namespace domain::containers
 #endif
         containers.at(key)->initialize(); // might have to use something specific to asio like asio::post
     }
-    void runtime::container_initialized(const std::string &identifier)
+    void runtime::container_initialized(const std::string &identifier, const std::string &network)
     {
         if (monitors.find(identifier) == monitors.end())
         {
@@ -37,29 +44,36 @@ namespace domain::containers
             auto container = pos->second;
             auto monitor = monitors.at(identifier);
             container->register_listener(monitor);
-            container->start();
+            // now go ahead and assign a network address to the container
+            if (auto error = container_address_assigner(identifier, network); !error)
+            {
+                container->start();
+            }
+            else
+            {
+                remove_container(identifier);
+                logger->error("container address assignment failed: {}", error.message());
+            }
         }
     }
     void runtime::container_started(const std::string &identifier)
     {
-        logger->info("container: {} started", identifier);
         repository->register_status(identifier, "active");
     }
     void runtime::container_failed(const std::string &identifier, const std::error_code &error)
     {
-        logger->info("container: {} failed", identifier);
+        logger->error("container: {} failed", identifier);
     }
-    void runtime::container_stopped(const std::string &identifier)
+    void runtime::container_stopped(const std::string &identifier, const std::string &network)
     {
-        logger->info("container: {} stopped", identifier);
         repository->register_status(identifier, "shutdown");
-    }
-    void runtime::remove_container(std::string &identifier)
-    {
-        for (const auto &entry : containers)
+        if(auto error = container_address_cleaner(identifier, network); error)
         {
-            logger->info("container-id: {}", entry.first);
+            logger->error("container-network: {}", error.message());
         }
+    }
+    void runtime::remove_container(const std::string &identifier)
+    {
         if (auto pos = containers.find(identifier); pos != containers.end())
         {
             if (auto pos = monitors.find(identifier); pos != monitors.end())

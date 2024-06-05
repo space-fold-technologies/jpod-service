@@ -1,6 +1,6 @@
 #include <bootstrap.h>
 #include <core/connections/connection_acceptor.h>
-#include <core/connections/frame.h>
+#include <core/connections/details.h>
 #include <core/sql/data_source.h>
 #include <core/sql/migrations.h>
 #include <core/commands/command_handler_registry.h>
@@ -21,10 +21,17 @@
 #include <domain/containers/stop_handler.h>
 #include <domain/containers/removal_handler.h>
 #include <domain/containers/runtime.h>
+
+// networking
+#include <domain/networking/details.h>
+#include <domain/networking/network_service.h>
+#include <domain/networking/sql_repository.h>
+
 #include <asio/io_context.hpp>
 
 #if defined(__FreeBSD__)
 #include <domain/containers/freebsd/freebsd_terminal.h>
+#include <domain/networking/freebsd/freebsd_network_handler.h>
 #endif
 
 #include <spdlog/spdlog.h>
@@ -38,10 +45,13 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
                                                                                data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
                                                                                image_repository(std::make_shared<domain::images::sql_image_repository>(*data_source)),
                                                                                container_repository(std::make_shared<domain::containers::sql_container_repository>(*data_source)),
+                                                                               network_repository(std::make_shared<domain::networking::sql_network_repository>(*data_source)),
                                                                                runtime(nullptr),
                                                                                client(nullptr),
+                                                                               network_service(nullptr),
                                                                                containers_folder(settings.containers_folder),
                                                                                images_folder(settings.images_folder),
+                                                                               default_network_entry{"default", settings.bridge, settings.ip_v4_cidr, "local", "bridge"},
                                                                                logger(spdlog::get("jpod"))
 {
 }
@@ -49,18 +59,40 @@ void bootstrap::setup()
 {
   data_source->initialize();
   client = std::make_shared<http::asio_client>(context, 4);
+  network_service = std::make_shared<domain::networking::network_service>(
+      network_repository,
+      [this]() -> std::unique_ptr<domain::networking::network_handler>
+      {
+        return this->provide_network_handler();
+      });
   runtime = std::make_shared<domain::containers::runtime>(
       context,
       container_repository,
       [this]() -> std::shared_ptr<domain::containers::container_monitor>
       {
         return this->create_container_monitor();
+      },
+      [this](const std::string &identifier, const std::string &network) -> std::error_code
+      {
+        return network_service->join(network, identifier);
+      },
+      [this](const std::string &identifier, const std::string &network) -> std::error_code
+      {
+        return network_service->leave(network, identifier);
       });
-
   core::sql::migration_handler handler(*data_source, "migrations");
   handler.migrate();
-  setup_handlers();
-  data_source->initialize();
+
+  // setup the networks
+  if (auto error = network_service->add(default_network_entry); !error)
+  {
+    setup_handlers();
+    data_source->initialize();
+  }
+  else
+  {
+    logger->error("failed to start up network services: {}", error.message());
+  }
 }
 void bootstrap::start()
 {
@@ -73,6 +105,7 @@ void bootstrap::stop()
 
 void bootstrap::setup_handlers()
 {
+  // image handlers
   registry->add_handler(
       operation_target::image,
       request_operation::list,
@@ -94,6 +127,7 @@ void bootstrap::setup_handlers()
       {
         return std::make_shared<import_handler>(conn, images_folder, image_repository);
       });
+  // container handlers
   registry->add_handler(
       operation_target::container,
       request_operation::build,
@@ -121,10 +155,10 @@ void bootstrap::setup_handlers()
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         auto provider = [this](
-                            const std::string &identifier,
+                            terminal_properties properties,
                             terminal_listener &listener) -> std::unique_ptr<virtual_terminal>
         {
-          return create_virtual_terminal(identifier, listener);
+          return create_virtual_terminal(std::move(properties), listener);
         };
         return std::make_shared<shell_handler>(conn, container_repository, provider);
       });
@@ -149,17 +183,22 @@ void bootstrap::setup_handlers()
       {
         return std::make_shared<container_removal_handler>(conn, runtime, container_repository, containers_folder);
       });
+  // networking handlers
 }
 
 #if defined(__FreeBSD__)
 std::unique_ptr<virtual_terminal> bootstrap::create_virtual_terminal(
-    const std::string &identifier,
+    terminal_properties properties,
     terminal_listener &listener)
 {
-  return std::make_unique<freebsd::freebsd_terminal>(context, identifier, listener);
+  return std::make_unique<freebsd::freebsd_terminal>(context, std::move(properties), listener);
+}
+
+std::unique_ptr<domain::networking::network_handler> bootstrap::provide_network_handler()
+{
+  return std::make_unique<domain::networking::freebsd::freebsd_network_handler>();
 }
 #endif
-
 std::shared_ptr<domain::containers::container_monitor> bootstrap::create_container_monitor()
 {
   // we will need to implement a container monitor of some kind

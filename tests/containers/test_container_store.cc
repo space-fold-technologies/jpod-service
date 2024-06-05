@@ -32,6 +32,7 @@ TEST_CASE("container repository case")
                 {"securelevel", "3"}},
             std::map<std::string, std::string>{{"9090", "9090"}},
             std::map<std::string, std::string>{{"JAVA_HOME", "/opt/sdks/java"}},
+            {},
             "/bin/sh",
             "nats"};
         std::error_code error = repository.save(properties);

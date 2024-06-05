@@ -2,7 +2,7 @@
 #define __DAEMON_CORE_COMMANDS_COMMAND_HANDLER_REGISTRY__
 #include <memory>
 #include <core/commands/command_handler.h>
-#include <core/connections/frame.h>
+#include <core/connections/details.h>
 #include <functional>
 #include <map>
 #include <optional>

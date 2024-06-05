@@ -8,7 +8,7 @@ namespace domain::containers
     container_list_handler::container_list_handler(
         core::connections::connection &connection,
         std::shared_ptr<container_repository> repository) : command_handler(connection),
-                                                            repository(repository),
+                                                            repository(std::move(repository)),
                                                             logger(spdlog::get("jpod"))
     {
     }

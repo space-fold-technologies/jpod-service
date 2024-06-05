@@ -136,7 +136,7 @@ namespace domain::containers
                         "VALUES(?, ?, ?, ?, (SELECT i.id FROM image_tb AS i WHERE i.identifier = ?))");
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
-        auto internals = container_internals{properties.parameters, properties.port_map, properties.env_vars, properties.entry_point, properties.network_properties};
+        auto internals = container_internals{properties.parameters, properties.env_vars, properties.port_map, properties.mount_points, properties.entry_point, properties.network_properties};
         auto statement = connection->statement(sql);
         statement.bind(1, properties.identifier);
         statement.bind(2, properties.name);
@@ -163,7 +163,7 @@ namespace domain::containers
             "c.name AS container_name, "
             "i.name AS image_name, "
             "c.internals, "
-            "c.created_at "
+            "UNIXEPOCH(c.created_at) AS creation_date "
             "FROM container_tb AS c "
             "INNER JOIN image_tb AS i ON c.image_id = i.id"
             "",
@@ -184,7 +184,7 @@ namespace domain::containers
             entry.name = result.fetch<std::string>("container_name");
             entry.status = result.fetch<std::string>("status");
             entry.image = result.fetch<std::string>("image_name");
-            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("created_at");
+            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("creation_date");
             auto internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             entry.port_map.insert(internals.port_map.begin(), internals.port_map.end());
             entries.push_back(entry);
@@ -200,7 +200,7 @@ namespace domain::containers
             "c.name AS container_name, "
             "i.name AS image_name, "
             "c.internals, "
-            "c.created_at "
+            "UNIXEPOCH(c.created_at) AS creation_date "
             "FROM container_tb AS c "
             "INNER JOIN image_tb AS i ON c.image_id = i.id "
             "WHERE c.name LIKE ? OR c.identifier LIKE ?{}",
@@ -225,7 +225,7 @@ namespace domain::containers
             entry.name = result.fetch<std::string>("container_name");
             entry.status = result.fetch<std::string>("status");
             entry.image = result.fetch<std::string>("image_name");
-            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("created_at");
+            entry.created_at = result.fetch<time_point<system_clock, nanoseconds>>("creation_date");
             auto internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             entry.port_map.insert(internals.port_map.begin(), internals.port_map.end());
             entries.push_back(entry);

@@ -126,7 +126,7 @@ namespace domain::images
         statement.bind(8, static_cast<int64_t>(details.size));
         statement.bind(9, pack_image_internals(internals));
         statement.bind(10, details.registry_path);
-        if (auto result_code = statement.execute(); result_code < 0)
+        if (auto result_code = statement.execute(); result_code != SQLITE_OK)
         {
             return core::sql::errors::make_error_code(result_code);
         }

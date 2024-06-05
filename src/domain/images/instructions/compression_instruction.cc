@@ -34,8 +34,6 @@ namespace domain::images::instructions
         else
         {
             listener.on_instruction_initialized(identifier, this->name);
-            frame.entry_name = identifier;
-            frame.sub_entry_name = "fs.tar.gz";
             archive_entry_ptr = {
                 archive_entry_new(),
                 [](archive_entry *instance) -> void
