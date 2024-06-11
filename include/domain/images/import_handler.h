@@ -2,26 +2,55 @@
 #define __DAEMON_DOMAIN_IMAGES_IMPORT_COMMAND_HANDLER__
 
 #include <core/commands/command_handler.h>
-#include <domain/images/instructions/instruction.h>
-#include <domain/images/instructions/instruction_listener.h>
-#include <domain/images/instructions/import_resolver.h>
+#include <system_error>
 #include <filesystem>
 #include <memory>
 #include <map>
-#include <deque>
+#include <tl/expected.hpp>
 
 namespace spdlog
 {
     class logger;
 };
-using namespace domain::images::instructions;
+struct archive;
 namespace fs = std::filesystem;
 namespace domain::images
 {
     class image_repository;
     struct import_order;
-    typedef std::shared_ptr<instruction> task;
-    class import_handler : public core::commands::command_handler, public instruction_listener, public import_resolver
+    using archive_ptr = std::shared_ptr<archive>;
+    constexpr std::size_t BUFFER_SIZE = 10240;
+    const std::size_t WRITE_BUFFER_SIZE = 1024 * 100;
+    const std::string MANIFEST = "manifest.json";
+    const std::string INDEX = "index.json";
+
+    struct import_state
+    {
+        std::string manifest;
+        std::string index;
+        std::string identifier;
+        std::string registry;
+        std::string repository;
+        std::string tag;
+        std::size_t size;
+        std::string os;
+        std::string variant;
+        std::string version;
+        fs::path image_folder;
+        archive_ptr in;
+        std::map<std::string, fs::path> entries;
+        std::shared_ptr<image_repository> store;
+        std::map<std::string, std::string> env_vars;
+        std::map<uint16_t, std::string> exposed_ports;
+        std::map<std::string, std::string> labels;
+        std::vector<std::string> volumes;
+        std::vector<std::string> command;
+        std::vector<std::string> entry_point;
+    };
+
+    using import_result = tl::expected<import_state, std::error_code>;
+
+    class import_handler : public core::commands::command_handler
     {
     public:
         import_handler(
@@ -31,22 +60,19 @@ namespace domain::images
         virtual ~import_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
         void on_connection_closed(const std::error_code &error) override;
-        void on_instruction_initialized(std::string id, std::string name) override;
-        void on_instruction_data_received(std::string id, const std::vector<uint8_t> &content) override;
-        void on_instruction_complete(std::string id, std::error_code err) override;
-        fs::path archive_file_path() override;
-        fs::path image_file_path(const std::string &identifier, std::error_code &error) override;
-        fs::path generate_image_path(const std::string &identifier, std::error_code &error) override;
 
     private:
-        void run_steps();
+        static import_result initialize_state(std::shared_ptr<image_repository> repository, fs::path local_file_path, fs::path &image_folder);
+        static import_result read_image_details(import_state state);
+        static import_result extract_configuration(import_state state);
+        static import_result extract_index(import_state state);
+        static import_result extract_image_content(import_state state);
+        static import_result resolve_image_meta(import_state state);
+        static tl::expected<std::string, std::error_code> persist_image_details(import_state state);
 
     private:
-        std::string identifier;
-        fs::path local_file_path;
-        fs::path &image_folder;
-        std::deque<task> tasks;
         std::shared_ptr<image_repository> repository;
+        fs::path &image_folder;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

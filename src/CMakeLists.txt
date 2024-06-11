@@ -11,23 +11,36 @@ find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
 find_package(msgpack REQUIRED CONFIG)
 find_package(nlohmann_json REQUIRED CONFIG)
+find_package(llhttp REQUIRED CONFIG)
+find_package(tl-expected REQUIRED CONFIG)
 
 add_executable(jcd
                 main.cc
                 bootstrap.cc
-                # operations
+                # core::oci
+                core/oci/oci_client.cc
+                core/oci/layer_download_task.cc
+                # core::http
+                core/http/secure_session.cc
+                core/http/insecure_session.cc
+                core/http/rest_client.cc
+                core/http/file_transfer_client.cc
+                # core::commands
                 core/commands/command_handler.cc
                 core/commands/command_handler_registry.cc
+                # core::connections
                 core/connections/connection.cc
                 core/connections/connection_acceptor.cc
-                # sql
+                # core::sql
                 core/sql/connection.cc 
                 core/sql/data_source.cc 
                 core/sql/migrations.cc 
                 core/sql/result_set.cc 
                 core/sql/statement.cc 
                 core/sql/transaction.cc 
-                # images
+                # core::archives
+                core/archives/helper.cc
+                # domain::images
                 domain/images/list_handler.cc
                 domain/images/build_handler.cc
                 domain/images/import_handler.cc
@@ -41,17 +54,9 @@ add_executable(jcd
                 domain/images/instructions/unmount_instruction.cc
                 domain/images/instructions/registration_instruction.cc
                 domain/images/instructions/cleanup_instruction.cc
-                domain/images/instructions/extraction_instruction.cc
-                domain/images/instructions/import_instruction.cc
                 domain/images/instructions/build_system_resolver.cc
                 domain/images/sql_repository.cc
-                domain/images/http/request.cc
-                domain/images/http/request_builder.cc
-                domain/images/http/connection_base.cc
-                domain/images/http/secure_connection.cc
-                domain/images/http/insecure_connection.cc
-                domain/images/http/asio_client.cc
-                #containers
+                #domain::containers
                 domain/containers/runtime.cc 
                 domain/containers/list_handler.cc
                 domain/containers/creation_handler.cc
@@ -62,7 +67,7 @@ add_executable(jcd
                 domain/containers/removal_handler.cc
                 domain/containers/sql_repository.cc
                 domain/containers/in_memory_monitor.cc
-                #networking
+                # domain::networking
                 domain/networking/address_provider.cc
                 domain/networking/network_service.cc
                 domain/networking/create_handler.cc 
@@ -109,10 +114,12 @@ target_link_libraries(jcd
                        yaml-cpp::yaml-cpp
                        SQLite::SQLite3
                        resource::rc
+                       llhttp::llhttp
                        PUBLIC 
                        OpenSSL::Crypto 
                        OpenSSL::SSL
                        CLI11::CLI11
+                       tl::expected
                        )
  
                   

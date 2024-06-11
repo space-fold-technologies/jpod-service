@@ -13,6 +13,7 @@ namespace domain::images::instructions
         std::string local_directory,
         const std::map<std::string, std::string> &stage_names) : local_directory(local_directory),
                                                                  stage_names(stage_names),
+                                                                 extensions{{"tar", "tar archives"}, {"tar.gz", "gzip archives"}, {"tar.xz", "lzma archives"}},
                                                                  logger(spdlog::get("jpod"))
     {
     }
@@ -51,6 +52,10 @@ namespace domain::images::instructions
         }
         return output_folder;
     }
+    fs::path build_system_resolver::image_path()
+    {
+        return image_folder;
+    }
     fs::path build_system_resolver::generate_image_path(const std::string &identifier, std::error_code &error)
     {
         // generate a folder in a pre-fixed path that has the ${identifier} as the final folder
@@ -63,34 +68,40 @@ namespace domain::images::instructions
     }
     void build_system_resolver::extract_image(const std::string &identifier, const std::string &image_identifier, extraction_callback callback)
     {
-        fs::path image_fs_archive = image_folder / fs::path(image_identifier) / fs::path("fs.tar.gz");
+        // An Image is Composed of Layers, so extraction would imply opening up the layers into a target directory
+
         fs::path output_folder = temporary_folder / fs::path(identifier);
-        std::error_code error;
-        progress_frame frame{};
-        if (auto in = initialize_reader(image_fs_archive, error); error)
+        for (const auto &entry : fs::directory_iterator(image_folder / fs::path(image_identifier)))
         {
-            callback(error, frame);
-        }
-        else
-        {
-            archive_entry *entry;
-            archive_ptr out = initialize_writer();
-            while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
+            if (fs::is_regular_file(entry) && extensions.find(entry.path().extension()) != extensions.end())
             {
-                const char *entry_name = archive_entry_pathname(entry);
-                const mode_t type = archive_entry_filetype(entry);
-                fs::path full_path = output_folder / fs::path(std::string(entry_name));
-                archive_entry_set_pathname(entry, full_path.generic_string().c_str());
-                // printf("extracting %s\n", currentFile);
-                if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
+                // perform extraction
+                progress_frame frame{};
+                std::error_code error{};
+                auto out = initialize_writer();
+                if (auto in = initialize_reader(entry, error); error)
                 {
-                    logger->error("{}", archive_error_string(out.get()));
+                    callback(error, frame);
                 }
-                else if (archive_entry_size(entry) > 0)
+                else
                 {
-                    if (error = copy_entry(in.get(), out.get()); error)
+                    archive_entry *entry;
+                    while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
                     {
-                        callback(error, frame);
+                        const char *entry_name = archive_entry_pathname(entry);
+                        fs::path full_path = output_folder / fs::path(std::string(entry_name));
+                        archive_entry_set_pathname(entry, full_path.generic_string().c_str());
+                        if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
+                        {
+                            logger->error("{}", archive_error_string(out.get()));
+                        }
+                        else if (archive_entry_size(entry) > 0)
+                        {
+                            if (error = copy_entry(in.get(), out.get()); error)
+                            {
+                                callback(error, frame);
+                            }
+                        }
                     }
                 }
             }

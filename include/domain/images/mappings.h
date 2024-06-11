@@ -92,18 +92,19 @@ namespace domain::images
     struct image_details
     {
         std::string identifier;
-        std::string name;
+        std::string repository;
+        std::string registry;
         std::string tag;
         std::string os;
         std::string variant;
         std::string version;
         std::size_t size;
         std::string entry_point;
-        std::string registry_path;
         std::map<std::string, std::string> labels;
         std::map<std::string, std::string> parameters;
+        std::map<uint16_t, std::string> exposed_ports;
         std::map<std::string, std::string> env_vars;
-        std::vector<mount_point> mount_points;
+        std::vector<std::string> volumes;
     };
 }
 

@@ -114,18 +114,18 @@ namespace domain::images
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
-        image_internals internals{details.labels, details.parameters, details.env_vars, details.mount_points};
+        //image_internals internals{details.labels, details.parameters, details.env_vars, details.mount_points};
         auto statement = connection->statement(sql);
         statement.bind(1, details.identifier);
-        statement.bind(2, details.name);
+        //statement.bind(2, details.name);
         statement.bind(3, details.tag);
         statement.bind(4, details.os);
         statement.bind(5, details.variant);
         statement.bind(6, details.version);
         statement.bind(7, details.entry_point);
         statement.bind(8, static_cast<int64_t>(details.size));
-        statement.bind(9, pack_image_internals(internals));
-        statement.bind(10, details.registry_path);
+   //     statement.bind(9, pack_image_internals(internals));
+        //statement.bind(10, details.registry_path);
         if (auto result_code = statement.execute(); result_code != SQLITE_OK)
         {
             return core::sql::errors::make_error_code(result_code);
@@ -164,7 +164,7 @@ namespace domain::images
             image_details details{};
 
             details.identifier = result.fetch<std::string>("identifier");
-            details.name = result.fetch<std::string>("name");
+            //details.name = result.fetch<std::string>("name");
             details.tag = result.fetch<std::string>("tag");
             details.os = result.fetch<std::string>("os");
             details.variant = result.fetch<std::string>("variant");
@@ -175,7 +175,7 @@ namespace domain::images
             details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
             details.labels.insert(internals.labels.begin(), internals.labels.end());
             details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
-            details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
+            //details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
             return details;
         }
     }

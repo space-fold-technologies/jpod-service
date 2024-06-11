@@ -1,5 +1,5 @@
-#ifndef __DAEMON_DOMAIN_IMAGES_HTTP_RESPONSE__
-#define __DAEMON_DOMAIN_IMAGES_HTTP_RESPONSE__
+#ifndef __DAEMON_CORE_HTTP_RESPONSE__
+#define __DAEMON_CORE_HTTP_RESPONSE__
 
 #include <string>
 #include <vector>
@@ -7,8 +7,14 @@
 #include <system_error>
 #include <sstream>
 #include <unordered_map>
+#include <range/v3/view/split.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <optional>
+#include <algorithm>
 
-namespace domain::images::http
+using namespace ranges;
+
+namespace core::http
 {
     struct hash
     {
@@ -84,29 +90,55 @@ namespace domain::images::http
     public:
         inline auto has_body() const -> bool
         {
-            return headers.find("Content-Length") != headers.end() && headers.find("Accept-Ranges") == headers.end();
+            if (headers.find("Content-Length") != headers.end() && headers.find("Content-Range") == headers.end())
+            {
+                return content_length() > 0;
+            }
+            return headers.find("content-length") != headers.end() && headers.find("Content-Range") == headers.end() && content_length() > 0;
         };
         inline auto is_chunked() const -> bool
         {
             if (auto pos = headers.find("Transfer-Encoding"); pos != headers.end() && pos->second == "chunked")
+            {
                 return true;
+            }
+            else if (pos = headers.find("transfer-encoding"); pos != headers.end() && pos->second == "chunked")
+            {
+                return true;
+            }
             return false;
         };
         inline auto is_event_stream() const -> bool
         {
             if (auto pos = headers.find("Content-Type"); pos != headers.end() && pos->second == "text/event-stream")
+            {
                 return true;
+            }
+            else if (pos = headers.find("content-type"); pos != headers.end() && pos->second == "text/event-stream")
+            {
+                return true;
+            }
             return false;
         };
         inline auto is_closed() const -> bool
         {
-            if (auto pos = headers.find("Connection"); pos != headers.end() && pos->second == "close" || version < "1.1")
+            if (auto pos = headers.find("Connection"); pos != headers.end() && pos->second == "close" && version < "1.1")
+            {
                 return true;
+            }
+            else if (pos = headers.find("connection"); pos != headers.end() && pos->second == "close" && version < "1.1")
+            {
+                return true;
+            }
             return false;
         };
         inline auto content_length() const -> std::size_t
         {
             if (auto pos = headers.find("Content-Length"); pos != headers.end())
+            {
+                return std::stoul(pos->second);
+            }
+            else if (pos = headers.find("content-length"); pos != headers.end())
             {
                 return std::stoul(pos->second);
             }
@@ -118,27 +150,109 @@ namespace domain::images::http
             {
                 return pos->second;
             }
+            else if (pos = headers.find("content-type"); pos != headers.end())
+            {
+                return pos->second;
+            }
             return "";
         };
-        inline auto accepts_ranges() const -> bool
+        inline auto has_partial_body() const -> bool
         {
-            if (headers.find("Content-Length") != headers.end())
+            if (headers.find("Content-Length") != headers.end() && headers.find("Content-Range") != headers.end())
             {
-                if (auto pos = headers.find("Accept-Ranges"); pos != headers.end() && pos->second != "none")
-                {
-                    return true;
-                }
-                return false;
+                return true;
+            }
+            else if (headers.find("content-length") != headers.end() && headers.find("content-range") != headers.end())
+            {
+                return true;
             }
             return false;
         }
-        inline auto unit() const -> std::string
+        inline auto is_partial()
+        {
+            if (code() == 206)
+            {
+                return (headers.find("Content-Range") != headers.end() || headers.find("content-range") != headers.end());
+            }
+            return false;
+        }
+        inline auto is_redirect() const -> bool
+        {
+            if (headers.find("Location") != headers.end() && content_length() == 0)
+            {
+                return true;
+            }
+            else if (headers.find("location") != headers.end() && content_length() == 0)
+            {
+                return true;
+            }
+            return false;
+        }
+        inline auto accepts_ranges() const -> std::string
         {
             if (auto pos = headers.find("Accept-Ranges"); pos != headers.end() && pos->second != "none")
             {
                 return pos->second;
             }
+            else if (pos = headers.find("accept-ranges"); pos != headers.end() && pos->second != "none")
+            {
+                return pos->second;
+            }
+            return "bytes";
+        }
+        inline auto accepts_partial_request() const -> bool
+        {
+            if (headers.find("Content-Length") != headers.end() && headers.find("Content-Range") != headers.end())
+            {
+                return true;
+            }
+            else if (headers.find("content-length") != headers.end() && headers.find("content-range") != headers.end())
+            {
+                return true;
+            }
+            return false;
+        }
+        inline auto content_range() const -> std::optional<std::string>
+        {
+            if (auto pos = headers.find("Content-Range"); pos != headers.end())
+            {
+                return std::make_optional(pos->second);
+            }
+            else if (pos = headers.find("content-range"); pos != headers.end())
+            {
+                return std::make_optional(pos->second);
+            }
+            return std::nullopt;
+        }
+        inline auto location() const -> std::string
+        {
+            auto is_space = [](auto x)
+            {
+                return std::isspace(x);
+            };
+            if (auto pos = headers.find("Location"); pos != headers.end())
+            {
+                std::string _location(pos->second);
+                _location.erase(std::remove_if(_location.begin(), _location.end(), is_space), _location.end());
+                return _location;
+            }
+            else if (pos = headers.find("location"); pos != headers.end())
+            {
+                std::string _location(pos->second);
+                _location.erase(std::remove_if(_location.begin(), _location.end(), is_space), _location.end());
+                return _location;
+            }
             return "";
+        }
+        inline auto code() const -> uint32_t
+        {
+            auto parts = status_code | views::split(' ') | to<std::vector<std::string>>();
+            return std::stoi(parts.at(0));
+        }
+        inline auto is_ok() const -> bool
+        {
+            auto _code = code();
+            return _code >= 200 && _code < 300;
         }
         std::unordered_multimap<std::string, std::string, hash, equal> headers;
         std::vector<uint8_t> data;
@@ -192,4 +306,4 @@ namespace domain::images::http
         return {};
     };
 }
-#endif // __DAEMON_DOMAIN_IMAGES_HTTP_RESPONSE__
+#endif // __DAEMON_CORE_HTTP_RESPONSE__

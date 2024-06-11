@@ -4,6 +4,7 @@
 #include <core/commands/command_handler.h>
 #include <domain/images/instructions/instruction.h>
 #include <domain/images/instructions/instruction_listener.h>
+#include <functional>
 #include <filesystem>
 #include <memory>
 #include <map>
@@ -24,9 +25,9 @@ namespace domain::images::instructions
     class directory_resolver;
 };
 
-namespace domain::images::http
+namespace core::oci
 {
-    class client;
+    class oci_client;
 };
 
 using namespace domain::images::instructions;
@@ -35,14 +36,16 @@ namespace domain::images
 {
     class image_repository;
     class build_order;
-    typedef std::shared_ptr<instruction> task;
+    using oci_client_provider = std::function<std::unique_ptr<core::oci::oci_client>()>;
+    using task = std::shared_ptr<instruction>;
+
     class build_handler : public core::commands::command_handler, public instruction_listener
     {
     public:
         explicit build_handler(
             core::connections::connection &connection,
             std::shared_ptr<image_repository> repository,
-            std::shared_ptr<http::client> client,
+            oci_client_provider provider,
             asio::io_context &context);
         virtual ~build_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
@@ -67,13 +70,13 @@ namespace domain::images
         task create_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers);
 
     private:
+        asio::io_context &context;
+        oci_client_provider provider;
         std::map<std::string, std::deque<task>> stages;
         std::map<std::string, fs::path> current_stage_work_directories;
         std::map<std::string, std::string> stage_names;
         std::unique_ptr<directory_resolver> resolver;
         std::shared_ptr<image_repository> repository;
-        std::shared_ptr<http::client> client;
-        asio::io_context &context;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

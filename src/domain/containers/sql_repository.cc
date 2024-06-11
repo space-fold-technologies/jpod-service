@@ -44,7 +44,7 @@ namespace domain::containers
             domain::images::image_details details{};
 
             details.identifier = result.fetch<std::string>("identifier");
-            details.name = result.fetch<std::string>("name");
+            //details.name = result.fetch<std::string>("name");
             details.tag = result.fetch<std::string>("tag");
             details.os = result.fetch<std::string>("os");
             details.variant = result.fetch<std::string>("variant");
@@ -55,7 +55,7 @@ namespace domain::containers
             details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
             details.labels.insert(internals.labels.begin(), internals.labels.end());
             details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
-            details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
+            //details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
             return details;
         }
     }

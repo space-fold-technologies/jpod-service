@@ -11,7 +11,7 @@ CREATE TABLE
 CREATE TABLE
     IF NOT EXISTS image_tb (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        repository TEXT NOT NULL,
         tag TEXT NOT NULL,
         os TEXT NOT NULL,
         size INTEGER NOT NULL,

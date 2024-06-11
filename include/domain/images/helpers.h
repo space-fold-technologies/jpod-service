@@ -9,7 +9,7 @@ namespace domain::images::instructions
     struct image_registry_query
     {
         std::string registry;
-        std::string name;
+        std::string repository;
         std::string tag;
     };
 
@@ -35,12 +35,12 @@ namespace domain::images::instructions
 
         if (auto position = tagged_name.find_last_of(":"); position != std::string::npos)
         {
-            query.name = tagged_name.substr(0, position);
+            query.repository = tagged_name.substr(0, position);
             query.tag = tagged_name.substr(position + 1);
         }
         else
         {
-            query.name = tagged_name;
+            query.repository = tagged_name;
             query.tag = "latest";
         }
         return std::optional{query};
