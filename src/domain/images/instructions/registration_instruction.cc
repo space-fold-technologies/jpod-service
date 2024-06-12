@@ -25,22 +25,22 @@ namespace domain::images::instructions
         {
             listener.on_instruction_complete(identifier, make_error_code(error_code::invalid_order_issued));
         }
-        else if (auto details = repository.fetch_image_details(result->registry, result->name, result->tag); !details.has_value())
+        else if (auto details = repository.fetch_image_details(result->registry, result->repository, result->tag); !details.has_value())
         {
             listener.on_instruction_complete(identifier, make_error_code(error_code::no_matching_image_found));
         }
         else
         {
-            listener.on_instruction_initialized(identifier, name);
-            details->identifier = identifier;
-            details->name = properties.name;
-            details->tag = properties.tag;
-            details->entry_point = properties.entry_point;
-            details->registry_path = "localhost";
-            details->labels.insert(properties.labels.begin(), properties.labels.end());
-            details->env_vars.insert(properties.env_vars.begin(), properties.env_vars.end());
-            std::error_code error = repository.save_image_details(*details);
-            listener.on_instruction_complete(identifier, error);
+            // listener.on_instruction_initialized(identifier, name);
+            // details->identifier = identifier;
+            // details->name = properties.name;
+            // details->tag = properties.tag;
+            // details->entry_point = properties.entry_point;
+            // details->registry_path = "localhost";
+            // details->labels.insert(properties.labels.begin(), properties.labels.end());
+            // details->env_vars.insert(properties.env_vars.begin(), properties.env_vars.end());
+            // std::error_code error = repository.save_image_details(*details);
+            // listener.on_instruction_complete(identifier, error);
         }
     }
 

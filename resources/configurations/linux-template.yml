@@ -1,0 +1,35 @@
+environment:
+    PATH: '/usr/bin:/bin:/usr/local/bin'
+    TERM: 'xterm-256color'
+mount_points:
+    -
+        filesystem: 'devfs'
+        flags: 0
+        folder: 'dev'
+        options: 'rw'
+    -
+        filesystem: 'linprocfs'
+        flags: 0
+        folder: 'proc'
+        options: 'rw'
+    -
+        filesystem: 'linsysfs'
+        flags: 0
+        folder: 'sys'
+        options: 'rw'
+    -
+        filesystem: 'tmpfs'
+        flags: 0
+        folder: 'dev/shm'
+        options: 'rw,mode=1777'
+parameters:
+    allow.mount: ' '
+    allow.mount.devfs: ' '
+    allow.mount.linprocfs: ' '
+    allow.mount.linsysfs: ' '
+    allow.mount.procfs: ' '
+    allow.mount.tmpfs: ' '
+    allow.raw_sockets: ' '
+    devfs_ruleset: 4
+    securelevel: 3
+    persist: ' '

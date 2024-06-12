@@ -35,10 +35,8 @@ catch_discover_tests(
   .xml)
 
 add_executable(download-instruction-tests 
-  test_download_instruction.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/instructions/download_instruction.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/http/request.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/http/request_builder.cc)
+               test_download_instruction.cc
+               ${PROJECT_SRC_FOLDER}/domain/images/instructions/download_instruction.cc)
 target_link_libraries(download-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX

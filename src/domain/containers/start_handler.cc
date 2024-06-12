@@ -3,9 +3,13 @@
 #include <domain/containers/container.h>
 #include <domain/containers/runtime.h>
 #include <domain/containers/orders.h>
-#include <asio/io_context.hpp>
+#include <domain/images/mappings.h>
+#include <yaml-cpp/yaml.h>
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
+#include <cmrc/cmrc.hpp>
+
+CMRC_DECLARE(resources);
 
 namespace domain::containers
 {
@@ -38,11 +42,12 @@ namespace domain::containers
             details.parameters.insert(result->parameters.begin(), result->parameters.end());
             details.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
             details.port_map.insert(result->port_map.begin(), result->port_map.end());
-            details.entry_point = result->entry_point;
+            details.entry_point.assign(result->entry_point.begin(), result->entry_point.end());
+            details.command.assign(result->command.begin(), result->command.end());
             details.container_folder = containers_folder / fs::path(details.identifier);
             details.network_properties = result->network_properties;
-    
-            for (const auto &entry : result->mount_points)
+
+            for (const auto &entry : (!result->mount_points.empty() ? result->mount_points : from_template(result->os)))
             {
                 details.mount_points.push_back(std::move(mount_point_entry{
                     entry.filesystem,
@@ -58,6 +63,23 @@ namespace domain::containers
     void start_handler::on_connection_closed(const std::error_code &error)
     {
         logger->info("stopping start handler");
+    }
+    std::vector<images::mount_point> start_handler::from_template(const std::string& os)
+    {
+        auto fs = cmrc::resources::get_filesystem();
+        auto file = fs.open(fmt::format("{}-template.yml", os));
+        std::vector<char> content(file.begin(), file.end());
+        YAML::Node parsed_content = YAML::Load(std::string(content.begin(), content.end()));
+        std::vector<images::mount_point> mount_points;
+        for (const auto &node : parsed_content["mount_points"])
+        {
+            mount_points.push_back(images::mount_point{
+                node["filesystem"].as<std::string>(),
+                node["folder"].as<std::string>(),
+                node["options"].as<std::string>(),
+                node["flags"].as<uint64_t>()});
+        }
+        return mount_points;
     }
     start_handler::~start_handler()
     {

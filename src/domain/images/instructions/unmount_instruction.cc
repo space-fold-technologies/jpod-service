@@ -33,7 +33,7 @@ namespace domain::images::instructions
         {
             listener.on_instruction_complete(identifier, make_error_code(error_code::invalid_order_issued));
         }
-        else if (auto mount_points = repository.fetch_image_mount_points(result->registry, result->name, result->tag); mount_points.empty())
+        else if (auto mount_points = repository.fetch_image_mount_points(result->registry, result->repository, result->tag); mount_points.empty())
         {
             listener.on_instruction_complete(identifier, make_error_code(error_code::no_mount_points_present));
         }

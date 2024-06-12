@@ -41,7 +41,7 @@ namespace domain::containers
         {
             send_error(dmi::make_error_code(dmi::error_code::invalid_order_issued));
         }
-        else if (auto details = repository->fetch_image_details(query->registry, query->name, query->tag); !details)
+        else if (auto details = repository->fetch_image_details(query->registry, query->repository, query->tag); !details)
         {
             send_error(std::make_error_code(std::errc::resource_unavailable_try_again));
         }
@@ -57,10 +57,10 @@ namespace domain::containers
         {
             container_properties properties;
             properties.identifier = identifier;
+            properties.os = details->os;
             properties.name = order.name;
             properties.image_identifier = details->identifier;
             properties.parameters.insert(details->parameters.begin(), details->parameters.end());
-            properties.mount_points.assign(details->mount_points.begin(), details->mount_points.end());
             properties.port_map.insert(order.port_map.begin(), order.port_map.end());
             properties.env_vars.insert(details->env_vars.begin(), details->env_vars.end());
             properties.env_vars.insert(order.env_vars.begin(), order.env_vars.end());

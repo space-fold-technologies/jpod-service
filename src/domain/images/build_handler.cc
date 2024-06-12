@@ -10,7 +10,6 @@
 #include <domain/images/instructions/cleanup_instruction.h>
 #include <domain/images/instructions/build_system_resolver.h>
 #include <domain/images/repository.h>
-#include <domain/images/http/client.h>
 #include <domain/images/payload.h>
 #include <range/v3/algorithm/for_each.hpp>
 #include <asio/io_context.hpp>
@@ -23,12 +22,12 @@ namespace domain::images
 
     build_handler::build_handler(core::connections::connection &connection,
                                  std::shared_ptr<image_repository> repository,
-                                 std::shared_ptr<http::client> client,
+                                 oci_client_provider provider,
                                  asio::io_context &context) : command_handler(connection),
+                                                              context(context),
+                                                              provider(provider),
                                                               resolver(nullptr),
                                                               repository(std::move(repository)),
-                                                              client(std::move(client)),
-                                                              context(context),
                                                               logger(spdlog::get("jpod"))
     {
     }
@@ -102,7 +101,7 @@ namespace domain::images
                         identifiers.push_back(stage.first);
                     }
                     identifiers.push_back(stage_identifier);
-                    instructions.push_back(create_registration_instruction(stage_identifier, order, parent_image_order));
+                    //instructions.push_back(create_registration_instruction(stage_identifier, order, parent_image_order));
                     instructions.push_back(create_cleanup_instruction(stage_identifier, std::move(identifiers)));
                 }
                 this->stages.try_emplace(std::move(stage_identifier), std::move(instructions));
@@ -128,7 +127,7 @@ namespace domain::images
     }
     task build_handler::create_download_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<download_instruction>(stage_identifier, order, *client.get(), *repository.get(), *resolver.get(), *this);
+        return std::make_shared<download_instruction>(stage_identifier, order, provider, *repository.get(), *resolver.get(), *this);
     }
     task build_handler::create_mount_instruction(const std::string &stage_identifier, const std::string &order)
     {
@@ -154,14 +153,14 @@ namespace domain::images
     {
         return std::make_shared<compression_instruction>(stage_identifier, *resolver.get(), *this);
     }
-    task build_handler::create_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order)
-    {
-        image_properties properties{};
-        properties.name = order.name;
-        properties.tag = order.tag;
-        properties.parent_image_order = parent_order;
-        return std::make_shared<registration_instruction>(stage_identifier, std::move(properties), *repository.get(), *this);
-    }
+    // task build_handler::create_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order)
+    // {
+    //     image_properties properties{};
+    //     properties.name = order.name;
+    //     properties.tag = order.tag;
+    //     properties.parent_image_order = parent_order;
+    //     return std::make_shared<registration_instruction>(stage_identifier, std::move(properties), *repository.get(), *this);
+    // }
     task build_handler::create_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers)
     {
         return std::make_shared<cleanup_instruction>(stage_identifier, stage_identifiers, *resolver.get(), *this);

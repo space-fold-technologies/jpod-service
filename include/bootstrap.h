@@ -3,6 +3,7 @@
 #include <core/configuration/configuration.h>
 #include <domain/containers/terminal_details.h>
 #include <domain/networking/details.h>
+#include <asio/ssl/context.hpp>
 #include <memory>
 
 namespace asio
@@ -31,9 +32,15 @@ namespace domain::images
 {
     class image_repository;
 };
-namespace domain::images::http
+namespace core::http
 {
-    class client;
+    class http_session;
+    struct ssl_configuration;
+};
+
+namespace core::oci
+{
+    class oci_client;
 };
 
 namespace domain::containers
@@ -79,9 +86,12 @@ private:
         domain::containers::terminal_listener &listener);
     std::shared_ptr<domain::containers::container_monitor> create_container_monitor();
     std::unique_ptr<domain::networking::network_handler> provide_network_handler();
+    std::unique_ptr<core::oci::oci_client> oci_client_provider();
+    std::shared_ptr<core::http::http_session> provider_http_session(const std::string &scheme, const std::string &host);
 
 private:
     asio::io_context &context;
+    asio::ssl::context ssl_ctx;
     std::shared_ptr<command_handler_registry> registry;
     std::unique_ptr<connection_acceptor> acceptor;
     std::unique_ptr<core::sql::pool::data_source> data_source;
@@ -89,10 +99,9 @@ private:
     std::shared_ptr<domain::containers::container_repository> container_repository;
     std::shared_ptr<domain::networking::network_repository> network_repository;
     std::shared_ptr<domain::containers::runtime> runtime;
-    std::shared_ptr<domain::images::http::client> client;
     std::shared_ptr<domain::networking::network_service> network_service;
-    //perhaps on
-    
+    // perhaps on
+
     fs::path containers_folder;
     fs::path images_folder;
     domain::networking::network_entry default_network_entry;

@@ -44,7 +44,9 @@ namespace domain::images
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> env_vars;
         std::vector<mount_point> mount_points;
-        MSGPACK_DEFINE(labels, parameters, env_vars, mount_points)
+        std::vector<std::string> command;
+        std::vector<std::string> entry_point;
+        MSGPACK_DEFINE(labels, parameters, env_vars, mount_points, command, entry_point)
     };
 
     inline std::vector<uint8_t> pack_image_internals(const image_internals &order)
@@ -66,12 +68,12 @@ namespace domain::images
     struct image_summary_entry
     {
         std::string identifier;
-        std::string name;
         std::string repository;
+        std::string registry;
         std::string tag;
         std::size_t size;
         time_point<system_clock, nanoseconds> created_at;
-        MSGPACK_DEFINE(identifier, name, repository, tag, size, created_at)
+        MSGPACK_DEFINE(identifier, repository, registry, tag, size, created_at)
     };
 
     struct image_summary
@@ -92,18 +94,21 @@ namespace domain::images
     struct image_details
     {
         std::string identifier;
-        std::string name;
+        std::string repository;
+        std::string registry;
         std::string tag;
         std::string os;
         std::string variant;
         std::string version;
         std::size_t size;
-        std::string entry_point;
-        std::string registry_path;
         std::map<std::string, std::string> labels;
         std::map<std::string, std::string> parameters;
+        std::map<uint16_t, std::string> exposed_ports;
         std::map<std::string, std::string> env_vars;
+        std::vector<std::string> volumes;
         std::vector<mount_point> mount_points;
+        std::vector<std::string> entry_point;
+        std::vector<std::string> command;
     };
 }
 

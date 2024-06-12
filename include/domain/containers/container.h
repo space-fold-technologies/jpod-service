@@ -29,7 +29,8 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
         std::vector<mount_point_entry> mount_points;
-        std::string entry_point;
+        std::vector<std::string> entry_point;
+        std::vector<std::string> command;
         fs::path container_folder;
         std::string network_properties;
     };

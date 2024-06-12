@@ -4,11 +4,19 @@
 #include <core/sql/data_source.h>
 #include <core/sql/migrations.h>
 #include <core/commands/command_handler_registry.h>
+// core::http
+#include <core/http/secure_session.h>
+#include <core/http/insecure_session.h>
+#include <core/http/ssl_configuration.h>
+
+// core::oci
+#include <core/oci/oci_client.h>
+
 #include <domain/images/list_handler.h>
 #include <domain/images/build_handler.h>
 #include <domain/images/import_handler.h>
 #include <domain/images/sql_repository.h>
-#include <domain/images/http/asio_client.h>
+
 // container headers
 #include <domain/containers/in_memory_monitor.h>
 #include <domain/containers/virtual_terminal.h>
@@ -28,6 +36,7 @@
 #include <domain/networking/sql_repository.h>
 
 #include <asio/io_context.hpp>
+#include <asio/ssl/context.hpp>
 
 #if defined(__FreeBSD__)
 #include <domain/containers/freebsd/freebsd_terminal.h>
@@ -38,8 +47,10 @@
 
 using namespace domain::images;
 using namespace domain::containers;
+using namespace std::placeholders;
 
 bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : context(context),
+                                                                               ssl_ctx(core::http::create_context({})),
                                                                                registry(std::make_shared<command_handler_registry>()),
                                                                                acceptor(std::make_unique<connection_acceptor>(context, settings.domain_socket, registry)),
                                                                                data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
@@ -47,7 +58,6 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
                                                                                container_repository(std::make_shared<domain::containers::sql_container_repository>(*data_source)),
                                                                                network_repository(std::make_shared<domain::networking::sql_network_repository>(*data_source)),
                                                                                runtime(nullptr),
-                                                                               client(nullptr),
                                                                                network_service(nullptr),
                                                                                containers_folder(settings.containers_folder),
                                                                                images_folder(settings.images_folder),
@@ -58,7 +68,6 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
 void bootstrap::setup()
 {
   data_source->initialize();
-  client = std::make_shared<http::asio_client>(context, 4);
   network_service = std::make_shared<domain::networking::network_service>(
       network_repository,
       [this]() -> std::unique_ptr<domain::networking::network_handler>
@@ -118,7 +127,7 @@ void bootstrap::setup_handlers()
       request_operation::build,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<build_handler>(conn, image_repository, client, context);
+        return std::make_shared<build_handler>(conn, image_repository, std::bind(&bootstrap::oci_client_provider, this), context);
       });
   registry->add_handler(
       operation_target::image,
@@ -204,7 +213,21 @@ std::shared_ptr<domain::containers::container_monitor> bootstrap::create_contain
   // we will need to implement a container monitor of some kind
   return std::make_shared<in_memory_monitor>();
 }
-
+std::unique_ptr<core::oci::oci_client> bootstrap::oci_client_provider()
+{
+  return std::make_unique<core::oci::oci_client>(context, std::bind(&bootstrap::provider_http_session, this, _1, _2));
+}
+std::shared_ptr<core::http::http_session> bootstrap::provider_http_session(const std::string &scheme, const std::string &host)
+{
+  if (scheme == "https")
+  {
+    return std::make_shared<core::http::secure_http_session>(context, ssl_ctx);
+  }
+  else
+  {
+    return std::make_shared<core::http::insecure_http_session>(context);
+  }
+}
 bootstrap::~bootstrap()
 {
 }

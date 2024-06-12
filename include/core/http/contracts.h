@@ -1,17 +1,17 @@
-#ifndef __DAEMON_DOMAIN_IMAGES_HTTP_CONTRACTS__
-#define __DAEMON_DOMAIN_IMAGES_HTTP_CONTRACTS__
+#ifndef __DAEMON_CORE_HTTP_CONTRACTS__
+#define __DAEMON_CORE_HTTP_CONTRACTS__
 
 #include <vector>
 #include <cstdint>
 #include <string>
 #include <system_error>
 #include <functional>
-#include <domain/images/http/uri.h>
-#include <domain/images/http/response.h>
+#include <core/http/uri.h>
+#include <core/http/response.h>
 #include <filesystem>
 
 namespace fs = std::filesystem;
-namespace domain::images::http
+namespace core::http
 {
     class download_destination;
     struct upload_status
@@ -38,9 +38,9 @@ namespace domain::images::http
         std::string unit;
         bool complete;
     };
-    typedef std::function<void(std::error_code, download_status)> report_callback;
-    typedef std::function<void(std::error_code, const response &)> response_callback;
-    typedef std::function<void(std::error_code, const upload_status &)> upload_callback;
+    typedef std::function<void(const std::error_code &, download_status)> report_callback;
+    typedef std::function<void(const std::error_code &, const response &)> response_callback;
+    typedef std::function<void(const std::error_code &, const upload_status &)> upload_callback;
     struct file_download
     {
         report_callback callback;
@@ -62,4 +62,4 @@ namespace domain::images::http
     };
 }
 
-#endif // __DAEMON_DOMAIN_IMAGES_HTTP_CONTRACTS__
+#endif // __DAEMON_CORE_HTTP_CONTRACTS__
