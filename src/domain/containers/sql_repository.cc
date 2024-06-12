@@ -17,18 +17,17 @@ namespace domain::containers
     {
         std::string sql("SELECT "
                         "i.identifier, "
-                        "i.name, "
+                        "i.repository, "
                         "i.tag, "
                         "i.os, "
                         "i.variant, "
                         "i.version, "
-                        "i.entry_point, "
                         "i.size, "
                         "i.internals "
                         "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
-                        "AND i.name = ? "
+                        "AND i.repository = ? "
                         "AND i.tag = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
@@ -44,18 +43,18 @@ namespace domain::containers
             domain::images::image_details details{};
 
             details.identifier = result.fetch<std::string>("identifier");
-            //details.name = result.fetch<std::string>("name");
+            details.repository = result.fetch<std::string>("repository");
             details.tag = result.fetch<std::string>("tag");
             details.os = result.fetch<std::string>("os");
             details.variant = result.fetch<std::string>("variant");
             details.version = result.fetch<std::string>("version");
-            details.entry_point = result.fetch<std::string>("entry_point");
             details.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
             auto internals = domain::images::unpack_image_internals(result.fetch<std::vector<uint8_t>>("internals"));
             details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
             details.labels.insert(internals.labels.begin(), internals.labels.end());
             details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
-            //details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
+            details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
+            details.entry_point.assign(internals.entry_point.begin(), internals.entry_point.end());
             return details;
         }
     }
@@ -136,7 +135,16 @@ namespace domain::containers
                         "VALUES(?, ?, ?, ?, (SELECT i.id FROM image_tb AS i WHERE i.identifier = ?))");
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
-        auto internals = container_internals{properties.parameters, properties.env_vars, properties.port_map, properties.mount_points, properties.entry_point, properties.network_properties};
+        auto internals = container_internals
+        {
+            properties.parameters, 
+            properties.env_vars, 
+            properties.port_map, 
+            properties.mount_points, 
+            properties.entry_point, 
+            properties.command, 
+            properties.network_properties
+        };
         auto statement = connection->statement(sql);
         statement.bind(1, properties.identifier);
         statement.bind(2, properties.name);
@@ -161,7 +169,7 @@ namespace domain::containers
             "c.identifier, "
             "c.status, "
             "c.name AS container_name, "
-            "i.name AS image_name, "
+            "i.repository AS image_name, "
             "c.internals, "
             "UNIXEPOCH(c.created_at) AS creation_date "
             "FROM container_tb AS c "
@@ -198,7 +206,7 @@ namespace domain::containers
             "c.identifier, "
             "c.status, "
             "c.name AS container_name, "
-            "i.name AS image_name, "
+            "i.repository AS image_name, "
             "c.internals, "
             "UNIXEPOCH(c.created_at) AS creation_date "
             "FROM container_tb AS c "

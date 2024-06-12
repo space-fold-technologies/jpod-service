@@ -171,15 +171,19 @@ namespace domain::containers::freebsd
             {
                 logger->error("insecure mode in effect without specified user: {} :error: {}", details.username, error.message());
             }
-
-            setenv("SHELL", "/bin/sh", 1);
-            setenv("TERM", "xterm-256color", 1);
             for (const auto &entry : details.env_vars)
             {
                 setenv(entry.first.c_str(), entry.second.c_str(), 1);
             }
-            auto target_shell = getenv("SHELL");
-            if (auto err = execlp(target_shell, details.entry_point.c_str(), NULL); err < 0)
+
+            std::vector<const char *> command;
+            for (auto &entry : !details.command.empty() ? details.command : details.entry_point)
+            {
+                command.push_back(const_cast<char *>(entry.c_str()));
+            }
+
+            command.push_back(NULL);
+            if (auto err = execvp(command[0], const_cast<char *const *>(command.data())); err < 0)
             {
                 perror("execlp failed");
                 listener.container_failed(details.identifier, std::error_code(errno, std::system_category()));

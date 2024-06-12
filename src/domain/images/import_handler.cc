@@ -226,7 +226,7 @@ namespace domain::images
         }
         if (configuration.contains("Cmd"))
         {
-            for (auto &parts : payload["config"]["Cmd"])
+            for (auto &parts : configuration["Cmd"])
             {
                 state.command.push_back(parts.template get<std::string>());
             }

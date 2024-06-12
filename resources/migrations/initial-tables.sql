@@ -17,7 +17,6 @@ CREATE TABLE
         size INTEGER NOT NULL,
         variant TEXT NOT NULL,
         version TEXT NOT NULL,
-        entry_point TEXT NULL,
         internals BLOB NOT NULL,
         identifier VARCHAR(36) NOT NULL,
         registry_id INTEGER NOT NULL,

@@ -11,7 +11,8 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
         std::vector<domain::images::mount_point> mount_points;
-        std::string entry_point;
+        std::vector<std::string> entry_point;
+        std::vector<std::string> command;
         std::string network_properties;
     };
 
@@ -21,7 +22,8 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
         std::vector<domain::images::mount_point> mount_points;
-        std::string entry_point;
+        std::vector<std::string> entry_point;
+        std::vector<std::string> command;
         std::string network_properties;
 
         MSGPACK_DEFINE(parameters, env_vars, port_map, mount_points, entry_point, network_properties)
@@ -49,7 +51,8 @@ namespace domain::containers
         details.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
         details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
-        details.entry_point = internals.entry_point;
+        details.entry_point.assign(internals.entry_point.begin(), internals.entry_point.end());
+        details.command.assign(internals.command.begin(), internals.command.end());
         details.network_properties = internals.network_properties;
     }
 
@@ -62,7 +65,8 @@ namespace domain::containers
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
         std::vector<domain::images::mount_point> mount_points;
-        std::string entry_point;
+        std::vector<std::string> entry_point;
+        std::vector<std::string> command;
         std::string network_properties;
     };
 
@@ -71,7 +75,8 @@ namespace domain::containers
         properties.parameters.insert(internals.parameters.begin(), internals.parameters.end());
         properties.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         properties.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
-        properties.entry_point = internals.entry_point;
+        properties.entry_point.assign(internals.entry_point.begin(), internals.entry_point.end());
+        properties.command.assign(internals.command.begin(), internals.command.end());
         properties.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
         properties.network_properties = internals.network_properties;
     }

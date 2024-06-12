@@ -38,7 +38,8 @@ namespace domain::containers
             details.parameters.insert(result->parameters.begin(), result->parameters.end());
             details.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
             details.port_map.insert(result->port_map.begin(), result->port_map.end());
-            details.entry_point = result->entry_point;
+            details.entry_point.assign(result->entry_point.begin(), result->entry_point.end());
+            details.command.assign(result->command.begin(), result->command.end());
             details.container_folder = containers_folder / fs::path(details.identifier);
             details.network_properties = result->network_properties;
     
