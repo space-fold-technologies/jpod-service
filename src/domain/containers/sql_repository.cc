@@ -13,7 +13,30 @@ namespace domain::containers
     sql_container_repository::sql_container_repository(core::sql::pool::data_source &data_source) : data_source(data_source)
     {
     }
-    std::optional<domain::images::image_details> sql_container_repository::fetch_image_details(const std::string &registry, const std::string &name, const std::string &tag)
+    std::optional<std::string> sql_container_repository::fetch_image_identifier(const std::string &registry, const std::string &name, const std::string &tag)
+    {
+        std::string sql("SELECT "
+                        "i.identifier "
+                        "FROM image_tb AS i "
+                        "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
+                        "WHERE r.path = ? "
+                        "AND i.repository = ? "
+                        "AND i.tag = ?");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        statement.bind(1, registry);
+        statement.bind(2, name);
+        statement.bind(3, tag);
+        if (auto result = statement.execute_query(); !result.has_next())
+        {
+            return std::nullopt;
+        }
+        else
+        {
+            return result.fetch<std::string>("identifier");
+        }
+    }
+    std::optional<domain::images::image_details> sql_container_repository::fetch_image_details(const std::string &identifier)
     {
         std::string sql("SELECT "
                         "i.identifier, "
@@ -26,14 +49,10 @@ namespace domain::containers
                         "i.internals "
                         "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
-                        "WHERE r.path = ? "
-                        "AND i.repository = ? "
-                        "AND i.tag = ?");
+                        "WHERE i.identifier = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
-        statement.bind(1, registry);
-        statement.bind(2, name);
-        statement.bind(3, tag);
+        statement.bind(1, identifier);
         if (auto result = statement.execute_query(); !result.has_next())
         {
             return std::nullopt;
@@ -135,17 +154,15 @@ namespace domain::containers
                         "VALUES(?, ?, ?, ?, (SELECT i.id FROM image_tb AS i WHERE i.identifier = ?))");
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
-        auto internals = container_internals
-        {
+        auto internals = container_internals{
             properties.os,
-            properties.parameters, 
-            properties.env_vars, 
-            properties.port_map, 
-            properties.mount_points, 
-            properties.entry_point, 
-            properties.command, 
-            properties.network_properties
-        };
+            properties.parameters,
+            properties.env_vars,
+            properties.port_map,
+            properties.mount_points,
+            properties.entry_point,
+            properties.command,
+            properties.network_properties};
         auto statement = connection->statement(sql);
         statement.bind(1, properties.identifier);
         statement.bind(2, properties.name);

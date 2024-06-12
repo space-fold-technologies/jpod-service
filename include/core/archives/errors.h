@@ -9,13 +9,13 @@
 namespace core::archives
 {
     inline std::map<int, std::string> compression_error_map =
-        {
+    {
             {ARCHIVE_EOF, "Found end of archive"},
             {ARCHIVE_RETRY, "Retry might succeed"},
             {ARCHIVE_WARN, "Partial Success"},
             {ARCHIVE_FAILED, "Current operation cannot complete"},
             {ARCHIVE_FATAL, "No more operations are possible"}
-        };
+    };
     struct compression_failure_category : public std::error_category
     {
         compression_failure_category() {}
