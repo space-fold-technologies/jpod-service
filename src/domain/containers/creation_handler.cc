@@ -57,6 +57,7 @@ namespace domain::containers
         {
             container_properties properties;
             properties.identifier = identifier;
+            properties.os = details->os;
             properties.name = order.name;
             properties.image_identifier = details->identifier;
             properties.parameters.insert(details->parameters.begin(), details->parameters.end());

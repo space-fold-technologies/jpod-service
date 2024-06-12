@@ -137,6 +137,7 @@ namespace domain::containers
         core::sql::transaction txn(connection);
         auto internals = container_internals
         {
+            properties.os,
             properties.parameters, 
             properties.env_vars, 
             properties.port_map, 

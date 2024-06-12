@@ -87,7 +87,7 @@ namespace domain::images
         std::string folder;
         std::string options;
         uint64_t flags;
-        MSGPACK_DEFINE(filesystem, folder, options)
+        MSGPACK_DEFINE(filesystem, folder, options, flags)
     };
 
     struct image_meta

@@ -12,6 +12,11 @@ namespace spdlog
 
 namespace fs = std::filesystem;
 
+namespace domain::images
+{
+    struct mount_point;
+};
+
 namespace domain::containers
 {
     class container_repository;
@@ -29,6 +34,7 @@ namespace domain::containers
         void on_connection_closed(const std::error_code &error) override;
 
     private:
+        std::vector<images::mount_point> from_template(const std::string& os);
         
     private:
         std::shared_ptr<container_repository> repository;

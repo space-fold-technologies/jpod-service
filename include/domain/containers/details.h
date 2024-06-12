@@ -7,6 +7,7 @@ namespace domain::containers
     struct container_details
     {
         std::string identifier;
+        std::string os;
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
@@ -18,6 +19,7 @@ namespace domain::containers
 
     struct container_internals
     {
+        std::string os;
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
@@ -47,6 +49,7 @@ namespace domain::containers
 
     inline void fill_container_details(container_details &details, const container_internals &internals)
     {
+        details.os = internals.os;
         details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
         details.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
@@ -59,6 +62,7 @@ namespace domain::containers
     struct container_properties
     {
         std::string identifier;
+        std::string os;
         std::string name;
         std::string image_identifier;
         std::map<std::string, std::string> parameters;
@@ -72,6 +76,7 @@ namespace domain::containers
 
     inline void fill_container_properties(container_properties &properties, const container_internals &internals)
     {
+        properties.os = internals.os;
         properties.parameters.insert(internals.parameters.begin(), internals.parameters.end());
         properties.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         properties.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
