@@ -15,6 +15,7 @@
 #include <domain/images/list_handler.h>
 #include <domain/images/build_handler.h>
 #include <domain/images/import_handler.h>
+#include <domain/images/pull_handler.h>
 #include <domain/images/sql_repository.h>
 
 // container headers
@@ -135,6 +136,13 @@ void bootstrap::setup_handlers()
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         return std::make_shared<import_handler>(conn, images_folder, image_repository);
+      });
+  registry->add_handler(
+      operation_target::image,
+      request_operation::pull,
+      [this](connection &conn) -> std::shared_ptr<command_handler>
+      {
+        return std::make_shared<pull_handler>(conn, image_repository, std::bind(&bootstrap::oci_client_provider, this), images_folder);
       });
   // container handlers
   registry->add_handler(

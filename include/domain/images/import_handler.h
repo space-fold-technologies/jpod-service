@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <memory>
 #include <map>
+#include <vector>
 #include <tl/expected.hpp>
 
 namespace spdlog
@@ -26,8 +27,8 @@ namespace domain::images
 
     struct import_state
     {
-        std::string manifest;
-        std::string index;
+        std::vector<uint8_t> manifest;
+        std::vector<uint8_t> index;
         std::string identifier;
         std::string registry;
         std::string repository;
@@ -37,7 +38,7 @@ namespace domain::images
         std::string variant;
         std::string version;
         fs::path image_folder;
-        archive_ptr in;
+        fs::path image_archive;
         std::map<std::string, fs::path> entries;
         std::shared_ptr<image_repository> store;
         std::map<std::string, std::string> env_vars;
@@ -46,6 +47,7 @@ namespace domain::images
         std::vector<std::string> volumes;
         std::vector<std::string> command;
         std::vector<std::string> entry_point;
+        std::shared_ptr<spdlog::logger> logger;
     };
 
     using import_result = tl::expected<import_state, std::error_code>;
@@ -73,7 +75,6 @@ namespace domain::images
     private:
         std::shared_ptr<image_repository> repository;
         fs::path &image_folder;
-        std::shared_ptr<spdlog::logger> logger;
     };
 }
 #endif // __DAEMON_DOMAIN_IMAGES_IMPORT_COMMAND_HANDLER__

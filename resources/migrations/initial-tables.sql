@@ -22,7 +22,7 @@ CREATE TABLE
         registry_id INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
         CONSTRAINT registry_fk FOREIGN KEY (registry_id) REFERENCES registry_tb (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
-        CONSTRAINT image_unq UNIQUE (name, version, tag)
+        CONSTRAINT image_unq UNIQUE (repository, version, tag)
     );
 
 CREATE TABLE

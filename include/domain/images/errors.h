@@ -5,34 +5,20 @@
 #include <map>
 #include <string>
 
-namespace domain::images::instructions
+namespace domain::images
 {
     enum class error_code
     {
-        file_not_found,
-        no_work_directory,
-        directory_not_found,
-        invalid_origin,
-        invalid_destination,
-        invalid_copy_instruction,
-        no_registry_entries_found,
-        no_matching_image_found,
-        no_registry_access,
-        invalid_order_issued,
-        no_mount_points_present
+        already_exists,
+        invalid_order,
+        unknown_image,
+        unknown_registry
     };
     const inline std::map<error_code, std::string> error_map{
-        {error_code::file_not_found, "file not found"},
-        {error_code::no_work_directory, "no work directory"},
-        {error_code::directory_not_found, "directory not found"},
-        {error_code::invalid_origin, "invalid origin"},
-        {error_code::invalid_destination, "invalid destination"},
-        {error_code::invalid_copy_instruction, "invalid copy instruction"},
-        {error_code::no_registry_entries_found, "no registries found"},
-        {error_code::no_matching_image_found, "no matching image found"},
-        {error_code::no_registry_access, "not authorized to access registry"},
-        {error_code::invalid_order_issued, "invalid order issued"},
-        {error_code::no_mount_points_present, "no mount points present for this file system"}};
+        {error_code::already_exists, "the specified image already exists"},
+        {error_code::invalid_order, "invalid image order"},
+        {error_code::unknown_image, "the image specified is unknown"},
+        {error_code::unknown_registry, "unknown registry specified"}};
 
     struct image_failure_category : public std::error_category
     {
@@ -41,7 +27,7 @@ namespace domain::images::instructions
         image_failure_category(const image_failure_category &) = delete;
         const char *name() const noexcept override
         {
-            return "image instruction failures";
+            return "image failures";
         }
 
         std::string message(int ec) const override
