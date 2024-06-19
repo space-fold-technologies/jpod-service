@@ -26,7 +26,8 @@ namespace domain::images
     struct registry_access_details
     {
         std::string uri;
-        std::string token;
+        std::string authorization_type;
+        std::string authorization_url;
     };
 
     struct mount_point

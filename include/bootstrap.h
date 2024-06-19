@@ -78,9 +78,11 @@ public:
     void stop();
 
 private:
-    void setup_handlers();
+    
 
 private:
+    static asio::ssl::context context_provider(setting_properties& settings);
+    void setup_handlers();
     std::unique_ptr<domain::containers::virtual_terminal> create_virtual_terminal(
         domain::containers::terminal_properties properties,
         domain::containers::terminal_listener &listener);

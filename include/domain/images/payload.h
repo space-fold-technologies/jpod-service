@@ -188,6 +188,20 @@ namespace domain::images
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<import_order>();
     }
+
+    struct pull_order
+    {
+        std::string target;
+        std::string credentials;
+        MSGPACK_DEFINE(target, credentials)
+    };
+
+    inline pull_order unpack_pull_order(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<pull_order>();
+    }
 }
 MSGPACK_ADD_ENUM(domain::images::step_type);
 #endif // __DAEMON_DOMAIN_IMAGES_PAYLOADS__

@@ -3,7 +3,8 @@ CREATE TABLE
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         uri TEXT NOT NULL,
-        token TEXT,
+        authorization_type VARCHAR(10),
+        authorization_url TEXT,
         path TEXT,
         CONSTRAINT registry_unq UNIQUE (name)
     );

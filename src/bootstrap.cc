@@ -51,7 +51,7 @@ using namespace domain::containers;
 using namespace std::placeholders;
 
 bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : context(context),
-                                                                               ssl_ctx(core::http::create_context({})),
+                                                                               ssl_ctx(context_provider(settings)),
                                                                                registry(std::make_shared<command_handler_registry>()),
                                                                                acceptor(std::make_unique<connection_acceptor>(context, settings.domain_socket, registry)),
                                                                                data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
@@ -65,6 +65,12 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
                                                                                default_network_entry{"default", settings.bridge, settings.ip_v4_cidr, "local", "bridge"},
                                                                                logger(spdlog::get("jpod"))
 {
+}
+asio::ssl::context bootstrap::context_provider(setting_properties &settings)
+{
+  core::http::ssl_configuration configuration{};
+  configuration.verify = true;
+  return core::http::create_context(configuration);
 }
 void bootstrap::setup()
 {

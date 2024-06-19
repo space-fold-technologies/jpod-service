@@ -5,6 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <filesystem>
+#include <optional>
 
 namespace fs = std::filesystem;
 
@@ -16,6 +17,16 @@ namespace core::oci
         registry_token,
         none
     };
+    inline auto authorization_variant_from_str(const std::string &type) -> std::optional<authorization_variant>
+    {
+        if (type == "NONE")
+            return authorization_variant::none;
+        if(type == "TOKEN")
+            return authorization_variant::registry_token;
+        if(type == "BASIC_AUTH")
+            return authorization_variant::basic_auth;
+        return std::nullopt;
+    }
     struct registry_credentials
     {
         std::string name;
