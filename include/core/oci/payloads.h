@@ -52,6 +52,7 @@ namespace core::oci
         std::string feed;
         std::size_t total_layers;
         uint16_t progress;
+        bool complete;
     };
     struct registry_session
     {

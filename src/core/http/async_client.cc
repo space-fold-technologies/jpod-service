@@ -152,7 +152,6 @@ namespace core::http
                             {
                                 if (bytes_transferred > 0)
                                 {
-                                    logger->info("transferred : {} bytes", bytes_transferred);
                                     this->read_response_header();
                                 }
                             }
@@ -198,7 +197,6 @@ namespace core::http
                             }
                             else if (bytes_transferred > 0)
                             {
-                                logger->info("transferred : {} bytes", bytes_transferred);
                                 this->read_response_header();
                                 
                             } });
@@ -236,7 +234,6 @@ namespace core::http
                         session.initial_response = parse_response(exact_header_content, error);
                         if (error)
                         {
-                            logger->error("parsing header content failed");
                             this->on_response_failure(error);
                         }
                         else
@@ -256,7 +253,6 @@ namespace core::http
                             }
                             else if (session.initial_response.is_chunked())
                             {
-                                logger->info("is chunked");
                                 auto part = ss.str();
                                 session.raw.assign(part.begin(), part.end());
                                 buffer.consume(bytes_transferred);
@@ -266,12 +262,10 @@ namespace core::http
                             {
                                 if (!session.follow)
                                 {
-                                    logger->info("not handling re-direct");
                                     session.callback({}, session.initial_response);
                                 }
                                 else
                                 {
-                                    logger->info("been asked to re-direct");
                                     buffer.consume(buffer.size());
                                     connection(session.id)->delay([this](const std::error_code &error)
                                                                   {
@@ -281,7 +275,6 @@ namespace core::http
                                             }
                                             else
                                             {
-                                                logger->info("redirecting now");
                                                 handle_redirect(session.initial_response.location());
                                             } });
                                 }
@@ -368,7 +361,6 @@ namespace core::http
     }
     void async_client::read_next_chunk()
     {
-        logger->info("reading next chunk");
         auto current_connection = connection(session.id);
         current_connection->read_until(
             buffer,
@@ -389,7 +381,6 @@ namespace core::http
                 }
                 else if (bytes_transferred > 0)
                 {
-                    logger->info("got more bytes: {} as chunk", bytes_transferred);
                     std::istream stream(&buffer);
                     std::vector<uint8_t> content(bytes_transferred);
                     stream.read((char *)&content[0], bytes_transferred);
@@ -436,26 +427,23 @@ namespace core::http
     int async_client::on_message_complete(llhttp_t *parser)
     {
         auto self = static_cast<async_client *>(parser->data);
-        self->logger->info("completed");
+        self->logger->trace("completed");
         self->buffer.consume(self->buffer.size());
         self->session.callback({}, self->session.initial_response);
         return 0;
     }
     async_client::~async_client()
     {
-        logger->warn("clearing sessions");
         if(!connections.empty())
         {
             connections.clear();
         }
         if(!session.initial_response.headers.empty())
         {
-            logger->warn("nuking response headers");
             session.initial_response.headers.clear();
         }
         if(!session.initial_response.data.empty())
         {
-            logger->warn("nuking response data");
             session.initial_response.data.clear();
         }
     }

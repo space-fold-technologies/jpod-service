@@ -24,7 +24,6 @@ namespace domain::images
                                         image_folder(image_folder),
                                         client(nullptr),
                                         frame(std::make_unique<progress_frame>()),
-                                        layer_progress{},
                                         logger(spdlog::get("jpod"))
     {
         client = provider();
@@ -108,45 +107,29 @@ namespace domain::images
     }
     void pull_handler::on_image_download(const std::error_code &error, const progress_update &update, const image_properties &properties)
     {
-        // this is where the details will be tracked and persisted
-        // track the pair of image digest and layer digest
         if (error)
         {
             send_error(error);
         }
-        else if (layer_progress.find(update.layer_digest) == layer_progress.end())
-        {
-            layer_progress.try_emplace(update.layer_digest, update.progress);
-        }
         else
         {
-            layer_progress.try_emplace(update.layer_digest, update.progress);
+            logger->info("REGISTRY: {}", properties.registry);
             frame->feed = update.feed;
             frame->percentage = update.progress;
             send_progress(pack_progress_frame(*frame));
-            if (layer_progress.size() == update.total_layers)
+            if (update.complete)
             {
-                // verify completion condition by summing up and dividing to get 100
-                uint16_t sum = 0;
-                for (const auto &[_, progress] : layer_progress)
+                logger->info("completed image download");
+                std::string header("sha256:");
+                std::string image_identifier(properties.digest);
+                image_identifier.replace(0, header.size(), "");
+                if (auto error = save_image_details(image_identifier, properties); error)
                 {
-                    sum += progress;
+                    send_error(error);
                 }
-                if (sum == static_cast<uint16_t>(update.total_layers) * 100)
+                else
                 {
-                    // complete
-                    // save details on image
-                    std::string header("sha256:");
-                    std::string image_identifier(properties.digest);
-                    image_identifier.replace(0, header.size(), "");
-                    if (auto error = save_image_details(image_identifier, properties); error)
-                    {
-                        send_error(error);
-                    }
-                    else
-                    {
-                        send_success(image_identifier);
-                    }
+                    send_success(image_identifier);
                 }
             }
         }
@@ -154,6 +137,7 @@ namespace domain::images
     std::error_code pull_handler::save_image_details(const std::string identifier, const image_properties &properties)
     {
         image_details details{};
+        logger->info("image registry path: {}", properties.registry);
         details.identifier = identifier;
         details.registry = properties.registry;
         details.repository = properties.repository;

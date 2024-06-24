@@ -83,7 +83,6 @@ namespace core::http
                                                 }
                                                 else
                                                 {
-                                                    logger->info("handshake successful for: {}", host);
                                                     this->host = host;
                                                     this->port = port;
                                                     this->verified = true;
@@ -116,7 +115,6 @@ namespace core::http
                                     {
                                         stream->lowest_layer().close();
                                     }
-                                    logger->info("closed old secure connection");  
                                     verified = false;
                                     timer.expires_from_now(asio::chrono::milliseconds(500));  
                                     timer.async_wait([this,cb=std::move(cb), _(shared_from_this())](const std::error_code& error){
@@ -135,7 +133,6 @@ namespace core::http
     }
     void secure_http_session::shutdown()
     {
-        logger->warn("dumping secure connection");
         if (stream)
         {
             std::error_code error{};
@@ -154,7 +151,6 @@ namespace core::http
 
             SSL_clear(stream->native_handle());
             stream.reset();
-            logger->info("dumped secure connection");
         }
     }
     bool secure_http_session::is_scheme_matched(const std::string &scheme)
@@ -243,7 +239,6 @@ namespace core::http
     */
     secure_http_session::~secure_http_session()
     {
-        logger->warn("dumping secure connection");
         if (stream)
         {
             std::error_code error{};
@@ -262,7 +257,6 @@ namespace core::http
 
             SSL_clear(stream->native_handle());
             stream.reset();
-            logger->warn("connection dumped");
         }
     }
 }

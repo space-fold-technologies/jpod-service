@@ -56,7 +56,6 @@ namespace domain::images
         std::string repository;
         std::string tag;
         std::unique_ptr<progress_frame> frame;
-        std::map<std::string, uint16_t> layer_progress;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

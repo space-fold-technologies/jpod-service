@@ -114,7 +114,7 @@ namespace domain::images
     std::error_code sql_image_repository::save_image_details(const image_details &details)
     {
         std::string sql("INSERT INTO image_tb(identifier, repository, tag, os, variant, version, size, internals, registry_id) "
-                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.path = ?))");
+                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
