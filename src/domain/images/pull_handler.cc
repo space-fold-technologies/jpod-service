@@ -46,7 +46,6 @@ namespace domain::images
         }
         else
         {
-            logger->info("GOT REG: AUTH-TYPE:{} AUTH-EP: {} REG-URL: {}", registry->authorization_type, registry->authorization_url, registry->uri);
             this->access_details.emplace(registry.value());
             this->credentials = order.credentials;
             this->repository = result->repository;
@@ -62,13 +61,12 @@ namespace domain::images
         core::oci::registry_credentials credentials{};
         credentials.name = std::string("docker");
         credentials.authorization_server = fmt::format("{}&scope=repository:{}:pull", access_details->authorization_url, repository);
-        logger->info("authorization to oci registry: {}", credentials.authorization_server);
         credentials.credentials = this->credentials;
         credentials.registry = access_details->uri;
         if (auto variation = core::oci::authorization_variant_from_str(access_details->authorization_type); variation)
         {
             credentials.variant = variation.value();
-            logger->info("matched for variation");
+            logger->trace("matched for variation");
         }
         client->authorize(credentials, std::bind(&pull_handler::on_authorization, this, _1));
     }
@@ -113,13 +111,11 @@ namespace domain::images
         }
         else
         {
-            logger->info("REGISTRY: {}", properties.registry);
             frame->feed = update.feed;
             frame->percentage = update.progress;
             send_progress(pack_progress_frame(*frame));
             if (update.complete)
             {
-                logger->info("completed image download");
                 std::string header("sha256:");
                 std::string image_identifier(properties.digest);
                 image_identifier.replace(0, header.size(), "");
@@ -137,7 +133,6 @@ namespace domain::images
     std::error_code pull_handler::save_image_details(const std::string identifier, const image_properties &properties)
     {
         image_details details{};
-        logger->info("image registry path: {}", properties.registry);
         details.identifier = identifier;
         details.registry = properties.registry;
         details.repository = properties.repository;

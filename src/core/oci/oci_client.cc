@@ -102,7 +102,7 @@ namespace core::oci
 
     void oci_client::on_download_started(const std::string &image_digest, const std::string &layer_digest)
     {
-        logger->info("started download IMAGE: {} LAYER: {}", image_digest, layer_digest);
+        logger->trace("started download IMAGE: {} LAYER: {}", image_digest, layer_digest);
         // move to the next task
         // start_sequence.pop_front();
         // if (!start_sequence.empty())
@@ -478,7 +478,6 @@ namespace core::oci
             headers.emplace("Range", "bytes=0-");
             headers.emplace("Accept", target.media_type);
             headers.emplace("Authorization", fmt::format("Bearer {}", target.token));
-            logger->info("layer endpoint:{}", target.path);
             client->head(
                 target.path,
                 headers,
