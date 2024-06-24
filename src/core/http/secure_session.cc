@@ -9,17 +9,17 @@
 #include <spdlog/spdlog.h>
 namespace core::http
 {
-    secure_http_session::secure_http_session(asio::io_context &context, asio::ssl::context &ssl_ctx) : resolver(context),
-                                                                                                       ssl_ctx(ssl_ctx),
-                                                                                                       timer(context),
-                                                                                                       host(""),
-                                                                                                       port(443),
-                                                                                                       verified(false),
-                                                                                                       is_under_lock(false),
-                                                                                                       scheme("https"),
-                                                                                                       logger(spdlog::get("jpod"))
+    secure_http_session::secure_http_session(asio::io_context &context, asio::ssl::context ssl_ctx) : resolver(context),
+                                                                                                      ssl_ctx(std::move(ssl_ctx)),
+                                                                                                      timer(context),
+                                                                                                      host(""),
+                                                                                                      port(443),
+                                                                                                      verified(false),
+                                                                                                      is_under_lock(false),
+                                                                                                      scheme("https"),
+                                                                                                      logger(spdlog::get("jpod"))
     {
-        stream.emplace(context, ssl_ctx);
+        stream.emplace(context, this->ssl_ctx);
         // consider making the secure connection inherit `std::enable_shared_from_this<T>` and have each `lambda` take it in
     }
 
@@ -35,7 +35,6 @@ namespace core::http
                 {
                     if (error)
                     {
-                        logger->error("endpoint-resolve-failure:{}", error.message());
                         cb(error);
                     }
                     else
@@ -52,8 +51,8 @@ namespace core::http
                                 else
                                 {
                                     ssl_ctx.set_verify_callback(asio::ssl::host_name_verification(host));
-                                    asio::ip::tcp::no_delay option(true);
-                                    stream->lowest_layer().set_option(option);
+                                    stream->lowest_layer().set_option(asio::ip::tcp::no_delay(true));
+                                    stream->lowest_layer().set_option(asio::socket_base::reuse_address(true));
                                     SSL_set_tlsext_max_fragment_length(stream->native_handle(), TLSEXT_max_fragment_length_4096);
                                     if (!SSL_set_tlsext_host_name(stream->native_handle(), host.c_str()))
                                     {
@@ -75,6 +74,11 @@ namespace core::http
                                             {
                                                 if (hand_shake_error)
                                                 {
+                                                    logger->warn("handshake failed for: {}", host);
+                                                    if (!this->host.empty())
+                                                    {
+                                                        logger->warn("last host before failure is: {}", this->host);
+                                                    }
                                                     cb(hand_shake_error);
                                                 }
                                                 else
@@ -100,7 +104,7 @@ namespace core::http
     void secure_http_session::reconnect(initialization_callback callback)
     {
         stream->lowest_layer().cancel();
-        stream->async_shutdown([this, cb = std::move(callback), _(shared_from_this())](const std::error_code &error)
+        stream->async_shutdown([this, cb = std::move(callback), _(shared_from_this())](std::error_code error)
                                {
                                 if(error)
                                 {
@@ -108,7 +112,10 @@ namespace core::http
                                 } 
                                 else
                                 {
-                                    stream->lowest_layer().close();
+                                    if(stream->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, error); !error)
+                                    {
+                                        stream->lowest_layer().close();
+                                    }
                                     logger->info("closed old secure connection");  
                                     verified = false;
                                     timer.expires_from_now(asio::chrono::milliseconds(500));  
@@ -128,6 +135,7 @@ namespace core::http
     }
     void secure_http_session::shutdown()
     {
+        logger->warn("dumping secure connection");
         if (stream)
         {
             std::error_code error{};
@@ -139,14 +147,14 @@ namespace core::http
             {
                 logger->error("shutdown ssl close error: {}", error.message());
             }
-            if(stream->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, error); !error)
+            if (stream->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, error); !error)
             {
                 stream->lowest_layer().close();
             }
 
             SSL_clear(stream->native_handle());
             stream.reset();
-            logger->info("dumping secure connection");
+            logger->info("dumped secure connection");
         }
     }
     bool secure_http_session::is_scheme_matched(const std::string &scheme)
@@ -235,6 +243,7 @@ namespace core::http
     */
     secure_http_session::~secure_http_session()
     {
+        logger->warn("dumping secure connection");
         if (stream)
         {
             std::error_code error{};
@@ -244,16 +253,16 @@ namespace core::http
             }
             if (stream->shutdown(error); error)
             {
-                logger->error("shutdown ssl close error: {}", error.message());
+                logger->warn("shutdown ssl close error: {}", error.message());
             }
-            if(stream->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, error); !error)
+            if (stream->lowest_layer().shutdown(asio::ip::tcp::socket::shutdown_both, error); !error)
             {
                 stream->lowest_layer().close();
             }
 
             SSL_clear(stream->native_handle());
             stream.reset();
-            logger->info("dumping secure connection");
+            logger->warn("connection dumped");
         }
     }
 }

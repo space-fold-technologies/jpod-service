@@ -51,7 +51,6 @@ using namespace domain::containers;
 using namespace std::placeholders;
 
 bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : context(context),
-                                                                               ssl_ctx(context_provider(settings)),
                                                                                registry(std::make_shared<command_handler_registry>()),
                                                                                acceptor(std::make_unique<connection_acceptor>(context, settings.domain_socket, registry)),
                                                                                data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
@@ -66,7 +65,7 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
                                                                                logger(spdlog::get("jpod"))
 {
 }
-asio::ssl::context bootstrap::context_provider(setting_properties &settings)
+asio::ssl::context bootstrap::context_provider()
 {
   core::http::ssl_configuration configuration{};
   configuration.verify = true;
@@ -235,7 +234,7 @@ std::shared_ptr<core::http::http_session> bootstrap::provider_http_session(const
 {
   if (scheme == "https")
   {
-    return std::make_shared<core::http::secure_http_session>(context, ssl_ctx);
+    return std::make_shared<core::http::secure_http_session>(context, context_provider());
   }
   else
   {

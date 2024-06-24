@@ -81,7 +81,7 @@ private:
     
 
 private:
-    static asio::ssl::context context_provider(setting_properties& settings);
+    static asio::ssl::context context_provider();
     void setup_handlers();
     std::unique_ptr<domain::containers::virtual_terminal> create_virtual_terminal(
         domain::containers::terminal_properties properties,
@@ -93,7 +93,6 @@ private:
 
 private:
     asio::io_context &context;
-    asio::ssl::context ssl_ctx;
     std::shared_ptr<command_handler_registry> registry;
     std::unique_ptr<connection_acceptor> acceptor;
     std::unique_ptr<core::sql::pool::data_source> data_source;

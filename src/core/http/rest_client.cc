@@ -7,7 +7,7 @@
 namespace core::http
 {
     rest_client::rest_client(session_provider provider) : provider(provider),
-                                                          buffer(5120),
+                                                          buffer(1024 * 6),
                                                           connection(nullptr),
                                                           http_parser{},
                                                           settings{},
@@ -364,7 +364,7 @@ namespace core::http
                                 {
                                     auto part = ss.str();
                                     raw_response.assign(part.begin(), part.end());
-                                    buffer.consume(buffer.size());
+                                    this->buffer.consume(bytes_transferred);
                                     read_next_chunk();
                                 }
                                 else if (session.initial_response.is_event_stream())

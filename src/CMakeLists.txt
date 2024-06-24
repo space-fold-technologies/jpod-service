@@ -23,6 +23,7 @@ add_executable(jcd
                 # core::http
                 core/http/secure_session.cc
                 core/http/insecure_session.cc
+                core/http/async_client.cc
                 core/http/rest_client.cc
                 core/http/file_transfer_client.cc
                 # core::commands

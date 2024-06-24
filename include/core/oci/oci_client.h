@@ -15,10 +15,6 @@ namespace fs = std::filesystem;
 namespace asio
 {
     class io_context;
-    namespace ssl
-    {
-        class context;
-    };
 };
 
 namespace spdlog
@@ -29,7 +25,7 @@ namespace spdlog
 namespace core::http
 {
     class http_session;
-    class rest_client;
+    class async_client;
 };
 
 namespace core::oci
@@ -134,7 +130,7 @@ namespace core::oci
     private:
         asio::io_context &context;
         session_provider provider;
-        std::unique_ptr<core::http::rest_client> client;
+        std::unique_ptr<core::http::async_client> client;
         std::map<std::string, std::map<std::string, std::shared_ptr<layer_download_task>>> download_tasks;
         std::map<std::string, image_details> images;
         std::map<std::string, configuration_request> configuration_requests;

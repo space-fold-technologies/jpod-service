@@ -1,7 +1,7 @@
 #include <core/oci/oci_client.h>
 #include <core/oci/layer_download_task.h>
 #include <core/oci/payloads.h>
-#include <core/http/rest_client.h>
+#include <core/http/async_client.h>
 #include <core/http/response.h>
 #include <core/http/session.h>
 #include <asio/ssl/error.hpp>
@@ -26,7 +26,7 @@ namespace core::oci
 {
     oci_client::oci_client(asio::io_context &context, session_provider provider) : context(context),
                                                                                    provider(provider),
-                                                                                   client(std::make_unique<core::http::rest_client>(provider)),
+                                                                                   client(std::make_unique<core::http::async_client>(provider)),
                                                                                    download_tasks{},
                                                                                    logger(spdlog::get("jpod"))
     {
