@@ -107,8 +107,6 @@ namespace core::http
         headers.emplace("Referer", _download->uri.original);
         headers.emplace("Range", "bytes=0-");
         headers.emplace("Accept", _download->media_type);
-        logger->info("PATH: {}", _download->uri.path);
-        logger->info("ORIGINAL: {}", _download->uri.original);
 
         if (auto error = compose_request(request_data, _download->uri, headers, "HEAD"); error)
         {
@@ -117,7 +115,6 @@ namespace core::http
         else
         {
             std::string content(request_data.begin(), request_data.end());
-            logger->info("FILE DETAILS CHECK:\n{}", content);
             connection->async_write(
                 request_data,
                 [this, headers = std::move(headers)](const std::error_code &error, std::size_t bytes_transferred)
@@ -159,8 +156,6 @@ namespace core::http
                     {
                         std::string exact_header_content = headers_contained.substr(0, headers_end + 4);
                         _download->buffer.consume(exact_header_content.length());
-                        logger->info("SERVER RESPONSE HEADERS:\n{}", exact_header_content);
-                        logger->info("METHOD:{}", method);
                         std::error_code error{};
                         if (auto response = parse_response(exact_header_content, error); error)
                         {
@@ -173,7 +168,6 @@ namespace core::http
                         }
                         else if (response.has_partial_body() && method == "GET")
                         {
-                            logger->info("we have an incoming payload");
                             auto content_range = response.content_range();
                             auto unit = _download->status.unit;
                             auto range_captured = content_range->replace(content_range->find(unit), unit.size(), "");
@@ -193,18 +187,14 @@ namespace core::http
                                 _download->buffer.consume(content.size());
                             }
                             size_t content_to_fetch = content_length - remaining_bytes;
-                            logger->info("reading payload content next");
                             read_partial_content(content_to_fetch);
                         }
                         else if (response.accepts_partial_request() && method == "HEAD")
                         {
-                            logger->info("accepts partial requests: {}", _download->name);
                             download_status status{};
                             status.total = response.content_length();
                             status.unit = response.accepts_ranges();
                             status.current = 0L;
-                            logger->info("Content-Length: {}", status.total);
-                            logger->info("UNIT: {}", status.unit);
                             _download->status = std::move(status);
                             _download->callback({}, _download->status);
                             std::size_t chunk_size = std::min<std::size_t>(
@@ -228,7 +218,6 @@ namespace core::http
     }
     void file_transfer_client::handle_redirect(const http_headers &headers, download_state state, const std::string &location, const std::string &method)
     {
-        logger->info("requested redirect");
         // in the event that the connection re-directs to a new host, you might need to make that your primary
         std::vector<uint8_t> content;
         internal::uri url;
@@ -266,7 +255,6 @@ namespace core::http
                                 {
                                     if (bytes_transferred > 0)
                                     {
-                                        logger->info("transferred : {} bytes", bytes_transferred);
                                         this->on_server_response(headers, state, method);
                                     }
                                 }
@@ -307,7 +295,7 @@ namespace core::http
         std::map<std::string, std::string> headers{_download->headers};
         if (!_download->current_request)
         {
-            logger->info("no current request details set");
+            logger->trace("no current request details set");
         }
         auto start = _download->current_request->start;
         auto end = _download->current_request->end;
@@ -358,10 +346,8 @@ namespace core::http
 
     void file_transfer_client::read_partial_content(std::size_t bytes_to_transfer)
     {
-        logger->info("reading current chunk returned of size: {}", bytes_to_transfer);
         if (bytes_to_transfer == 0)
         {
-            logger->info("done with current download");
             // We are done
             _download->status.complete = true;
             _download->callback({}, _download->status);
@@ -379,14 +365,11 @@ namespace core::http
                     }
                     else if (bytes_to_transfer > 0)
                     {
-                        this->logger->info("transferred :{} bytes", bytes_transferred);
                         std::istream stream(&_download->buffer);
                         std::vector<uint8_t> remainder(bytes_transferred);
                         stream.read((char *)&remainder[0], bytes_transferred);
                         _download->destination->write(remainder);
-                        this->logger->info("written to file");
                         _download->buffer.consume(bytes_transferred);
-                        logger->info("current: {} total: {}", _download->status.current, _download->status.total);
                         if (_download->status.current < _download->status.total)
                         {
                             auto end_index = _download->status.total - 1;

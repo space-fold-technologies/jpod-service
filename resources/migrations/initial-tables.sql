@@ -3,7 +3,8 @@ CREATE TABLE
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         uri TEXT NOT NULL,
-        token TEXT,
+        authorization_type VARCHAR(10),
+        authorization_url TEXT,
         path TEXT,
         CONSTRAINT registry_unq UNIQUE (name)
     );
@@ -22,7 +23,7 @@ CREATE TABLE
         registry_id INTEGER NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
         CONSTRAINT registry_fk FOREIGN KEY (registry_id) REFERENCES registry_tb (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
-        CONSTRAINT image_unq UNIQUE (name, version, tag)
+        CONSTRAINT image_unq UNIQUE (repository, version, tag)
     );
 
 CREATE TABLE

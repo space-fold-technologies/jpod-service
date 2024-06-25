@@ -23,7 +23,7 @@ namespace core::http
     class secure_http_session : public http_session, public std::enable_shared_from_this<secure_http_session>
     {
     public:
-        explicit secure_http_session(asio::io_context &context, asio::ssl::context &ssl_ctx);
+        explicit secure_http_session(asio::io_context &context, asio::ssl::context ssl_ctx);
         virtual ~secure_http_session();
         void connect(const std::string &host, uint16_t port, initialization_callback callback) override;
         void reconnect(initialization_callback callback) override;
@@ -43,7 +43,7 @@ namespace core::http
 
     private:
         asio::ip::tcp::resolver resolver;
-        asio::ssl::context &ssl_ctx;
+        asio::ssl::context ssl_ctx;
         asio::steady_timer timer;
         std::string host;
         uint16_t port;

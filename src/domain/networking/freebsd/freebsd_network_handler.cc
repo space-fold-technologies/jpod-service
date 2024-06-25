@@ -73,7 +73,7 @@ namespace domain::networking::freebsd
                 return std::error_code(errno, std::system_category());
             }
             address_details details{order.name, order.ip, order.broadcast, order.netmask};
-            logger->info("adding address details");
+            logger->trace("adding address details");
             return add_address(fd, details);
         }
     }

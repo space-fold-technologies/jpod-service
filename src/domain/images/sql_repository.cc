@@ -55,7 +55,8 @@ namespace domain::images
     {
         std::string sql("SELECT "
                         "r.uri, "
-                        "r.token "
+                        "r.authorization_type, "
+                        "r.authorization_url "
                         "FROM registry_tb AS r "
                         "WHERE r.path = ?");
         auto connection = data_source.connection();
@@ -68,14 +69,16 @@ namespace domain::images
         }
         registry_access_details details{};
         details.uri = result.fetch<std::string>("uri");
-        details.token = result.fetch<std::string>("token");
+        details.authorization_type = result.fetch<std::string>("authorization_type");
+        details.authorization_url = result.fetch<std::string>("authorization_url");
         return std::make_optional(details);
     }
     std::optional<registry_access_details> sql_image_repository::fetch_registry_by_name(const std::string &name)
     {
         std::string sql("SELECT "
                         "r.uri, "
-                        "r.token "
+                        "r.authorization_type, "
+                        "r.authorization_url "
                         "FROM registry_tb AS r "
                         "WHERE r.name = ?");
         auto connection = data_source.connection();
@@ -88,7 +91,8 @@ namespace domain::images
         }
         registry_access_details details{};
         details.uri = result.fetch<std::string>("uri");
-        details.token = result.fetch<std::string>("token");
+        details.authorization_type = result.fetch<std::string>("authorization_type");
+        details.authorization_url = result.fetch<std::string>("authorization_url");
         return std::make_optional(details);
     }
     bool sql_image_repository::has_image(const std::string &registry, const std::string &name, const std::string &tag)
@@ -110,7 +114,7 @@ namespace domain::images
     std::error_code sql_image_repository::save_image_details(const image_details &details)
     {
         std::string sql("INSERT INTO image_tb(identifier, repository, tag, os, variant, version, size, internals, registry_id) "
-                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.path = ?))");
+                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);

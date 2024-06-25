@@ -23,8 +23,6 @@ namespace core::oci
         file_path = fs::path(this->details.folder / fs::path(fmt::format("layer_{0}.{1}", this->details.index, extension)))
                         .generic_string();
         client = std::make_unique<core::http::file_transfer_client>(context, this->details.provider);
-        logger->info("INDEX: {} URL: {}", this->details.index, this->details.layer_url);
-        logger->info("FILE PATH :{}", file_path);
     }
     bool layer_download_task::is_valid()
     {
@@ -50,7 +48,6 @@ namespace core::oci
     }
     std::size_t layer_download_task::write(const std::vector<uint8_t> &data)
     {
-        logger->info("writing {} bytes to file", data.size());
         std::ofstream file(file_path, std::ios::binary | std::ios::app);
         file.write(reinterpret_cast<const char *>(data.data()), data.size());
         file.close();
@@ -82,7 +79,6 @@ namespace core::oci
     void layer_download_task::abort()
     {
         // stop the client and remove the file
-        logger->warn("removing layer: {}", file_path);
         std::error_code error{};
         if(fs::remove(fs::path(file_path), error); error) 
         {

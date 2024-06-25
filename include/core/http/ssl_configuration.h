@@ -15,7 +15,7 @@ namespace core::http
 
     inline asio::ssl::context create_context(const ssl_configuration &configuration)
     {
-        asio::ssl::context ctx(asio::ssl::context::sslv23_client);
+        asio::ssl::context ctx(asio::ssl::context::tls_client);
         ctx.set_options(asio::ssl::context::default_workarounds);
         if (!configuration.certificate_file.empty() && !configuration.private_key_file.empty())
         {

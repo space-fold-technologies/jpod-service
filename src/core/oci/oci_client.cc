@@ -1,7 +1,7 @@
 #include <core/oci/oci_client.h>
 #include <core/oci/layer_download_task.h>
 #include <core/oci/payloads.h>
-#include <core/http/rest_client.h>
+#include <core/http/async_client.h>
 #include <core/http/response.h>
 #include <core/http/session.h>
 #include <asio/ssl/error.hpp>
@@ -26,7 +26,7 @@ namespace core::oci
 {
     oci_client::oci_client(asio::io_context &context, session_provider provider) : context(context),
                                                                                    provider(provider),
-                                                                                   client(std::make_unique<core::http::rest_client>(provider)),
+                                                                                   client(std::make_unique<core::http::async_client>(provider)),
                                                                                    download_tasks{},
                                                                                    logger(spdlog::get("jpod"))
     {
@@ -102,7 +102,7 @@ namespace core::oci
 
     void oci_client::on_download_started(const std::string &image_digest, const std::string &layer_digest)
     {
-        logger->info("started download IMAGE: {} LAYER: {}", image_digest, layer_digest);
+        logger->trace("started download IMAGE: {} LAYER: {}", image_digest, layer_digest);
         // move to the next task
         // start_sequence.pop_front();
         // if (!start_sequence.empty())
@@ -116,16 +116,18 @@ namespace core::oci
 
     void oci_client::on_download_complete(const std::string &image_digest, const std::string &layer_digest)
     {
-        logger->info("download complete");
+        auto details = images.at(image_digest);
+        progress_update update{};
+        update.progress = 100;
+        update.image_digest = image_digest;
+        update.layer_digest = layer_digest;
+        update.feed = "finished layer download";
+        update.stage = "image download";
+        update.total_layers = details.layers.size();
         auto tasks = download_tasks.at(image_digest);
         if (auto position = tasks.find(layer_digest); position != tasks.end())
         {
-            logger->warn("nuking old task");
             tasks.erase(position);
-        }
-        else
-        {
-            logger->error("old task not found");
         }
         start_sequence.pop_front();
         if (!start_sequence.empty())
@@ -134,8 +136,10 @@ namespace core::oci
             auto pending_tasks = download_tasks.at(target.first);
             auto task = pending_tasks.at(target.second);
             task->start();
+            update.complete = false;
+            details.callback({}, update, {});
         }
-        else if (tasks.empty())
+        else if (start_sequence.empty())
         {
             download_tasks.erase(download_tasks.find(image_digest));
             // persist the configuration and manifest
@@ -146,6 +150,8 @@ namespace core::oci
             std::ofstream configuration(image.destination / fs::path("config.json"), std::ios::out | std::ios::binary);
             manifest.write(reinterpret_cast<const char *>(image.configuration.data()), image.configuration.size());
             manifest.close();
+            update.complete = true;
+            details.callback({}, update, details.properties);
         }
     }
     void oci_client::on_download_update(const update_details &details)
@@ -154,10 +160,12 @@ namespace core::oci
         {
             auto &image = position->second;
             progress_update progress{};
+            progress.feed = "image layer downloading";
             progress.image_digest = details.image_digest;
             progress.layer_digest = details.layer_digest;
             progress.total_layers = image.layers.size();
             progress.progress = (details.current * 100) / details.total;
+            progress.complete = false;
             image.callback({}, progress, image.properties);
         }
     }
@@ -216,24 +224,26 @@ namespace core::oci
                     auto payload = json::parse(resp.data);
                     if (payload.contains("manifests"))
                     {
-                        logger->info("got image manifest index");
-                        logger->info("#### ARCH : {} #### OS : {}", req.architecture, req.operating_system);
+                        progress_update update{};
+                        update.stage = "resolving correct manifest";
+                        update.feed = std::string("got image manifest index");
+                        update.feed.append(fmt::format("#### ARCH : {} #### OS : {}\n", req.architecture, req.operating_system));
                         for (const auto &entry : payload["manifests"])
                         {
                             if (entry.contains("platform"))
                             {
                                 auto architecture = entry["platform"]["architecture"].template get<std::string>();
-                                logger->info("ARCH: {}", architecture);
+                                update.feed.append(fmt::format("ARCH: {}", architecture));
                                 auto operating_system = entry["platform"]["os"].template get<std::string>();
-                                logger->info("OPERATING SYSTEM: {}", operating_system);
+                                update.feed.append(fmt::format("OPERATING SYSTEM: {}", operating_system));
                                 if (entry["platform"].contains("variant"))
                                 {
                                     architecture = fmt::format("{}:{}", architecture, entry["platform"]["variant"].template get<std::string>());
-                                    logger->info("VARIATION OF ARCH: {}", architecture);
+                                    update.feed.append(fmt::format("VARIATION OF ARCH: {}", architecture));
                                 }
                                 if (req.operating_system == operating_system && req.architecture == architecture)
                                 {
-                                    logger->info("GOT A MATCH");
+                                    update.feed.append("GOT A MATCH");
                                     manifest_request request{};
                                     request.name = req.name;
                                     request.registry = req.registry;
@@ -242,6 +252,8 @@ namespace core::oci
                                     request.headers.try_emplace("Accept", entry["mediaType"].template get<std::string>());
                                     request.tag = entry["digest"].template get<std::string>();
                                     request.destination = req.destination;
+                                    update.feed.append("fetching manifest");
+                                    cb({}, update, {});
                                     fetch_manifest(request, std::move(cb));
                                     return;
                                 }
@@ -253,14 +265,16 @@ namespace core::oci
                     }
                     else if (payload.contains("config"))
                     {
-                        logger->info("got image manifest");
+                        progress_update update{};
+                        update.stage = "found image manifest";
                         // this means you are at the final image of interest, fetch layers
                         auto digest = payload["config"]["digest"].template get<std::string>();
+                        update.image_digest = digest;
+                        update.feed = std::string("found matching configuration identifier");
                         image_details details{};
                         details.tag = req.tag;
                         details.registry = req.registry;
                         details.repository = req.repository;
-
                         details.destination = req.destination;
 
                         for (const auto &layer_entry : payload["layers"])
@@ -289,6 +303,7 @@ namespace core::oci
                         conf_req.repository = fmt::format("{}", req.repository);
                         conf_req.token = fmt::format("{}", req.token);
                         configuration_requests.try_emplace(digest, std::move(conf_req));
+                        cb({}, update, {});
                         fetch_configuration(std::move(digest), std::move(cb));
                     }
                 }
@@ -305,7 +320,6 @@ namespace core::oci
         {
             auto request = pos->second;
             std::string path = fmt::format("{0}/{1}/blobs/{2}", request.registry, request.repository, digest);
-            logger->info("PATH: {}", path);
             std::map<std::string, std::string> headers;
             headers.try_emplace("Authorization", fmt::format("Bearer {}", request.token));
             headers.try_emplace("Connection", "Keep-Alive");
@@ -334,14 +348,7 @@ namespace core::oci
                     }
                     else
                     {
-                        logger->info("got image configuration");
                         add_configuration(digest, resp.data, std::move(cb));
-                        logger->info("parsed configuration");
-                        if (digest.empty())
-                        {
-                            logger->info("crap");
-                        }
-                        logger->info("using IMAGE DIGEST:{} to fetch layers", digest);
                         fetch_layers(std::move(digest));
                     }
                 });
@@ -352,19 +359,7 @@ namespace core::oci
     {
         auto payload = json::parse(data);
         image_properties properties{};
-        auto image = images.at(digest);
-
-        for (const auto &layer : image.layers)
-        {
-            properties.size += layer.size;
-        }
         properties.os = payload["os"].template get<std::string>();
-        properties.tag = image.tag;
-        properties.registry = image.registry;
-        properties.repository = image.repository;
-        properties.variant = image.variant;
-        properties.version = image.version;
-
         for (auto &[key, value] : payload["config"]["ExposedPorts"].items())
         {
             auto parts = key | views::split('/') | to<std::vector<std::string>>();
@@ -402,25 +397,39 @@ namespace core::oci
                 properties.layer_diffs.push_back(layer_id.template get<std::string>());
             }
         }
-        logger->info("inside configuration packaging");
+
         if (auto position = images.find(digest); position != images.end())
         {
-            logger->info("using digest to pack properties and callback");
             position->second.properties = std::move(properties);
+            position->second.properties.tag = position->second.tag;
+            position->second.properties.registry = position->second.registry;
+            position->second.properties.repository = position->second.repository;
+            position->second.properties.variant = position->second.variant;
+            position->second.properties.version = position->second.version;
+            for (const auto &layer : position->second.layers)
+            {
+                position->second.properties.size += layer.size;
+            }
             position->second.callback = std::move(callback);
-            image.configuration.assign(data.begin(), data.end());
+            position->second.configuration.assign(data.begin(), data.end());
         }
+        progress_update update{};
+        update.stage = "adding image configuration";
+        update.feed = "found image configuration details";
+        callback({}, update, {});
     }
 
     void oci_client::fetch_layers(std::string digest)
     {
-        logger->info("setting up download tasks");
+        progress_update update{};
+        update.stage = "download";
+        update.feed = std::string("setting up download tasks\n");
         auto &details = images.at(digest);
         auto request = configuration_requests.at(digest);
         std::map<std::string, std::shared_ptr<layer_download_task>> tasks{};
         download_tasks.try_emplace(digest, std::move(tasks));
         uint16_t index = 0;
-        //details.destination = details.destination / fs::path("sha256") / fs::path(digest.replace("sha256:", ""));
+        details.destination = details.destination / fs::path("sha256") / fs::path(digest.substr(digest.find(":") + 1));
         std::error_code error;
         if (fs::create_directories(details.destination, error); error)
         {
@@ -451,9 +460,10 @@ namespace core::oci
             resolve_queue.push_back(target);
             index++;
         }
-        logger->info("Creating Image Target Directory: {}");
 
-        logger->info("TOTAL ORDERS: {}", download_tasks.at(digest).size());
+        update.feed.append(fmt::format("Creating Image Target Directory: {}\n", details.destination.string()));
+        update.feed.append(fmt::format("layers to download:{}\n", download_tasks.at(digest).size()));
+        details.callback({}, update, {});
         resolve_layer();
     }
 
@@ -468,7 +478,6 @@ namespace core::oci
             headers.emplace("Range", "bytes=0-");
             headers.emplace("Accept", target.media_type);
             headers.emplace("Authorization", fmt::format("Bearer {}", target.token));
-            logger->info("layer endpoint:{}", target.path);
             client->head(
                 target.path,
                 headers,

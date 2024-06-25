@@ -1,1 +1,2 @@
 INSERT INTO registry_tb(name, uri, path) VALUES("localhost", "127.0.0.1", "localhost");
+INSERT INTO registry_tb(name, uri, path, authorization_type, authorization_url) VALUES("public.docker.hub","https://index.docker.io/v2", "index.docker.io", "NONE", "https://auth.docker.io/token?service=registry.docker.io");

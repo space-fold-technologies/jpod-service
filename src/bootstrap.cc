@@ -15,6 +15,7 @@
 #include <domain/images/list_handler.h>
 #include <domain/images/build_handler.h>
 #include <domain/images/import_handler.h>
+#include <domain/images/pull_handler.h>
 #include <domain/images/sql_repository.h>
 
 // container headers
@@ -50,7 +51,6 @@ using namespace domain::containers;
 using namespace std::placeholders;
 
 bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : context(context),
-                                                                               ssl_ctx(core::http::create_context({})),
                                                                                registry(std::make_shared<command_handler_registry>()),
                                                                                acceptor(std::make_unique<connection_acceptor>(context, settings.domain_socket, registry)),
                                                                                data_source(std::make_unique<core::sql::pool::data_source>(settings.database_path, settings.pool_size)),
@@ -64,6 +64,12 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
                                                                                default_network_entry{"default", settings.bridge, settings.ip_v4_cidr, "local", "bridge"},
                                                                                logger(spdlog::get("jpod"))
 {
+}
+asio::ssl::context bootstrap::context_provider()
+{
+  core::http::ssl_configuration configuration{};
+  configuration.verify = true;
+  return core::http::create_context(configuration);
 }
 void bootstrap::setup()
 {
@@ -135,6 +141,13 @@ void bootstrap::setup_handlers()
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
         return std::make_shared<import_handler>(conn, images_folder, image_repository);
+      });
+  registry->add_handler(
+      operation_target::image,
+      request_operation::pull,
+      [this](connection &conn) -> std::shared_ptr<command_handler>
+      {
+        return std::make_shared<pull_handler>(conn, image_repository, std::bind(&bootstrap::oci_client_provider, this), images_folder);
       });
   // container handlers
   registry->add_handler(
@@ -221,7 +234,7 @@ std::shared_ptr<core::http::http_session> bootstrap::provider_http_session(const
 {
   if (scheme == "https")
   {
-    return std::make_shared<core::http::secure_http_session>(context, ssl_ctx);
+    return std::make_shared<core::http::secure_http_session>(context, context_provider());
   }
   else
   {
