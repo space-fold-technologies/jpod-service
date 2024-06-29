@@ -113,8 +113,8 @@ namespace domain::images
     }
     std::error_code sql_image_repository::save_image_details(const image_details &details)
     {
-        std::string sql("INSERT INTO image_tb(identifier, repository, tag, os, variant, version, size, internals, registry_id) "
-                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
+        std::string sql("INSERT INTO image_tb(identifier, repository, tag, tag_reference, os, variant, version, size, internals, registry_id) "
+                        "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
@@ -123,12 +123,13 @@ namespace domain::images
         statement.bind(1, details.identifier);
         statement.bind(2, details.repository);
         statement.bind(3, details.tag);
-        statement.bind(4, details.os);
-        statement.bind(5, details.variant);
-        statement.bind(6, details.version);
-        statement.bind(7, static_cast<int64_t>(details.size));
-        statement.bind(8, pack_image_internals(internals));
-        statement.bind(9, details.registry);
+        statement.bind(4, details.tag_reference);
+        statement.bind(5, details.os);
+        statement.bind(6, details.variant);
+        statement.bind(7, details.version);
+        statement.bind(8, static_cast<int64_t>(details.size));
+        statement.bind(9, pack_image_internals(internals));
+        statement.bind(10, details.registry);
         if (auto result_code = statement.execute(); result_code != SQLITE_OK)
         {
             return core::sql::errors::make_error_code(result_code);

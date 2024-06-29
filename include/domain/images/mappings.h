@@ -98,6 +98,7 @@ namespace domain::images
         std::string repository;
         std::string registry;
         std::string tag;
+        std::string tag_reference;
         std::string os;
         std::string variant;
         std::string version;

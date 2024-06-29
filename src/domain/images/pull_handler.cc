@@ -137,6 +137,7 @@ namespace domain::images
         details.registry = properties.registry;
         details.repository = properties.repository;
         details.tag = properties.tag;
+        details.tag_reference = properties.tag_reference;
         details.size = properties.size;
         details.os = properties.os;
         details.variant = properties.variant;

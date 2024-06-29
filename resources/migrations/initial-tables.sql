@@ -14,6 +14,7 @@ CREATE TABLE
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         repository TEXT NOT NULL,
         tag TEXT NOT NULL,
+        tag_reference TEXT NOT NULL,
         os TEXT NOT NULL,
         size INTEGER NOT NULL,
         variant TEXT NOT NULL,

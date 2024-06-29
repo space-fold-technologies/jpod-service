@@ -1,6 +1,6 @@
 #include <core/archives/helper.h>
 #include <core/archives/errors.h>
-
+#include <spdlog/spdlog.h>
 namespace core::archives
 {
     constexpr std::size_t BUFFER_SIZE = 10240;
@@ -40,45 +40,61 @@ namespace core::archives
         return arch;
     }
 
-    std::error_code copy_entry(struct archive *in, struct archive *out)
+    std::error_code copy_entry(archive_ptr &in, archive_ptr &out)
     {
         int ec;
         const void *buffer;
         std::size_t size;
         la_int64_t offset;
-        while ((ec = archive_read_data_block(in, &buffer, &size, &offset)) == ARCHIVE_OK)
+        while ((ec = archive_read_data_block(in.get(), &buffer, &size, &offset)) == ARCHIVE_OK)
         {
-            if (ec = archive_write_data_block(out, buffer, size, offset); ec != ARCHIVE_OK)
+            if (ec = archive_write_data_block(out.get(), buffer, size, offset); ec != ARCHIVE_OK)
             {
                 return make_compression_error_code(ec);
             }
         }
-        if (ec = archive_write_finish_entry(out); ec != ARCHIVE_OK)
+        if (ec = archive_write_finish_entry(out.get()); ec != ARCHIVE_OK)
         {
             return make_compression_error_code(ec);
         }
         return {};
     }
-    std::error_code copy_to_destination(archive_ptr in, archive_ptr out, fs::path &destination)
+    std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out, fs::path &destination)
     {
         archive_entry *entry;
         while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
         {
             const char *entry_name = archive_entry_pathname(entry);
-            const mode_t type = archive_entry_filetype(entry);
             fs::path full_path = destination / fs::path(std::string(entry_name));
             archive_entry_set_pathname(entry, full_path.generic_string().c_str());
+            auto type = archive_entry_filetype(entry);
+            if (S_ISLNK(type))
+            {
+                const char *hard_link = archive_entry_symlink(entry);
+                auto link = destination / fs::path(std::string(hard_link));
+                archive_entry_set_symlink(entry, link.c_str());
+            }
             if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
             {
-                return make_compression_error_code(ec);
-            }
-            else if (archive_entry_size(entry) > 0)
-            {
-                auto entry_size = archive_entry_size(entry);
-                if (auto error = copy_entry(in.get(), out.get()); error)
+                std::string err(archive_error_string(out.get()));
+                if (err.find("Hard-link") != std::string::npos)
                 {
-                    return error;
+                    const char *hard_link = archive_entry_hardlink(entry);
+                    auto link = destination / fs::path(std::string(hard_link));
+                    archive_entry_set_hardlink(entry, link.c_str());
+                    if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
+                    {
+                        return make_compression_error_code(ec);
+                    }
                 }
+                else
+                {
+                    return make_compression_error_code(ec);
+                }
+            }
+            if (auto error = copy_entry(in, out); error)
+            {
+                return error;
             }
         }
         return {};
