@@ -45,8 +45,7 @@ namespace domain::containers
                         "i.os, "
                         "i.variant, "
                         "i.version, "
-                        "i.size, "
-                        "i.internals "
+                        "i.size "
                         "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE i.identifier = ?");
@@ -68,12 +67,6 @@ namespace domain::containers
             details.variant = result.fetch<std::string>("variant");
             details.version = result.fetch<std::string>("version");
             details.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
-            auto internals = domain::images::unpack_image_internals(result.fetch<std::vector<uint8_t>>("internals"));
-            details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
-            details.labels.insert(internals.labels.begin(), internals.labels.end());
-            details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
-            details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
-            details.entry_point.assign(internals.entry_point.begin(), internals.entry_point.end());
             return details;
         }
     }
@@ -106,8 +99,10 @@ namespace domain::containers
     {
         std::string sql("SELECT "
                         "c.identifier, "
+                        "i.identifier AS image_identifier, "
                         "c.internals "
                         "FROM container_tb AS c "
+                        "INNER JOIN image_tb AS i ON i.id = c.image_id "
                         "WHERE c.identifier LIKE ? "
                         "OR c.name LIKE ? LIMIT 1");
         auto connection = data_source.connection();
@@ -122,6 +117,7 @@ namespace domain::containers
         {
             container_details details{};
             details.identifier = result.fetch<std::string>("identifier");
+            details.image_identifier = result.fetch<std::string>("image_identifier");
             container_internals internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             fill_container_details(details, internals);
             return details;
@@ -156,12 +152,8 @@ namespace domain::containers
         core::sql::transaction txn(connection);
         auto internals = container_internals{
             properties.os,
-            properties.parameters,
-            properties.env_vars,
             properties.port_map,
-            properties.mount_points,
-            properties.entry_point,
-            properties.command,
+            properties.env_vars,
             properties.network_properties};
         auto statement = connection->statement(sql);
         statement.bind(1, properties.identifier);

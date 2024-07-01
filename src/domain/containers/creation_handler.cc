@@ -115,7 +115,6 @@ namespace domain::containers
                 }
             }
         }
-        fmt::println("extraction complete");
         return state;
     }
     tl::expected<std::string, std::error_code> creation_handler::register_container(creation_state state)
@@ -126,17 +125,13 @@ namespace domain::containers
         }
         else
         {
-            fmt::println("registering container details");
             container_properties properties{};
             properties.identifier = state.container_identifier;
             properties.os = details->os;
             properties.name = state.name;
-            properties.image_identifier = details->identifier;
-            properties.parameters.insert(details->parameters.begin(), details->parameters.end());
-            properties.port_map.insert(state.port_map.begin(), state.port_map.end());
-            properties.env_vars.insert(details->env_vars.begin(), details->env_vars.end());
             properties.env_vars.insert(state.env_vars.begin(), state.env_vars.end());
-            properties.entry_point = details->entry_point;
+            properties.port_map.insert(state.port_map.begin(), state.port_map.end());
+            properties.image_identifier = details->identifier;
             properties.network_properties = state.network_properties;
             if (auto error = state.store->save(properties); error)
             {

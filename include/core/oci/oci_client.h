@@ -67,13 +67,6 @@ namespace core::oci
         std::size_t size;
         std::string variant;
         std::string version;
-        std::vector<std::string> entry_point;
-        std::vector<std::string> command;
-        std::map<std::string, std::string> env_vars;
-        std::map<std::string, std::string> labels;
-        std::map<uint16_t, std::string> exposed_ports;
-        std::vector<std::string> volumes;
-        std::vector<std::string> layer_diffs;
     };
     struct layer
     {

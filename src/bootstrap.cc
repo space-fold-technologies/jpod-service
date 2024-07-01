@@ -155,14 +155,14 @@ void bootstrap::setup_handlers()
       request_operation::build,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<creation_handler>(conn, this->containers_folder, this->images_folder, container_repository);
+        return std::make_shared<creation_handler>(conn, containers_folder, images_folder, container_repository);
       });
   registry->add_handler(
       operation_target::container,
       request_operation::start,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<start_handler>(conn, container_repository, runtime, containers_folder);
+        return std::make_shared<start_handler>(conn, container_repository, runtime, containers_folder, images_folder);
       });
   registry->add_handler(
       operation_target::container,

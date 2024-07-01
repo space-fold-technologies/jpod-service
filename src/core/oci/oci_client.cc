@@ -248,6 +248,7 @@ namespace core::oci
                                     request.name = req.name;
                                     request.registry = req.registry;
                                     request.repository = req.repository;
+                                    request.operating_system = req.operating_system;
                                     request.token = req.token;
                                     request.headers.try_emplace("Accept", entry["mediaType"].template get<std::string>());
                                     request.readable_tag = req.tag;
@@ -274,6 +275,7 @@ namespace core::oci
                         update.feed = std::string("found matching configuration identifier");
                         image_details details{};
                         details.properties = {};
+                        details.properties.os = req.operating_system;
                         details.properties.digest = digest;
                         details.properties.tag = req.readable_tag;
                         details.properties.tag_reference = req.tag;
@@ -372,43 +374,6 @@ namespace core::oci
         {
             auto properties = position->second.properties;
             properties.os = payload["os"].template get<std::string>();
-            for (auto &[key, value] : payload["config"]["ExposedPorts"].items())
-            {
-                auto parts = key | views::split('/') | to<std::vector<std::string>>();
-                auto port = static_cast<uint16_t>(std::atoi(parts.at(0).c_str()));
-                auto protocol = parts.size() > 1 ? parts.at(1) : "tcp";
-                properties.exposed_ports.try_emplace(port, protocol);
-            }
-            for (const auto &env_var : payload["config"]["Env"])
-            {
-                std::string entry = env_var.template get<std::string>();
-                auto parts = entry | views::split('=') | to<std::vector<std::string>>();
-                properties.env_vars.try_emplace(parts.at(0), parts.at(1));
-            }
-            for (auto &[key, value] : payload["config"]["Labels"].items())
-            {
-                properties.labels.try_emplace(key, value);
-            }
-            for (auto &[key, value] : payload["config"]["Volumes"].items())
-            {
-                properties.volumes.push_back(key);
-            }
-            for (auto &parts : payload["config"]["Entrypoint"])
-            {
-                properties.entry_point.push_back(parts.template get<std::string>());
-            }
-            for (auto &parts : payload["config"]["Cmd"])
-            {
-                properties.command.push_back(parts.template get<std::string>());
-            }
-
-            if (payload["rootfs"].contains("diff_ids"))
-            {
-                for (auto layer_id : payload["rootfs"]["diff_ids"])
-                {
-                    properties.layer_diffs.push_back(layer_id.template get<std::string>());
-                }
-            }
             position->second.callback = std::move(callback);
             position->second.configuration.assign(data.begin(), data.end());
             progress_update update{};

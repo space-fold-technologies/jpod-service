@@ -32,6 +32,8 @@ cmrc_add_resource_library(
     resources/migrations/local-registry.sql
     resources/migrations/network-tables.sql
     resources/configurations/settings.yml
+    resources/configurations/freebsd-template.yml
+    resources/configurations/linux-template.yml
 )
 
 include_directories(include)

@@ -39,33 +39,6 @@ namespace domain::images
         MSGPACK_DEFINE(filesystem, folder, options, flags)
     };
 
-    struct image_internals
-    {
-        std::map<std::string, std::string> labels;
-        std::map<std::string, std::string> parameters;
-        std::map<std::string, std::string> env_vars;
-        std::vector<mount_point> mount_points;
-        std::vector<std::string> command;
-        std::vector<std::string> entry_point;
-        MSGPACK_DEFINE(labels, parameters, env_vars, mount_points, command, entry_point)
-    };
-
-    inline std::vector<uint8_t> pack_image_internals(const image_internals &order)
-    {
-        msgpack::sbuffer buffer;
-        msgpack::pack(buffer, order);
-        std::vector<uint8_t> output(buffer.size());
-        std::memcpy(output.data(), buffer.data(), buffer.size());
-        return output;
-    }
-
-    inline image_internals unpack_image_internals(const std::vector<uint8_t> &content)
-    {
-        msgpack::object_handle result;
-        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
-        return result.get().as<image_internals>();
-    }
-
     struct image_summary_entry
     {
         std::string identifier;
@@ -103,14 +76,6 @@ namespace domain::images
         std::string variant;
         std::string version;
         std::size_t size;
-        std::map<std::string, std::string> labels;
-        std::map<std::string, std::string> parameters;
-        std::map<uint16_t, std::string> exposed_ports;
-        std::map<std::string, std::string> env_vars;
-        std::vector<std::string> volumes;
-        std::vector<mount_point> mount_points;
-        std::vector<std::string> entry_point;
-        std::vector<std::string> command;
     };
 }
 
