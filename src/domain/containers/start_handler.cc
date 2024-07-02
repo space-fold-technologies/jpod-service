@@ -39,6 +39,7 @@ namespace domain::containers
         auto result = initialize(order.term, containers_folder, images_folder, repository, runtime_ptr)
                           .and_then(fetch_details)
                           .and_then(prepare_container)
+                          .and_then(setup_command)
                           .and_then(start_container);
         if (!result)
         {
@@ -78,6 +79,7 @@ namespace domain::containers
         {
             state.image_identifier = result->image_identifier;
             state.details = {};
+            state.details.hostname = result->name;
             state.details.identifier = result->identifier;
             state.details.container_folder = state.containers_folder / fs::path(result->identifier);
             state.details.network_properties = result->network_properties;
@@ -107,15 +109,33 @@ namespace domain::containers
             state.details.env_vars.try_emplace(parts.at(0), parts.at(1));
             fmt::println("ENV: {}:{}", parts.at(0), parts.at(1));
         }
+
         for (auto &part : payload["config"]["Entrypoint"])
         {
-            state.details.entry_point.push_back(part.template get<std::string>());
+            state.entry_point.push_back(part.template get<std::string>());
             fmt::println("ENTRY-POINT: {}", part.template get<std::string>());
         }
         for (auto &part : payload["config"]["Cmd"])
         {
-            state.details.command.push_back(part.template get<std::string>());
+            state.command.push_back(part.template get<std::string>());
             fmt::println("COMMAND: {}", part.template get<std::string>());
+        }
+        return state;
+    }
+    startup_result start_handler::setup_command(startup_state state)
+    {
+        if (!state.entry_point.empty())
+        {
+            state.details.command.assign(state.entry_point.begin(), state.entry_point.end());
+        }
+        if (!state.command.empty())
+        {
+            if (state.command.at(0).find("/bin/sh") == std::string::npos)
+            {
+                state.details.command.push_back("/bin/sh");
+                state.details.command.push_back("-c");
+            }
+            state.details.command.insert(state.details.command.end(), state.command.begin(), state.command.end());
         }
         return state;
     }

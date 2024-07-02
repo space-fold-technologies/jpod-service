@@ -29,7 +29,6 @@ namespace domain::containers
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
         std::vector<mount_point_entry> mount_points;
-        std::vector<std::string> entry_point;
         std::vector<std::string> command;
         fs::path container_folder;
         std::string network_properties;
@@ -46,6 +45,7 @@ namespace domain::containers
         virtual ~container() = default;
         virtual void start() = 0;
         virtual void register_listener(std::shared_ptr<container_listener> operation_listener) = 0;
+        virtual void update_parameters(const std::map<std::string, std::string>& parameters) = 0;
 
     protected:
         operation_details details;

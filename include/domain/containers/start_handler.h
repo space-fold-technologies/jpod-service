@@ -37,6 +37,8 @@ namespace domain::containers
         fs::path images_folder;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> port_map;
+        std::vector<std::string> entry_point;
+        std::vector<std::string> command;
         std::shared_ptr<runtime> runtime_ptr;
         std::shared_ptr<container_repository> store;
         operation_details details;
@@ -63,6 +65,7 @@ namespace domain::containers
                                          std::shared_ptr<runtime> runtime_ptr);
         static startup_result fetch_details(startup_state state);
         static startup_result prepare_container(startup_state state);
+        static startup_result setup_command(startup_state state);
         static tl::expected<std::string, std::error_code> start_container(startup_state state);
 
     private:

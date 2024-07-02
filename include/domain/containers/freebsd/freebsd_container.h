@@ -33,6 +33,7 @@ namespace domain::containers::freebsd
         virtual ~freebsd_container() override;
         void start() override;
         void register_listener(std::shared_ptr<container_listener> operation_listener) override;
+        void update_parameters(const std::map<std::string, std::string>& parameters) override;
 
     private:
         std::error_code mount_file_systems();

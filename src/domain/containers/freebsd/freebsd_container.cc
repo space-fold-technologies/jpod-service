@@ -1,5 +1,6 @@
 #include <domain/containers/freebsd/freebsd_container.h>
 #include <domain/containers/freebsd/freebsd_utils.h>
+#include <core/utilities/defer.h>
 #include <asio/io_context.hpp>
 #include <asio/post.hpp>
 #include <asio/read.hpp>
@@ -18,7 +19,7 @@
 #include <range/v3/range/conversion.hpp>
 
 using namespace ranges;
-
+using namespace core::utilities;
 namespace domain::containers::freebsd
 {
     freebsd_container::freebsd_container(
@@ -60,7 +61,7 @@ namespace domain::containers::freebsd
         {
             listener.container_failed(details.identifier, error);
         }
-        else if (!details.entry_point.empty())
+        else if (!details.command.empty())
         {
             if (error = start_process_in_jail(); error)
             {
@@ -106,6 +107,32 @@ namespace domain::containers::freebsd
         }
     }
 
+    void freebsd_container::update_parameters(const std::map<std::string, std::string> &parameters)
+    {
+        std::vector<jailparam> _prmz;
+        std::error_code error;
+        /* clang-format off */
+        defer clean_parameters([&_prmz]{  jailparam_free(&_prmz[0], _prmz.size()); });
+        /* clang-format on */
+        if (int jail_id = jail_getid(details.identifier.c_str()); jail_id <= 0)
+        {
+            listener.container_failed(details.identifier, std::error_code{errno, std::system_category()});
+        }
+        else
+        {
+            add_parameter(_prmz, std::string("jid"), fmt::format("{}", jail_id));
+            for (const auto &[key, value] : details.parameters)
+            {
+                add_parameter(_prmz, key, value);
+            }
+            if (int jail_id = jailparam_set(&_prmz[0], _prmz.size(), JAIL_UPDATE); jail_id == -1)
+            {
+                logger->error("failure in creating jail: JAIL ERR: {} SYS-ERR: {}", jail_errmsg, errno);
+                listener.container_failed(details.identifier, std::error_code{errno, std::system_category()});
+            }
+        }
+    }
+
     bool freebsd_container::setup_pipe(int fd)
     {
         if (auto fd_in_dup = ::dup(fd); fd_in_dup > 0 || close_on_exec(fd_in_dup))
@@ -123,22 +150,23 @@ namespace domain::containers::freebsd
     std::error_code freebsd_container::create_jail()
     {
         std::vector<jailparam> parameters;
-        std::error_code error;
+        /* clang-format off */
+        defer clean_parameters([&parameters]{  jailparam_free(&parameters[0], parameters.size()); });
+        /* clang-format on */
         add_parameter(parameters, std::string("name"), details.identifier);
         add_parameter(parameters, std::string("vnet"), "");
         add_parameter(parameters, std::string("host.hostname"), details.hostname);
         add_parameter(parameters, std::string("path"), details.container_folder.generic_string().c_str());
-        for (const auto &entry : details.parameters)
+        for (const auto &[key, value] : details.parameters)
         {
-            add_parameter(parameters, entry.first, entry.second);
+            add_parameter(parameters, key, value);
         }
         if (int jail_id = jailparam_set(&parameters[0], parameters.size(), JAIL_CREATE); jail_id == -1)
         {
             logger->error("failure in creating jail: JAIL ERR: {} SYS-ERR: {}", jail_errmsg, errno);
             return std::error_code{errno, std::system_category()};
         }
-        jailparam_free(&parameters[0], parameters.size());
-        return error;
+        return {};
     }
     std::error_code freebsd_container::start_process_in_jail()
     {
@@ -175,17 +203,17 @@ namespace domain::containers::freebsd
             {
                 setenv(key.c_str(), value.c_str(), 1);
             }
-            if(details.env_vars.find("SHELL") == details.env_vars.end())
+            if (details.env_vars.find("SHELL") == details.env_vars.end())
             {
                 setenv("SHELL", "/bin/sh", 1);
             }
-            if(details.env_vars.find("TERM") == details.env_vars.end())
+            if (details.env_vars.find("TERM") == details.env_vars.end())
             {
-                 setenv("TERM", "xterm-256color", 1);
+                setenv("TERM", "xterm-256color", 1);
             }
 
             std::vector<const char *> command;
-            for (auto &entry : !details.command.empty() ? details.command : details.entry_point)
+            for (auto &entry : details.command)
             {
                 command.push_back(const_cast<char *>(entry.c_str()));
             }

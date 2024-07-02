@@ -74,8 +74,11 @@ namespace domain::containers
     {
         std::string sql("SELECT "
                         "c.identifier, "
+                        "c.name, "
+                        "i.identifier AS image_identifier, "
                         "c.internals "
                         "FROM container_tb AS c "
+                        "INNER JOIN image_tb AS i ON i.id = c.image_id "
                         "WHERE c.identifier = ?");
         auto connection = data_source.connection();
         auto statement = connection->statement(sql);
@@ -88,8 +91,9 @@ namespace domain::containers
         {
             container_details details{};
             details.identifier = result.fetch<std::string>("identifier");
-            auto content = result.fetch<std::vector<uint8_t>>("internals");
-            auto internals = unpack_container_internals(content);
+            details.name = result.fetch<std::string>("name");
+            details.image_identifier = result.fetch<std::string>("image_identifier");
+            container_internals internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             fill_container_details(details, internals);
             return details;
         }
@@ -99,6 +103,7 @@ namespace domain::containers
     {
         std::string sql("SELECT "
                         "c.identifier, "
+                        "c.name, "
                         "i.identifier AS image_identifier, "
                         "c.internals "
                         "FROM container_tb AS c "
@@ -117,6 +122,7 @@ namespace domain::containers
         {
             container_details details{};
             details.identifier = result.fetch<std::string>("identifier");
+            details.name = result.fetch<std::string>("name");
             details.image_identifier = result.fetch<std::string>("image_identifier");
             container_internals internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             fill_container_details(details, internals);

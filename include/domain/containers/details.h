@@ -7,6 +7,7 @@ namespace domain::containers
     struct container_details
     {
         std::string identifier;
+        std::string name;
         std::string os;
         std::string image_identifier;
         std::map<std::string, std::string> port_map;
