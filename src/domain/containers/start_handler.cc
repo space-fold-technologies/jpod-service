@@ -86,20 +86,17 @@ namespace domain::containers
             state.os = result->os;
             state.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
             state.port_map.insert(result->port_map.begin(), result->port_map.end());
-            fmt::println("added container details to state");
             return state;
         }
     }
     startup_result start_handler::prepare_container(startup_state state)
     {
         std::ifstream file(state.images_folder / fs::path("sha256") / fs::path(state.image_identifier) / fs::path("config.json"));
-        fmt::println("opened configuration file");
         auto payload = json::parse(file);
         for (auto &[key, value] : payload["config"]["ExposedPorts"].items())
         {
             auto parts = key | views::split('/') | to<std::vector<std::string>>();
             auto port = fmt::format("{}", static_cast<uint16_t>(std::atoi(parts.at(0).c_str())));
-            fmt::println("PORT: {}", port);
             state.details.port_map.try_emplace(port, port);
         }
         for (const auto &env_var : payload["config"]["Env"])
@@ -107,18 +104,15 @@ namespace domain::containers
             std::string entry = env_var.template get<std::string>();
             auto parts = entry | views::split('=') | to<std::vector<std::string>>();
             state.details.env_vars.try_emplace(parts.at(0), parts.at(1));
-            fmt::println("ENV: {}:{}", parts.at(0), parts.at(1));
         }
 
         for (auto &part : payload["config"]["Entrypoint"])
         {
             state.entry_point.push_back(part.template get<std::string>());
-            fmt::println("ENTRY-POINT: {}", part.template get<std::string>());
         }
         for (auto &part : payload["config"]["Cmd"])
         {
             state.command.push_back(part.template get<std::string>());
-            fmt::println("COMMAND: {}", part.template get<std::string>());
         }
         return state;
     }
