@@ -62,25 +62,21 @@ namespace core::archives
     std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out, fs::path &destination)
     {
         archive_entry *entry;
+        auto logger = spdlog::get("jpod");
         while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
         {
             const char *entry_name = archive_entry_pathname(entry);
             fs::path full_path = destination / fs::path(std::string(entry_name));
             archive_entry_set_pathname(entry, full_path.generic_string().c_str());
-            auto type = archive_entry_filetype(entry);
-            if (S_ISLNK(type))
-            {
-                const char *hard_link = archive_entry_symlink(entry);
-                auto link = destination / fs::path(std::string(hard_link));
-                archive_entry_set_symlink(entry, link.c_str());
-            }
             if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
             {
                 std::string err(archive_error_string(out.get()));
                 if (err.find("Hard-link") != std::string::npos)
                 {
                     const char *hard_link = archive_entry_hardlink(entry);
+                    logger->warn("HARDLINK FOUND: {}", hard_link);
                     auto link = destination / fs::path(std::string(hard_link));
+                    logger->warn("HARDLINK SHIFT >> {}", link.string());
                     archive_entry_set_hardlink(entry, link.c_str());
                     if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
                     {

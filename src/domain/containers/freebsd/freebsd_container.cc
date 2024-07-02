@@ -171,9 +171,17 @@ namespace domain::containers::freebsd
             {
                 logger->error("insecure mode in effect without specified user: {} :error: {}", details.username, error.message());
             }
-            for (const auto &entry : details.env_vars)
+            for (const auto &[key, value] : details.env_vars)
             {
-                setenv(entry.first.c_str(), entry.second.c_str(), 1);
+                setenv(key.c_str(), value.c_str(), 1);
+            }
+            if(details.env_vars.find("SHELL") == details.env_vars.end())
+            {
+                setenv("SHELL", "/bin/sh", 1);
+            }
+            if(details.env_vars.find("TERM") == details.env_vars.end())
+            {
+                 setenv("TERM", "xterm-256color", 1);
             }
 
             std::vector<const char *> command;

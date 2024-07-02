@@ -148,8 +148,8 @@ namespace core::oci
             manifest.write(reinterpret_cast<const char *>(image.manifest.data()), image.manifest.size());
             manifest.close();
             std::ofstream configuration(image.destination / fs::path("config.json"), std::ios::out | std::ios::binary);
-            manifest.write(reinterpret_cast<const char *>(image.configuration.data()), image.configuration.size());
-            manifest.close();
+            configuration.write(reinterpret_cast<const char *>(image.configuration.data()), image.configuration.size());
+            configuration.close();
             update.complete = true;
             details.callback({}, update, details.properties);
         }
@@ -374,11 +374,13 @@ namespace core::oci
         {
             auto properties = position->second.properties;
             properties.os = payload["os"].template get<std::string>();
+            position->second.configuration.assign(data.begin(), data.end());
             position->second.callback = std::move(callback);
             position->second.configuration.assign(data.begin(), data.end());
             progress_update update{};
             update.stage = "adding image configuration";
             update.feed = "found image configuration details";
+
             callback({}, update, {});
         }
     }

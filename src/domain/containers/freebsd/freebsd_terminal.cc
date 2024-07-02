@@ -57,8 +57,18 @@ namespace domain::containers::freebsd
                     {
                         logger->debug("was not able to set up secure mode");
                     }
-                    setenv("SHELL", "/bin/sh", 1);
-                    setenv("TERM", "xterm-256color", 1);
+                    for (const auto &[key, value] : properties.env_vars)
+                    {
+                        setenv(key.c_str(), value.c_str(), 1);
+                    }
+                    if (properties.env_vars.find("SHELL") == properties.env_vars.end())
+                    {
+                        setenv("SHELL", "/bin/sh", 1);
+                    }
+                    if (properties.env_vars.find("TERM") == properties.env_vars.end())
+                    {
+                        setenv("TERM", "xterm-256color", 1);
+                    }
                     if (properties.interactive && properties.commands.empty())
                     {
                         if (auto target_shell = getenv("SHELL"); target_shell != NULL)
