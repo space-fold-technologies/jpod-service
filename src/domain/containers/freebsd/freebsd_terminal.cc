@@ -217,18 +217,13 @@ namespace domain::containers::freebsd
                 {
                     if (bytes_transferred > 0)
                     {
-                        this->listener.on_terminal_data_received(buffer);
-                        this->in->async_wait(
-                            asio::posix::stream_descriptor::wait_read,
-                            [this](const std::error_code &err)
-                            {
-                                this->wait_to_read_from_shell();
-                            });
+                        listener.on_terminal_data_received(buffer);
                     }
+                    wait_to_read_from_shell();
                 }
                 else
                 {
-                    this->listener.on_terminal_error(error);
+                    listener.on_terminal_error(error);
                 }
             });
     }
