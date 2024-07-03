@@ -31,31 +31,31 @@ namespace domain::images::instructions
     }
     void mount_instruction::execute()
     {
-        std::error_code error;
-        if (auto result = resolve_tagged_image_details(order); !result.has_value())
-        {
-            listener.on_instruction_complete(identifier, make_error_code(error_code::invalid_order_issued));
-        }
-        else if (auto mount_points = repository.fetch_image_mount_points(result->registry, result->repository, result->tag); mount_points.empty())
-        {
-            listener.on_instruction_complete(identifier, make_error_code(error_code::no_mount_points_present));
-        }
-        else if (auto entries = resolve_mountpoint_folders(mount_points, error); error)
-        {
-            listener.on_instruction_complete(identifier, error);
-        }
-        else
-        {
-            listener.on_instruction_initialized(identifier, name);
-            if (mount_filesystems(entries, error); error)
-            {
-                listener.on_instruction_complete(identifier, error);
-            }
-            else
-            {
-                listener.on_instruction_complete(identifier, {});
-            }
-        }
+        // std::error_code error;
+        // if (auto result = resolve_tagged_image_details(order); !result.has_value())
+        // {
+        //     listener.on_instruction_complete(identifier, make_error_code(error_code::invalid_order_issued));
+        // }
+        // else if (auto mount_points = repository.fetch_image_mount_points(result->registry, result->repository, result->tag); mount_points.empty())
+        // {
+        //     listener.on_instruction_complete(identifier, make_error_code(error_code::no_mount_points_present));
+        // }
+        // else if (auto entries = resolve_mountpoint_folders(mount_points, error); error)
+        // {
+        //     listener.on_instruction_complete(identifier, error);
+        // }
+        // else
+        // {
+        //     listener.on_instruction_initialized(identifier, name);
+        //     if (mount_filesystems(entries, error); error)
+        //     {
+        //         listener.on_instruction_complete(identifier, error);
+        //     }
+        //     else
+        //     {
+        //         listener.on_instruction_complete(identifier, {});
+        //     }
+        // }
     }
     std::vector<mount_point_entry> mount_instruction::resolve_mountpoint_folders(const std::vector<mount_point> &mount_points, std::error_code &error)
     {

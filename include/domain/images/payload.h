@@ -101,11 +101,7 @@ namespace domain::images
         std::string version;
         std::size_t size;
         std::string repository;
-        std::map<std::string, std::string> env_vars;
-        std::map<std::string, std::string> parameters;
-        std::vector<mount_point_details> mount_points;
-
-        MSGPACK_DEFINE(identifier, host, name, tag, os, variant, version, size, env_vars, parameters, mount_points)
+        MSGPACK_DEFINE(identifier, host, name, tag, os, variant, version, size)
     };
 
     inline image_meta unpack_image_details(const std::vector<uint8_t> &content)

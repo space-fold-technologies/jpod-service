@@ -12,6 +12,7 @@ namespace domain::containers
 {
     std::map<std::string, std::string> extensions =
         {
+            {".gz", "archive"},
             {".tar", "tar ball archive"},
             {".tar.gz", "gunzip archive"},
             {".tar.xz", "xzip arhive"}};
@@ -34,8 +35,15 @@ namespace domain::containers
         if (!result)
         {
             auto target = containers_folder / fs::path(identifier);
-            fs::remove_all(target);
-            send_error(fmt::format("container creation failed: {}", result.error().message()));
+            std::error_code error{};
+            if (auto changed = fs::remove_all(target, error); error)
+            {
+                send_error(fmt::format("container creation failed: {}\n{}", error.message(), result.error().message()));
+            }
+            else
+            {
+                send_error(fmt::format("container creation failed: {}", result.error().message()));
+            }
         }
         else
         {
@@ -85,11 +93,10 @@ namespace domain::containers
     }
     creation_result creation_handler::extract_layers(creation_state state)
     {
-        fs::path image_folder = state.image_folder / fs::path(state.image_identifier);
-
+        fs::path image_folder = state.image_folder / fs::path("sha256") / fs::path(state.image_identifier);
         if (auto out = core::archives::initialize_writer(); !out)
         {
-            return tl::make_unexpected(make_container_failure(container_error::extraction_failed));
+            return tl::make_unexpected(out.error());
         }
         else
         {
@@ -99,7 +106,7 @@ namespace domain::containers
                 {
                     if (auto in = core::archives::initialize_reader(entry.path()); !in)
                     {
-                        return tl::make_unexpected(make_container_failure(container_error::extraction_failed));
+                        return tl::make_unexpected(in.error());
                     }
                     else if (auto error = core::archives::copy_to_destination(in.value(), out.value(), state.container_folder); error)
                     {
@@ -122,12 +129,9 @@ namespace domain::containers
             properties.identifier = state.container_identifier;
             properties.os = details->os;
             properties.name = state.name;
-            properties.image_identifier = details->identifier;
-            properties.parameters.insert(details->parameters.begin(), details->parameters.end());
-            properties.port_map.insert(state.port_map.begin(), state.port_map.end());
-            properties.env_vars.insert(details->env_vars.begin(), details->env_vars.end());
             properties.env_vars.insert(state.env_vars.begin(), state.env_vars.end());
-            properties.entry_point = details->entry_point;
+            properties.port_map.insert(state.port_map.begin(), state.port_map.end());
+            properties.image_identifier = details->identifier;
             properties.network_properties = state.network_properties;
             if (auto error = state.store->save(properties); error)
             {

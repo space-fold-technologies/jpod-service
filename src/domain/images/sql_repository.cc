@@ -113,21 +113,20 @@ namespace domain::images
     }
     std::error_code sql_image_repository::save_image_details(const image_details &details)
     {
-        std::string sql("INSERT INTO image_tb(identifier, repository, tag, os, variant, version, size, internals, registry_id) "
+        std::string sql("INSERT INTO image_tb(identifier, repository, tag, tag_reference, os, variant, version, size, registry_id) "
                         "VALUES(?, ?, ?, ?, ?, ?, ?, ?, (SELECT r.id FROM registry_tb AS r WHERE r.uri = ?))");
 
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
-        image_internals internals{details.labels, details.parameters, details.env_vars, details.mount_points};
         auto statement = connection->statement(sql);
         statement.bind(1, details.identifier);
         statement.bind(2, details.repository);
         statement.bind(3, details.tag);
-        statement.bind(4, details.os);
-        statement.bind(5, details.variant);
-        statement.bind(6, details.version);
-        statement.bind(7, static_cast<int64_t>(details.size));
-        statement.bind(8, pack_image_internals(internals));
+        statement.bind(4, details.tag_reference);
+        statement.bind(5, details.os);
+        statement.bind(6, details.variant);
+        statement.bind(7, details.version);
+        statement.bind(8, static_cast<int64_t>(details.size));
         statement.bind(9, details.registry);
         if (auto result_code = statement.execute(); result_code != SQLITE_OK)
         {
@@ -145,8 +144,7 @@ namespace domain::images
                         "i.os, "
                         "i.variant, "
                         "i.version, "
-                        "i.size, "
-                        "i.internals "
+                        "i.size "
                         "FROM image_tb AS i "
                         "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
                         "WHERE r.path = ? "
@@ -172,13 +170,6 @@ namespace domain::images
             details.variant = result.fetch<std::string>("variant");
             details.version = result.fetch<std::string>("version");
             details.size = static_cast<std::size_t>(result.fetch<int64_t>("size"));
-            image_internals internals = unpack_image_internals(result.fetch<std::vector<uint8_t>>("internals"));
-            details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
-            details.labels.insert(internals.labels.begin(), internals.labels.end());
-            details.parameters.insert(internals.parameters.begin(), internals.parameters.end());
-            details.mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
-            details.entry_point.assign(internals.entry_point.begin(), internals.entry_point.end());
-            details.command.assign(internals.command.begin(), internals.command.end());
             return details;
         }
     }
@@ -237,29 +228,6 @@ namespace domain::images
             return std::nullopt;
         }
         return {result.fetch<std::string>("identifier")};
-    }
-    std::vector<mount_point> sql_image_repository::fetch_image_mount_points(const std::string &registry, const std::string &name, const std::string &tag)
-    {
-        std::string sql("SELECT i.internals "
-                        "FROM image_tb AS i "
-                        "INNER JOIN registry_tb AS r ON i.registry_id = r.id "
-                        "WHERE r.path = ? "
-                        "AND i.repository = ? "
-                        "AND i.tag = ?");
-        auto connection = data_source.connection();
-        auto statement = connection->statement(sql);
-        statement.bind(1, registry);
-        statement.bind(2, name);
-        statement.bind(3, tag);
-        auto result = statement.execute_query();
-        std::vector<mount_point> mount_points;
-        if (result.has_next())
-        {
-            image_internals internals = unpack_image_internals(result.fetch<std::vector<uint8_t>>("internals"));
-            mount_points.reserve(internals.mount_points.size());
-            mount_points.assign(internals.mount_points.begin(), internals.mount_points.end());
-        }
-        return mount_points;
     }
     bool sql_image_repository::has_containers(const std::string &query)
     {

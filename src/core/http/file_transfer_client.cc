@@ -384,7 +384,7 @@ namespace core::http
                         }
                         else
                         {
-                            logger->info("done with current download");
+                            logger->trace("done with current download");
                             // We are done
                             _download->status.complete = true;
                             _download->callback({}, _download->status);

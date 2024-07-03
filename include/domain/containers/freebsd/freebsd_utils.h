@@ -75,6 +75,11 @@ namespace domain::containers::freebsd
         login_close(details.lcap);
         setenv("USER", details.pwd->pw_name, 1);
         setenv("HOME", details.pwd->pw_dir, 1);
+        auto home = getenv("HOME");
+        if (!home || strcmp(home, "") == 0)
+        {
+            setenv("HOME", "/", 1);
+        }
         setenv("SHELL", *details.pwd->pw_shell ? details.pwd->pw_shell : _PATH_BSHELL, 1);
         if (chdir(details.pwd->pw_dir) < 0)
         {

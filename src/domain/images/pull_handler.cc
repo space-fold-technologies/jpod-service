@@ -137,14 +137,11 @@ namespace domain::images
         details.registry = properties.registry;
         details.repository = properties.repository;
         details.tag = properties.tag;
+        details.tag_reference = properties.tag_reference;
         details.size = properties.size;
         details.os = properties.os;
         details.variant = properties.variant;
         details.version = properties.version;
-        details.labels.insert(properties.labels.begin(), properties.labels.end());
-        details.volumes.assign(properties.volumes.begin(), properties.volumes.end());
-        details.env_vars.insert(properties.env_vars.begin(), properties.env_vars.end());
-        details.exposed_ports.insert(properties.exposed_ports.begin(), properties.exposed_ports.end());
         return store->save_image_details(details);
     }
     pull_handler::~pull_handler()

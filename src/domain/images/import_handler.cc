@@ -302,10 +302,6 @@ namespace domain::images
         details.size = state.size;
         details.variant = state.variant;
         details.version = state.version;
-        details.labels.insert(state.labels.begin(), state.labels.end());
-        details.volumes.assign(state.volumes.begin(), state.volumes.end());
-        details.env_vars.insert(state.env_vars.begin(), state.env_vars.end());
-        details.exposed_ports.insert(state.exposed_ports.begin(), state.exposed_ports.end());
         if (auto error = state.store->save_image_details(details); error)
         {
             return tl::make_unexpected(error);

@@ -9,6 +9,7 @@ namespace domain::containers
     enum class container_error
     {
         exists,
+        unknown,
         unknown_image,
         extraction_failed,
         not_found,
@@ -18,6 +19,7 @@ namespace domain::containers
     inline std::map<container_error, std::string> container_error_map =
     {
             {container_error::exists, "a container with the specified identifier already exists"},
+            {container_error::unknown, "a container with the specified identifier does not exists"},
             {container_error::unknown_image, "the image specified to create the container does not exist"},
             {container_error::extraction_failed, "image extraction failed during container creations"},
             {container_error::not_found, "no matching container was found matching"},

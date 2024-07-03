@@ -148,8 +148,8 @@ namespace core::oci
             manifest.write(reinterpret_cast<const char *>(image.manifest.data()), image.manifest.size());
             manifest.close();
             std::ofstream configuration(image.destination / fs::path("config.json"), std::ios::out | std::ios::binary);
-            manifest.write(reinterpret_cast<const char *>(image.configuration.data()), image.configuration.size());
-            manifest.close();
+            configuration.write(reinterpret_cast<const char *>(image.configuration.data()), image.configuration.size());
+            configuration.close();
             update.complete = true;
             details.callback({}, update, details.properties);
         }
@@ -248,8 +248,10 @@ namespace core::oci
                                     request.name = req.name;
                                     request.registry = req.registry;
                                     request.repository = req.repository;
+                                    request.operating_system = req.operating_system;
                                     request.token = req.token;
                                     request.headers.try_emplace("Accept", entry["mediaType"].template get<std::string>());
+                                    request.readable_tag = req.tag;
                                     request.tag = entry["digest"].template get<std::string>();
                                     request.destination = req.destination;
                                     update.feed.append("fetching manifest");
@@ -272,13 +274,18 @@ namespace core::oci
                         update.image_digest = digest;
                         update.feed = std::string("found matching configuration identifier");
                         image_details details{};
-                        details.tag = req.tag;
-                        details.registry = req.registry;
-                        details.repository = req.repository;
+                        details.properties = {};
+                        details.properties.os = req.operating_system;
+                        details.properties.digest = digest;
+                        details.properties.tag = req.readable_tag;
+                        details.properties.tag_reference = req.tag;
+                        details.properties.registry = req.registry;
+                        details.properties.repository = req.repository;
                         details.destination = req.destination;
 
                         for (const auto &layer_entry : payload["layers"])
                         {
+                            details.properties.size += layer_entry["size"].template get<std::size_t>();
                             details.layers.push_back(layer{
                                 layer_entry["size"].template get<std::size_t>(),
                                 layer_entry["mediaType"].template get<std::string>(),
@@ -288,11 +295,11 @@ namespace core::oci
                         {
                             if (key == "org.opencontainers.image.base.name")
                             {
-                                details.variant = value.template get<std::string>();
+                                details.properties.variant = value.template get<std::string>();
                             }
                             if (key == "org.opencontainers.image.version")
                             {
-                                details.version = value.template get<std::string>();
+                                details.properties.version = value.template get<std::string>();
                             }
                         }
                         details.manifest.assign(resp.data.begin(), resp.data.end());
@@ -358,65 +365,24 @@ namespace core::oci
     void oci_client::add_configuration(const std::string &digest, const std::vector<uint8_t> &data, image_progress_callback callback)
     {
         auto payload = json::parse(data);
-        image_properties properties{};
-        properties.os = payload["os"].template get<std::string>();
-        for (auto &[key, value] : payload["config"]["ExposedPorts"].items())
+        if (auto position = images.find(digest); position == images.end())
         {
-            auto parts = key | views::split('/') | to<std::vector<std::string>>();
-            auto port = static_cast<uint16_t>(std::atoi(parts.at(0).c_str()));
-            auto protocol = parts.size() > 1 ? parts.at(1) : "tcp";
-            properties.exposed_ports.try_emplace(port, protocol);
+            // report error here
+            callback(std::make_error_code(std::errc::identifier_removed), {}, {});
         }
-        for (const auto &env_var : payload["config"]["Env"])
+        else
         {
-            std::string entry = env_var.template get<std::string>();
-            auto parts = entry | views::split('=') | to<std::vector<std::string>>();
-            properties.env_vars.try_emplace(parts.at(0), parts.at(1));
-        }
-        for (auto &[key, value] : payload["config"]["Labels"].items())
-        {
-            properties.labels.try_emplace(key, value);
-        }
-        for (auto &[key, value] : payload["config"]["Volumes"].items())
-        {
-            properties.volumes.push_back(key);
-        }
-        for (auto &parts : payload["config"]["Entrypoint"])
-        {
-            properties.entry_point.push_back(parts.template get<std::string>());
-        }
-        for (auto &parts : payload["config"]["Cmd"])
-        {
-            properties.command.push_back(parts.template get<std::string>());
-        }
-
-        if (payload["rootfs"].contains("diff_ids"))
-        {
-            for (auto layer_id : payload["rootfs"]["diff_ids"])
-            {
-                properties.layer_diffs.push_back(layer_id.template get<std::string>());
-            }
-        }
-
-        if (auto position = images.find(digest); position != images.end())
-        {
-            position->second.properties = std::move(properties);
-            position->second.properties.tag = position->second.tag;
-            position->second.properties.registry = position->second.registry;
-            position->second.properties.repository = position->second.repository;
-            position->second.properties.variant = position->second.variant;
-            position->second.properties.version = position->second.version;
-            for (const auto &layer : position->second.layers)
-            {
-                position->second.properties.size += layer.size;
-            }
+            auto properties = position->second.properties;
+            properties.os = payload["os"].template get<std::string>();
+            position->second.configuration.assign(data.begin(), data.end());
             position->second.callback = std::move(callback);
             position->second.configuration.assign(data.begin(), data.end());
+            progress_update update{};
+            update.stage = "adding image configuration";
+            update.feed = "found image configuration details";
+
+            callback({}, update, {});
         }
-        progress_update update{};
-        update.stage = "adding image configuration";
-        update.feed = "found image configuration details";
-        callback({}, update, {});
     }
 
     void oci_client::fetch_layers(std::string digest)

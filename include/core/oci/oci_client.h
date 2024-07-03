@@ -42,6 +42,7 @@ namespace core::oci
         std::string repository;
         std::string registry;
         std::string tag;
+        std::string readable_tag;
         std::string token;
         std::string operating_system;
         std::string architecture;
@@ -59,19 +60,13 @@ namespace core::oci
     {
         std::string digest;
         std::string tag;
+        std::string tag_reference;
         std::string registry;
         std::string repository;
         std::string os;
         std::size_t size;
         std::string variant;
         std::string version;
-        std::vector<std::string> entry_point;
-        std::vector<std::string> command;
-        std::map<std::string, std::string> env_vars;
-        std::map<std::string, std::string> labels;
-        std::map<uint16_t, std::string> exposed_ports;
-        std::vector<std::string> volumes;
-        std::vector<std::string> layer_diffs;
     };
     struct layer
     {
@@ -95,11 +90,6 @@ namespace core::oci
     // life time resolve task
     struct image_details
     {
-        std::string tag;
-        std::string registry;
-        std::string repository;
-        std::string variant;
-        std::string version;
         std::vector<layer> layers;
         image_properties properties;
         image_progress_callback callback;
