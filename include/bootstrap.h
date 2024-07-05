@@ -105,6 +105,7 @@ private:
 
     fs::path containers_folder;
     fs::path images_folder;
+    fs::path volumes_folder;
     domain::networking::network_entry default_network_entry;
     std::shared_ptr<spdlog::logger> logger;
 };

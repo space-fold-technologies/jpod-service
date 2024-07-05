@@ -99,5 +99,26 @@ namespace domain::containers
         return output;
     }
 
+    struct volume_details
+    {
+        std::string identifier;
+        std::string container_identifier;
+        std::string driver; // default local {zfs|nullfs}
+        std::string filesystem;
+        std::string path;
+        std::string source;
+        std::string options;
+        uint64_t flags;
+    };
+
+    struct volume_entry
+    {
+        std::string driver; // default local {zfs|nullfs}
+        std::string filesystem;
+        std::string path;
+        std::string source;
+        std::string options;
+        uint64_t flags;
+    }; 
 }
 #endif // __DAEMON_DOMAIN_CONTAINERS_DETAILS__

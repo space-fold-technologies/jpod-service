@@ -4,6 +4,7 @@
 #include <domain/containers/runtime_listener.h>
 #include <domain/containers/container_listener.h>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 #include <memory>
@@ -17,6 +18,7 @@ namespace domain::containers
     {
         std::string filesystem;
         fs::path folder;
+        std::optional<fs::path> source;
         std::string options;
         uint64_t flags;
     };

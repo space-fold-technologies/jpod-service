@@ -5,8 +5,12 @@
 #include <domain/images/helpers.h>
 #include <core/archives/helper.h>
 #include <core/archives/errors.h>
+#include <nlohmann/json.hpp>
 #include <fmt/format.h>
 #include <sole.hpp>
+#include <fstream>
+
+using json = nlohmann::json;
 
 namespace domain::containers
 {
@@ -20,17 +24,20 @@ namespace domain::containers
         core::connections::connection &connection,
         const fs::path &containers_folder,
         const fs::path &images_folder,
+        const fs::path &volumes_folder,
         std::shared_ptr<container_repository> repository) : command_handler(connection),
                                                             containers_folder(containers_folder),
                                                             images_folder(images_folder),
+                                                            volumes_folder(volumes_folder),
                                                             repository(std::move(repository))
     {
     }
     void creation_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto identifier = sole::uuid4().str();
-        auto result = initialize_creation(identifier, repository, images_folder, containers_folder, payload)
+        auto result = initialize_creation(identifier, repository, images_folder, containers_folder, volumes_folder, payload)
                           .and_then(extract_layers)
+                          .and_then(create_volumes)
                           .and_then(register_container);
         if (!result)
         {
@@ -55,6 +62,7 @@ namespace domain::containers
         std::shared_ptr<container_repository> store,
         const fs::path &images_folder,
         const fs::path &containers_folder,
+        const fs::path &volumes_folder,
         const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_creation_order(payload);
@@ -85,6 +93,7 @@ namespace domain::containers
             state.port_map.insert(order.port_map.begin(), order.port_map.end());
             state.container_folder = target;
             state.image_folder = images_folder;
+            state.volumes_folder = volumes_folder;
             state.image_identifier = image_identifier.value();
             state.container_identifier = identifier;
             state.store = store;
@@ -113,6 +122,33 @@ namespace domain::containers
                         return tl::make_unexpected(error);
                     }
                 }
+            }
+        }
+        return state;
+    }
+    creation_result creation_handler::create_volumes(creation_state state)
+    {
+        std::ifstream file(state.image_folder / fs::path("sha256") / fs::path(state.image_identifier) / fs::path("config.json"));
+        auto payload = json::parse(file);
+        for (auto &[key, _] : payload["config"]["Volumes"].items())
+        {
+            volume_details details {};
+            details.identifier = sole::uuid4().str();
+            details.container_identifier = state.container_identifier;
+            details.driver = std::string("local");
+            details.filesystem = std::string("nullfs");
+            details.options = std::string("rw");
+            
+            details.path = state.container_folder / fs::path(key);
+            std::error_code error{};
+            if(!fs::create_directory(fs::path(state.volumes_folder / fs::path(details.identifier)), error) || error)
+            {
+                return tl::make_unexpected(error);
+            }
+            details.source = fs::path(state.volumes_folder / fs::path(details.identifier)).generic_string();
+            if(auto error = state.store->add_entry(details); error)
+            {
+                return tl::make_unexpected(error);
             }
         }
         return state;

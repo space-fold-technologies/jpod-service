@@ -35,7 +35,7 @@ namespace domain::containers
 
     void start_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
-        auto order = container_start_order(payload);
+        auto order = unpack_container_start_order(payload);
         auto result = initialize(order.name, order.user, containers_folder, images_folder, repository, runtime_ptr)
                           .and_then(fetch_details)
                           .and_then(prepare_container)
@@ -70,6 +70,7 @@ namespace domain::containers
         state.images_folder = images_folder;
         state.runtime_ptr = runtime_ptr;
         state.store = store;
+        state.logger = spdlog::get("jpod");
         return state;
     }
     startup_result start_handler::fetch_details(startup_state state)
@@ -119,6 +120,26 @@ namespace domain::containers
         }
         return state;
     }
+    startup_result start_handler::prepare_volumes(startup_state state)
+    {
+        if (auto result = state.store->fetch_volumes(state.details.identifier); !result || result->empty())
+        {
+            state.logger->warn("no local volumes found for container : {}", state.details.identifier);
+        }
+        else
+        {
+            for (const auto &volume : result.value())
+            {
+                state.details.mount_points.push_back(mount_point_entry{
+                volume.filesystem,
+                state.details.container_folder / fs::path(volume.path),
+                fs::path(volume.source),
+                volume.options,
+                volume.flags});
+            }
+        }
+        return state;
+    }
     startup_result start_handler::setup_command(startup_state state)
     {
         if (!state.entry_point.empty())
@@ -151,6 +172,7 @@ namespace domain::containers
             state.details.mount_points.push_back(mount_point_entry{
                 node["filesystem"].as<std::string>(),
                 state.details.container_folder / fs::path(node["folder"].as<std::string>()),
+                std::nullopt,
                 node["options"].as<std::string>(),
                 node["flags"].as<uint64_t>()});
         }

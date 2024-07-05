@@ -43,6 +43,7 @@ namespace domain::containers
         std::shared_ptr<runtime> runtime_ptr;
         std::shared_ptr<container_repository> store;
         operation_details details;
+        std::shared_ptr<spdlog::logger> logger;
     };
     using startup_result = tl::expected<startup_state, std::error_code>;
     class start_handler : public core::commands::command_handler

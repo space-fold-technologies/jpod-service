@@ -180,7 +180,7 @@ namespace domain::containers::freebsd
         }
         else if (pid == 0)
         {
-            //setsid();
+            // setsid();
             if (auto result = fetch_user_details(details.username); !result)
             {
                 logger->error("insecure mode in effect error: {}", result.error().message());
@@ -372,7 +372,14 @@ namespace domain::containers::freebsd
             std::vector<iovec> mount_order_parts;
             add_mount_point_entry(mount_order_parts, "fstype", entry.filesystem);
             add_mount_point_entry(mount_order_parts, "fspath", entry.folder.generic_string());
-            add_mount_point_entry(mount_order_parts, "from", entry.filesystem);
+            if (entry.source && entry.filesystem == "nullfs")
+            {
+                add_mount_point_entry(mount_order_parts, "target", entry.source.value().generic_string());
+            }
+            else
+            {
+                add_mount_point_entry(mount_order_parts, "from", entry.filesystem);
+            }
             if (auto position = entry.options.find("rw"); position != std::string::npos)
             {
                 add_mount_point_entry(mount_order_parts, "rw", fmt::format("{}", 1));
@@ -390,7 +397,7 @@ namespace domain::containers::freebsd
             }
             if (!error)
             {
-                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags) == -1)
+                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags | MNT_IGNORE) == -1)
                 {
                     logger->error("mounting failed: {}", errno);
                     error = std::error_code(errno, std::system_category());

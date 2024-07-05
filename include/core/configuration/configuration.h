@@ -17,6 +17,7 @@ namespace core::configurations
         std::string ip_v6_cidr;
         std::string images_folder;
         std::string containers_folder;
+        std::string volumes_folder;
         std::string database_path;
         std::string domain_socket;
         int pool_size;
@@ -36,6 +37,7 @@ namespace core::configurations
             config["networking"]["ip-v6-cidr"].as<std::string>(),
             config["images"]["path"].as<std::string>(),
             config["containers"]["path"].as<std::string>(),
+            config["volumes"]["path"].as<std::string>(),
             config["database"]["path"].as<std::string>(),
             config["domain-socket"].as<std::string>(),
             config["database"]["pool-size"].as<int>()};
@@ -50,6 +52,7 @@ namespace core::configurations
             config["networking"]["ip-v6-cidr"].as<std::string>(),
             config["images"]["path"].as<std::string>(),
             config["containers"]["path"].as<std::string>(),
+            config["volumes"]["path"].as<std::string>(),
             config["database"]["path"].as<std::string>(),
             config["domain-socket"].as<std::string>(),
             config["database"]["pool-size"].as<int>()};

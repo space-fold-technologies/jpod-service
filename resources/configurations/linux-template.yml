@@ -30,6 +30,7 @@ parameters:
     allow.mount.linsysfs: ' '
     allow.mount.procfs: ' '
     allow.mount.tmpfs: ' '
+    allow.mount.nullfs: ' '
     allow.raw_sockets: ' '
     devfs_ruleset: 4
     allow.sysvipc: 1

@@ -23,6 +23,7 @@ namespace domain::containers
     {
         fs::path image_folder;
         fs::path container_folder;
+        fs::path volumes_folder;
         std::string image_identifier;
         std::string container_identifier;
         std::string name;
@@ -40,6 +41,7 @@ namespace domain::containers
         creation_handler(core::connections::connection &connection,
                          const fs::path &containers_folder,
                          const fs::path &images_folder,
+                         const fs::path &volumes_folder,
                          std::shared_ptr<container_repository> repository);
         virtual ~creation_handler();
         void on_order_received(const std::vector<uint8_t> &payload) override;
@@ -51,13 +53,16 @@ namespace domain::containers
             std::shared_ptr<container_repository> store,
             const fs::path &images_folder,
             const fs::path &containers_folder,
+            const fs::path &volumes_folder,
             const std::vector<uint8_t> &payload);
         static creation_result extract_layers(creation_state state);
+        static creation_result create_volumes(creation_state state);
         static tl::expected<std::string, std::error_code> register_container(creation_state state);
 
     private:
         const fs::path &containers_folder;
         const fs::path &images_folder;
+        const fs::path &volumes_folder;
         std::shared_ptr<container_repository> repository;
     };
 }

@@ -339,5 +339,11 @@ namespace domain::containers
         txn.commit();
         return {};
     }
+    std::error_code sql_container_repository::add_entry(const volume_details &entry)
+    {
+    }
+    tl::expected<volumes, std::error_code> sql_container_repository::fetch_volumes(const std::string &identifier)
+    {
+    }
     sql_container_repository::~sql_container_repository() {}
 }
