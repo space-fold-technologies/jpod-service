@@ -36,6 +36,21 @@ namespace domain::containers
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_term_order>();
     }
+
+    struct container_start_order
+    {
+        std::string name;
+        std::string user;
+        MSGPACK_DEFINE(name, user)
+    };
+
+    inline container_start_order unpack_container_start_order(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_start_order>();
+    }
+
     struct container_remove_order
     {
         std::string term;

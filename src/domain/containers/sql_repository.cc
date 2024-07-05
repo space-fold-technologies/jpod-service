@@ -160,6 +160,7 @@ namespace domain::containers
             properties.os,
             properties.port_map,
             properties.env_vars,
+            properties.volumes,
             properties.network_properties};
         auto statement = connection->statement(sql);
         statement.bind(1, properties.identifier);

@@ -23,6 +23,7 @@ mount_points:
         folder: 'dev/shm'
         options: 'rw,mode=1777'
 parameters:
+    linux: ' '
     allow.mount: ' '
     allow.mount.devfs: ' '
     allow.mount.linprocfs: ' '

@@ -35,11 +35,11 @@ namespace domain::containers
 
     void start_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
-        auto order = unpack_container_term_order(payload);
-        std::string user("william");
-        auto result = initialize(order.term, user, containers_folder, images_folder, repository, runtime_ptr)
+        auto order = container_start_order(payload);
+        auto result = initialize(order.name, order.user, containers_folder, images_folder, repository, runtime_ptr)
                           .and_then(fetch_details)
                           .and_then(prepare_container)
+                          .and_then(prepare_volumes)
                           .and_then(setup_command)
                           .and_then(start_container);
         if (!result)

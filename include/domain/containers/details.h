@@ -12,6 +12,7 @@ namespace domain::containers
         std::string image_identifier;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::map<std::string, std::string> volumes;
         std::string network_properties;
     };
 
@@ -20,8 +21,9 @@ namespace domain::containers
         std::string os;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::map<std::string, std::string> volumes;
         std::string network_properties;
-        MSGPACK_DEFINE(os, port_map, env_vars, network_properties)
+        MSGPACK_DEFINE(os, port_map, env_vars, volumes, network_properties)
     };
 
     inline container_internals unpack_container_internals(const std::vector<uint8_t> &content)
@@ -45,6 +47,7 @@ namespace domain::containers
         details.os = internals.os;
         details.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         details.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
+        details.volumes.insert(internals.volumes.begin(), internals.volumes.end());
         details.network_properties = internals.network_properties;
     }
 
@@ -56,6 +59,7 @@ namespace domain::containers
         std::string image_identifier;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::map<std::string, std::string> volumes;
         std::string network_properties;
     };
 
@@ -64,6 +68,7 @@ namespace domain::containers
         properties.os = internals.os;
         properties.port_map.insert(internals.port_map.begin(), internals.port_map.end());
         properties.env_vars.insert(internals.env_vars.begin(), internals.env_vars.end());
+        properties.volumes.insert(internals.volumes.begin(), internals.volumes.end());
         properties.network_properties = internals.network_properties;
     }
 

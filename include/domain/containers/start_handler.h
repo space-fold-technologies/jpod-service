@@ -67,6 +67,7 @@ namespace domain::containers
                                          std::shared_ptr<runtime> runtime_ptr);
         static startup_result fetch_details(startup_state state);
         static startup_result prepare_container(startup_state state);
+        static startup_result prepare_volumes(startup_state state);
         static startup_result setup_command(startup_state state);
         static tl::expected<std::string, std::error_code> start_container(startup_state state);
 

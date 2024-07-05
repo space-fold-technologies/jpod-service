@@ -29,6 +29,7 @@ namespace domain::containers
         std::string network_properties;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
+        std::map<std::string, std::string> volumes;
         std::shared_ptr<container_repository> store;
     };
     using creation_result = tl::expected<creation_state, std::error_code>;
