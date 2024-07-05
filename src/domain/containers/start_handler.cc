@@ -36,7 +36,8 @@ namespace domain::containers
     void start_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_term_order(payload);
-        auto result = initialize(order.term, containers_folder, images_folder, repository, runtime_ptr)
+        std::string user("william");
+        auto result = initialize(order.term, user, containers_folder, images_folder, repository, runtime_ptr)
                           .and_then(fetch_details)
                           .and_then(prepare_container)
                           .and_then(setup_command)
@@ -53,9 +54,10 @@ namespace domain::containers
     }
     void start_handler::on_connection_closed(const std::error_code &error)
     {
-        logger->info("stopping start handler");
+        logger->debug("stopping start handler");
     }
     startup_result start_handler::initialize(const std::string &term,
+                                             const std::string &user,
                                              const fs::path &containers_folder,
                                              const fs::path &images_folder,
                                              std::shared_ptr<container_repository> store,
@@ -63,6 +65,7 @@ namespace domain::containers
     {
         startup_state state{};
         state.term = term;
+        state.user = user;
         state.containers_folder = containers_folder;
         state.images_folder = images_folder;
         state.runtime_ptr = runtime_ptr;
@@ -151,10 +154,12 @@ namespace domain::containers
                 node["options"].as<std::string>(),
                 node["flags"].as<uint64_t>()});
         }
+        state.details.username = state.user;
         state.details.port_map.merge(state.port_map);
         state.details.env_vars.merge(state.env_vars);
+        auto identifier = state.details.identifier;
         state.runtime_ptr->create_container(std::move(state.details));
-        return state.details.identifier;
+        return identifier;
     }
     start_handler::~start_handler()
     {

@@ -14,7 +14,6 @@
 #include <termios.h>
 #include <spdlog/spdlog.h>
 #include <range/v3/view/split.hpp>
-// #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 #include <range/v3/range/conversion.hpp>
 
@@ -61,16 +60,9 @@ namespace domain::containers::freebsd
         {
             listener.container_failed(details.identifier, error);
         }
-        else if (!details.command.empty())
+        else if (error = start_process_in_jail(); error)
         {
-            if (error = start_process_in_jail(); error)
-            {
-                listener.container_failed(details.identifier, error);
-            }
-            else
-            {
-                listener.container_initialized(details.identifier, network);
-            }
+            listener.container_failed(details.identifier, error);
         }
         else
         {
@@ -82,14 +74,14 @@ namespace domain::containers::freebsd
         asio::post([this]()
                    { process_wait(process_identifier); });
         asio::post([this]()
-                   { this->stream->async_wait(
+                   { stream->async_wait(
                          asio::posix::stream_descriptor::wait_read,
                          [this](const std::error_code &err)
                          {
                              if (!err)
                              {
                                  listener.container_started(details.identifier);
-                                 read_from_shell();
+                                 wait_to_read_from_shell();
                              }
                              else
                              {
@@ -98,12 +90,19 @@ namespace domain::containers::freebsd
                          }); });
     }
 
-    void freebsd_container::register_listener(std::shared_ptr<container_listener> operation_listener)
+    void freebsd_container::register_listener(std::weak_ptr<container_listener> operation_listener)
     {
-        if (auto pos = operation_listeners.find(operation_listener->type()); pos != operation_listeners.end())
+        logger->info("registering monitor for freebsd-container: {}", details.identifier);
+
+        if (auto listener = operation_listener.lock())
         {
-            operation_listeners.erase(pos);
-            operation_listeners.emplace(operation_listener->type(), operation_listener);
+            logger->info("lock acquired for monitor");
+            operation_listeners.try_emplace(listener->type(), std::move(listener));
+            listener->on_operation_initialization();
+        }
+        else
+        {
+            logger->warn("monitor lock expired");
         }
     }
 
@@ -181,60 +180,61 @@ namespace domain::containers::freebsd
         }
         else if (pid == 0)
         {
-            setsid();
-            if (int jail_id = jail_getid(details.identifier.c_str()); jail_id > 0)
+            //setsid();
+            if (auto result = fetch_user_details(details.username); !result)
+            {
+                logger->error("insecure mode in effect error: {}", result.error().message());
+                listener.container_failed(details.identifier, result.error());
+                _exit(-1);
+            }
+            else if (int jail_id = jail_getid(details.identifier.c_str()); jail_id > 0)
             {
                 if (jail_attach(jail_id) == -1 || chdir("/") == -1)
                 {
                     listener.container_failed(details.identifier, std::error_code(errno, std::system_category()));
                     _exit(-errno);
                 }
-            }
-            context.notify_fork(asio::io_context::fork_child);
-            std::error_code error;
-            if (auto results = fetch_user_details(details.username, error); !error && setup_environment(*results))
-            {
+                else
+                {
+                    context.notify_fork(asio::io_context::fork_child);
+                    if (!setup_environment(result.value()))
+                    {
+                        logger->warn("was not able to set up secure mode");
+                    }
+                    for (const auto &[key, value] : details.env_vars)
+                    {
+                        setenv(key.c_str(), value.c_str(), 1);
+                    }
+                    if (details.env_vars.find("SHELL") == details.env_vars.end())
+                    {
+                        setenv("SHELL", "/bin/sh", 1);
+                    }
+                    if (details.env_vars.find("TERM") == details.env_vars.end())
+                    {
+                        setenv("TERM", "xterm-256color", 1);
+                    }
+                    std::vector<char *> args;
+                    for (const auto &entry : details.command)
+                    {
+                        args.push_back(const_cast<char *>(entry.c_str()));
+                    }
+                    args.push_back(nullptr);
+                    if (auto err = execvp(args[0], args.data()); err < 0)
+                    {
+                        perror("execlp failed");
+                        listener.container_failed(details.identifier, std::error_code(errno, std::system_category()));
+                        _exit(-errno);
+                    }
+                    return {};
+                }
             }
             else
             {
-                logger->error("insecure mode in effect without specified user: {} :error: {}", details.username, error.message());
-            }
-            for (const auto &[key, value] : details.env_vars)
-            {
-                setenv(key.c_str(), value.c_str(), 1);
-            }
-            if (details.env_vars.find("SHELL") == details.env_vars.end())
-            {
-                setenv("SHELL", "/bin/sh", 1);
-            }
-            if (details.env_vars.find("TERM") == details.env_vars.end())
-            {
-                setenv("TERM", "xterm-256color", 1);
-            }
-
-            std::vector<const char *> command;
-            for (auto &entry : details.command)
-            {
-                command.push_back(const_cast<char *>(entry.c_str()));
-            }
-
-            command.push_back(NULL);
-            if (auto err = execvp(command[0], const_cast<char *const *>(command.data())); err < 0)
-            {
-                perror("execlp failed");
                 listener.container_failed(details.identifier, std::error_code(errno, std::system_category()));
-                _exit(-errno);
-            }
-            else
-            {
-                listener.container_stopped(details.identifier, network);
+                return {};
             }
         }
-        else
-        {
-            context.notify_fork(asio::io_context::fork_parent);
-        }
-
+        // set the file descriptor non blocking
         if (int flags = fcntl(fd, F_GETFL); flags != -1)
         {
             if (int ret = fcntl(fd, F_SETFD, flags | O_NONBLOCK); ret == -1)
@@ -253,6 +253,7 @@ namespace domain::containers::freebsd
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
+            logger->info("invoked jailed process");
             return {};
         }
         clean();
@@ -285,17 +286,18 @@ namespace domain::containers::freebsd
 
     void freebsd_container::wait_to_read_from_shell()
     {
-        this->stream->async_wait(
+
+        stream->async_wait(
             asio::posix::stream_descriptor::wait_read,
             [this](std::error_code error)
             {
                 if (!error)
                 {
-                    this->read_from_shell();
+                    read_from_shell();
                 }
                 else if (error != asio::error::eof)
                 {
-                    this->on_operation_failure(error);
+                    on_operation_failure(error);
                 }
             });
     }
@@ -313,16 +315,24 @@ namespace domain::containers::freebsd
     {
         if (auto pos = operation_listeners.find(listener_category::observer); pos != operation_listeners.end())
         {
-            if (auto operation_listener = pos->second.lock(); operation_listener)
+            if (auto operation_listener = pos->second.lock())
             {
                 operation_listener->on_operation_failure(error);
+            }
+            else
+            {
+                operation_listeners.erase(pos);
             }
         }
         else if (auto pos = operation_listeners.find(listener_category::runtime); pos != operation_listeners.end())
         {
-            if (auto operation_listener = pos->second.lock(); operation_listener)
+            if (auto operation_listener = pos->second.lock())
             {
                 operation_listener->on_operation_failure(error);
+            }
+            else
+            {
+                operation_listeners.erase(pos);
             }
         }
     }
@@ -331,17 +341,25 @@ namespace domain::containers::freebsd
         if (auto pos = operation_listeners.find(listener_category::observer); pos != operation_listeners.end())
         {
 
-            if (auto operation_listener = pos->second.lock(); operation_listener)
+            if (auto operation_listener = pos->second.lock())
             {
                 operation_listener->on_operation_output(content);
+            }
+            else
+            {
+                operation_listeners.erase(pos);
             }
         }
         else if (auto pos = operation_listeners.find(listener_category::runtime); pos != operation_listeners.end())
         {
 
-            if (auto operation_listener = pos->second.lock(); operation_listener)
+            if (auto operation_listener = pos->second.lock())
             {
                 operation_listener->on_operation_output(content);
+            }
+            else
+            {
+                operation_listeners.erase(pos);
             }
         }
     }

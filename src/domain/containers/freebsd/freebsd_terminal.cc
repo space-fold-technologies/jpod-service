@@ -37,8 +37,14 @@ namespace domain::containers::freebsd
         }
         else if (pid == 0)
         {
-            setsid();
-            if (int jail_id = jail_getid(properties.identifier.c_str()); jail_id > 0)
+            // setsid();
+            if (auto result = fetch_user_details(properties.user); !result)
+            {
+                logger->error("insecure mode in effect error: {}", result.error().message());
+                listener.on_terminal_error(result.error());
+                _exit(-1);
+            }
+            else if (int jail_id = jail_getid(properties.identifier.c_str()); jail_id > 0)
             {
                 if (jail_attach(jail_id) == -1 || chdir("/") == -1)
                 {
@@ -48,12 +54,7 @@ namespace domain::containers::freebsd
                 else
                 {
                     context.notify_fork(asio::io_context::fork_child);
-                    std::error_code error;
-                    if (auto results = fetch_user_details(properties.user, error); error)
-                    {
-                        logger->debug("insecure mode in effect error: {}", error.message());
-                    }
-                    else if (!setup_environment(*results))
+                    if (!setup_environment(result.value()))
                     {
                         logger->debug("was not able to set up secure mode");
                     }
@@ -124,7 +125,7 @@ namespace domain::containers::freebsd
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
-            return std::error_code{};
+            return {};
         }
         clean();
         return std::error_code(errno, std::system_category());
@@ -195,7 +196,7 @@ namespace domain::containers::freebsd
     {
         this->in->async_wait(
             asio::posix::stream_descriptor::wait_read,
-            [this](const std::error_code &error)
+            [this](std::error_code error)
             {
                 if (!error)
                 {

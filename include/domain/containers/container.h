@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include <map>
 #include <memory>
+#include <map>
 
 namespace fs = std::filesystem;
 
@@ -44,7 +44,7 @@ namespace domain::containers
         virtual void initialize() = 0;
         virtual ~container() = default;
         virtual void start() = 0;
-        virtual void register_listener(std::shared_ptr<container_listener> operation_listener) = 0;
+        virtual void register_listener(std::weak_ptr<container_listener> operation_listener) = 0;
         virtual void update_parameters(const std::map<std::string, std::string>& parameters) = 0;
 
     protected:

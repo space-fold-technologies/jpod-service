@@ -1,11 +1,11 @@
 #ifndef __DAEMON_DOMAIN_CONTAINERS_FREEBSD_INTERNAL_UTILS__
 #define __DAEMON_DOMAIN_CONTAINERS_FREEBSD_INTERNAL_UTILS__
 
+#include <domain/containers/freebsd/freebsd_errors.h>
+#include <tl/expected.hpp>
 #include <login_cap.h>
 #include <pwd.h>
 #include <paths.h>
-#include <system_error>
-#include <optional>
 #include <jail.h>
 #include <sys/uio.h>
 #include <fcntl.h>
@@ -21,45 +21,40 @@ namespace domain::containers::freebsd
     {
         login_cap_t *lcap;
         passwd *pwd;
+        bool not_root;
     };
 
-    inline auto fetch_user_details(const std::string &username, std::error_code &error) -> std::optional<user_details>
+    inline auto fetch_user_details(const std::string &username) -> tl::expected<user_details, std::error_code>
     {
-        user_details details{nullptr, nullptr};
+        user_details details{};
+        details.not_root = username.find_first_of("root") == std::string::npos;
         errno = 0;
-        if (!username.empty())
+        if (details.pwd = username.empty() ? getpwuid(getuid()) : getpwnam(username.c_str()); details.pwd == nullptr)
         {
-            if (details.pwd = getpwnam(username.c_str()); details.pwd == nullptr)
+            if (errno != 0)
             {
-                if (errno != 0)
-                {
-                    error = std::error_code(errno, std::system_category());
-                }
-                return std::nullopt;
+                return tl::make_unexpected(std::error_code{errno, std::system_category()});
             }
+            return tl::make_unexpected(make_freebsd_failure(freebsd_error::unknown_user));
         }
-        else
+        else if (details.lcap = login_getpwclass(details.pwd); details.lcap == nullptr)
         {
-            uid_t uid = getuid();
-            if (details.pwd = getpwuid(uid); details.pwd == nullptr)
+            if (errno != 0)
             {
-                if (errno != 0)
-                {
-                    error = std::error_code(errno, std::system_category());
-                }
-                return std::nullopt;
+                return tl::make_unexpected(std::error_code{errno, std::system_category()});
             }
+            return tl::make_unexpected(make_freebsd_failure(freebsd_error::pwclass_failure));
         }
-        if (details.lcap = login_getpwclass(details.pwd); details.lcap == nullptr)
+        else if (initgroups(details.pwd->pw_name, details.pwd->pw_gid) < 0)
         {
-            return std::nullopt;
+            if (errno != 0)
+            {
+                return tl::make_unexpected(std::error_code{errno, std::system_category()});
+            }
+            return tl::make_unexpected(make_freebsd_failure(freebsd_error::pwclass_failure));
         }
-        if (initgroups(details.pwd->pw_name, details.pwd->pw_gid) < 0)
-        {
-            error = std::error_code(errno, std::system_category());
-            return std::nullopt;
-        }
-        return std::make_optional(details);
+        
+        return details;
     }
 
     inline auto setup_environment(const user_details &details) -> bool
@@ -68,23 +63,16 @@ namespace domain::containers::freebsd
         {
             return false;
         }
-        if (setusercontext(details.lcap, details.pwd, details.pwd->pw_uid, LOGIN_SETALL & ~LOGIN_SETGROUP & ~LOGIN_SETLOGIN) != 0)
+        auto flags = details.not_root ? LOGIN_SETALL & ~LOGIN_SETGROUP & ~LOGIN_SETLOGIN
+		    : LOGIN_SETPATH | LOGIN_SETENV;
+        if (setusercontext(details.lcap, details.pwd, details.pwd->pw_uid, flags) != 0)
         {
             return false;
         }
         login_close(details.lcap);
         setenv("USER", details.pwd->pw_name, 1);
         setenv("HOME", details.pwd->pw_dir, 1);
-        auto home = getenv("HOME");
-        if (!home || strcmp(home, "") == 0)
-        {
-            setenv("HOME", "/", 1);
-        }
         setenv("SHELL", *details.pwd->pw_shell ? details.pwd->pw_shell : _PATH_BSHELL, 1);
-        if (chdir(details.pwd->pw_dir) < 0)
-        {
-            return false;
-        }
         endpwent();
         return true;
     }

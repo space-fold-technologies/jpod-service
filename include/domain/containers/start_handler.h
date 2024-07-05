@@ -30,6 +30,7 @@ namespace domain::containers
     struct startup_state
     {
         std::string term;
+        std::string user;
         std::string image_identifier;
         std::string os;
         std::string configuration;
@@ -58,7 +59,8 @@ namespace domain::containers
         void on_connection_closed(const std::error_code &error) override;
 
     private:
-        static startup_result initialize(const std::string& term,
+        static startup_result initialize(const std::string &term,
+                                         const std::string &user,
                                          const fs::path &containers_folder,
                                          const fs::path &images_folder,
                                          std::shared_ptr<container_repository> store,

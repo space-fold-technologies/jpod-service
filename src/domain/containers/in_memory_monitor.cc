@@ -12,15 +12,15 @@ namespace domain::containers
     }
     void in_memory_monitor::on_operation_output(const std::vector<uint8_t> &content)
     {
-        logger->info("imm: output: {}", std::string(content.begin(), content.end()));
+        logger->warn("imm: output: {}", std::string(content.begin(), content.end()));
     }
     void in_memory_monitor::on_operation_failure(const std::error_code &error)
     {
-        logger->info("imm: input: {}", error.message());
+        logger->error("imm: error: {}", error.message());
     }
     listener_category in_memory_monitor::type()
     {
-        return listener_category::observer;
+        return listener_category::runtime;
     }
     void in_memory_monitor::clear()
     {

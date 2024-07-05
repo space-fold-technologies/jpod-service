@@ -20,18 +20,18 @@ namespace domain::containers
 
     void logging_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
-        auto order = unpack_container_term_order(payload);
-        if (auto result = repository->first_identifier_match(order.term); !result)
+        auto order = unpack_container_log_order(payload);
+        if (auto result = repository->first_identifier_match(order.name); !result.has_value())
         {
-            send_error(fmt::format("failed to find a container matching: {}", order.term));
+            send_error(fmt::format("failed to find a container matching: {}", order.name));
         }
-        else if (container_ptr = runtime_ptr->fetch_container(*result); !container_ptr)
+        else if (container_ptr = runtime_ptr->fetch_container(result.value()); !container_ptr)
         {
-            send_error(fmt::format("failed to find a container running instance for: {}", order.term));
+            send_error(fmt::format("failed to find a container running instance for: {}", order.name));
         }
         else
         {
-            container_ptr->register_listener(shared_from_this());
+            container_ptr->register_listener(weak_from_this());
         }
     }
     void logging_handler::on_operation_initialization()

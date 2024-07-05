@@ -31,5 +31,9 @@ parameters:
     allow.mount.tmpfs: ' '
     allow.raw_sockets: ' '
     devfs_ruleset: 4
+    allow.sysvipc: 1
+    sysvmsg: 'new'
+    sysvsem: 'new'
+    sysvshm: 'new'
     securelevel: 3
     persist: ' '
