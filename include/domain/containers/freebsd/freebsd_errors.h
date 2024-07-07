@@ -11,16 +11,20 @@ namespace domain::containers::freebsd
     {
         unknown_user,
         unknown_uid,
+        unknown_group,
         pwclass_failure,
         initgroup_failure,
+        chown_failure,
     };
 
     inline std::map<freebsd_error, std::string> freebsd_error_map =
         {
             {freebsd_error::unknown_user, "failed to find specified user"},
             {freebsd_error::unknown_uid, "failed to resolve uid for current user"},
+            {freebsd_error::unknown_group, "failed to resolve group for current user"},
             {freebsd_error::pwclass_failure, "failed to resolve login {pwclass}"},
-            {freebsd_error::initgroup_failure, "failed to initialized groups for pwd"}};
+            {freebsd_error::initgroup_failure, "failed to initialized groups for pwd"},
+            {freebsd_error::chown_failure, "failed to set directory ownership"}};
 
     struct freebsd_failure_category : public std::error_category
     {

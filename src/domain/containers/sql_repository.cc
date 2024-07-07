@@ -341,9 +341,53 @@ namespace domain::containers
     }
     std::error_code sql_container_repository::add_entry(const volume_details &entry)
     {
+        std::string sql("INSERT INTO volume_tb(identifier, container_id, driver, filesystem, path, source, options) "
+                        "VALUES(?, (SELECT c.id FROM container_tb AS c WHERE c.identifier = ?), ?, ?, ?, ?, ?)");
+        auto connection = data_source.connection();
+        core::sql::transaction txn(connection);
+        auto statement = connection->statement(sql);
+        statement.bind(1, entry.identifier);
+        statement.bind(2, entry.container_identifier);
+        statement.bind(3, entry.driver);
+        statement.bind(4, entry.filesystem);
+        statement.bind(5, entry.path);
+        statement.bind(6, entry.source);
+        statement.bind(7, entry.options);
+        if (auto result_code = statement.execute(); result_code < 0)
+        {
+            return core::sql::errors::make_error_code(result_code);
+        }
+        txn.commit();
+        return {};
     }
     tl::expected<volumes, std::error_code> sql_container_repository::fetch_volumes(const std::string &identifier)
     {
+        std::string sql("SELECT "
+                        "v.driver, "
+                        "v.filesystem, "
+                        "v.path, "
+                        "v.source, "
+                        "v.options "
+                        "FROM volume_tb AS v "
+                        "INNER JOIN container_tb AS c ON c.id = v.container_id "
+                        "WHERE c.identifier = ?");
+        auto connection = data_source.connection();
+        auto statement = connection->statement(sql);
+        statement.bind(1, identifier);
+        auto result = statement.execute_query();
+        std::vector<volume_entry> entries;
+        while(result.has_next())
+        {
+            entries.push_back(volume_entry
+            {
+                result.fetch<std::string>("driver"),
+                result.fetch<std::string>("filesystem"),
+                result.fetch<std::string>("path"),
+                result.fetch<std::string>("source"),
+                result.fetch<std::string>("options")
+            });
+        }
+        return entries;
     }
     sql_container_repository::~sql_container_repository() {}
 }

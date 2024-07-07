@@ -131,11 +131,10 @@ namespace domain::containers
             for (const auto &volume : result.value())
             {
                 state.details.mount_points.push_back(mount_point_entry{
-                volume.filesystem,
-                state.details.container_folder / fs::path(volume.path),
-                fs::path(volume.source),
-                volume.options,
-                volume.flags});
+                    volume.filesystem,
+                    state.details.container_folder / fs::path(volume.path),
+                    fs::path(volume.source),
+                    volume.options});
             }
         }
         return state;
@@ -173,10 +172,10 @@ namespace domain::containers
                 node["filesystem"].as<std::string>(),
                 state.details.container_folder / fs::path(node["folder"].as<std::string>()),
                 std::nullopt,
-                node["options"].as<std::string>(),
-                node["flags"].as<uint64_t>()});
+                node["options"].as<std::string>()});
         }
         state.details.username = state.user;
+        state.details.group = std::string("jpod");
         state.details.port_map.merge(state.port_map);
         state.details.env_vars.merge(state.env_vars);
         auto identifier = state.details.identifier;

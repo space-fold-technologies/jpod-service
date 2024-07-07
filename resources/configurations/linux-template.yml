@@ -4,22 +4,18 @@ environment:
 mount_points:
     -
         filesystem: 'devfs'
-        flags: 0
         folder: 'dev'
         options: 'rw'
     -
         filesystem: 'linprocfs'
-        flags: 0
         folder: 'proc'
         options: 'rw'
     -
         filesystem: 'linsysfs'
-        flags: 0
         folder: 'sys'
         options: 'rw'
     -
         filesystem: 'tmpfs'
-        flags: 0
         folder: 'dev/shm'
         options: 'rw,mode=1777'
 parameters:

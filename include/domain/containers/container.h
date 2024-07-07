@@ -20,12 +20,14 @@ namespace domain::containers
         fs::path folder;
         std::optional<fs::path> source;
         std::string options;
-        uint64_t flags;
     };
     struct operation_details
     {
         std::string identifier;
         std::string username;
+        std::string group;
+        std::string home;
+        std::string workdir;
         std::string hostname;
         std::map<std::string, std::string> parameters;
         std::map<std::string, std::string> env_vars;

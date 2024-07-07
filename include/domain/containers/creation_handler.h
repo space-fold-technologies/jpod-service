@@ -56,8 +56,8 @@ namespace domain::containers
             const fs::path &volumes_folder,
             const std::vector<uint8_t> &payload);
         static creation_result extract_layers(creation_state state);
-        static creation_result create_volumes(creation_state state);
-        static tl::expected<std::string, std::error_code> register_container(creation_state state);
+        static creation_result register_container(creation_state state);
+        static tl::expected<std::string, std::error_code> create_volumes(creation_state state);
 
     private:
         const fs::path &containers_folder;

@@ -366,15 +366,32 @@ namespace domain::containers::freebsd
 
     std::error_code freebsd_container::mount_file_systems()
     {
-        std::error_code error;
+        std::error_code error{};
         for (const auto &entry : details.mount_points)
         {
             std::vector<iovec> mount_order_parts;
+            /* clangformat off */
+            defer free_mount_orders([&mount_order_parts]()
+                                    {
+                for (auto &entry : mount_order_parts)
+                    {
+                        free(entry.iov_base);
+                    } });
+            /* clangformat on */
+
             add_mount_point_entry(mount_order_parts, "fstype", entry.filesystem);
             add_mount_point_entry(mount_order_parts, "fspath", entry.folder.generic_string());
             if (entry.source && entry.filesystem == "nullfs")
             {
+                if (error = create_directories(entry.folder, details.username, details.group); error)
+                {
+                    return error;
+                }
                 add_mount_point_entry(mount_order_parts, "target", entry.source.value().generic_string());
+                if (error = create_directories(entry.source.value(), details.username, details.group); error)
+                {
+                    return error;
+                }
             }
             else
             {
@@ -384,47 +401,38 @@ namespace domain::containers::freebsd
             {
                 add_mount_point_entry(mount_order_parts, "rw", fmt::format("{}", 1));
             }
-            if (auto position = entry.options.find("="); position != std::string::npos)
+            // if (auto position = entry.options.find("="); position != std::string::npos)
+            // {
+            //     if (std::stoi(entry.options.substr(position + 1)) == 1777)
+            //     {
+            //         auto permissions = fs::perms::all | fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all;
+            //         if (fs::permissions(entry.folder, permissions, fs::perm_options::add, error); error)
+            //         {
+            //             return error;
+            //         }
+            //     }
+            // }
+
+            if (nmount(&mount_order_parts[0], mount_order_parts.size(), mount_point_flags(entry.options) | MNT_IGNORE) == -1)
             {
-                if (std::stoi(entry.options.substr(position + 1)) == 1777)
-                {
-                    auto permissions = fs::perms::all | fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all;
-                    if (fs::permissions(entry.folder, permissions, fs::perm_options::add, error); error)
-                    {
-                        continue;
-                    }
-                }
+                std::error_code error{errno, std::system_category()};
+                logger->error("mounting failed: {}", error.message());
+                return error;
             }
-            if (!error)
-            {
-                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags | MNT_IGNORE) == -1)
-                {
-                    logger->error("mounting failed: {}", errno);
-                    error = std::error_code(errno, std::system_category());
-                }
-            }
-            for (auto &entry : mount_order_parts)
-            {
-                free(entry.iov_base);
-            }
-            if (error)
-            {
-                break;
-            }
+            logger->info("mounted: destination: {}", entry.folder.generic_string());
         }
-        return error;
+        return {};
     }
     std::error_code freebsd_container::unmount_file_systems()
     {
-        std::error_code error;
         for (const auto &entry : details.mount_points)
         {
-            if (auto err = unmount(entry.folder.generic_string().c_str(), entry.flags); err != 0)
+            if (auto err = unmount(entry.folder.generic_string().c_str(), MNT_FORCE); err != 0)
             {
-                error = std::error_code(err, std::system_category());
+                return std::error_code(err, std::system_category());
             }
         }
-        return error;
+        return {};
     }
 
     freebsd_container::~freebsd_container()

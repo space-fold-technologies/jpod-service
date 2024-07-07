@@ -1,5 +1,6 @@
 #include <domain/containers/in_memory_monitor.h>
 #include <spdlog/spdlog.h>
+#include <fmt/format.h>
 
 namespace domain::containers
 {
@@ -12,7 +13,7 @@ namespace domain::containers
     }
     void in_memory_monitor::on_operation_output(const std::vector<uint8_t> &content)
     {
-        logger->warn("imm: output: {}", std::string(content.begin(), content.end()));
+        fmt::println("{}", std::string(content.begin(), content.end()));
     }
     void in_memory_monitor::on_operation_failure(const std::error_code &error)
     {
