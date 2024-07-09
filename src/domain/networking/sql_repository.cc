@@ -128,9 +128,9 @@ namespace domain::networking
     {
         std::string sql("DELETE FROM network_member_tb "
                         "WHERE "
-                        "network_id = (SELECT id FROM network_tb WHERE name = ?) "
+                        "network_id = (SELECT id FROM network_tb WHERE name = ? LIMIT 1) "
                         "AND "
-                        "container_id = (SELECT id FROM container_tb WHERE identifier = ?)");
+                        "container_id = (SELECT id FROM container_tb WHERE identifier = ? LIMIT 1)");
         auto connection = data_source.connection();
         core::sql::transaction txn(connection);
         auto statement = connection->statement(sql);

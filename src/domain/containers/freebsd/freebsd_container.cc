@@ -424,12 +424,14 @@ namespace domain::containers::freebsd
     }
     std::error_code freebsd_container::unmount_file_systems()
     {
+        logger->info("un-mounting file systems");
         for (const auto &entry : details.mount_points)
         {
             if (auto err = unmount(entry.folder.generic_string().c_str(), MNT_FORCE); err != 0)
             {
                 return std::error_code(err, std::system_category());
             }
+            logger->warn("fs-type: {} un-mounted: {}", entry.filesystem, entry.folder.generic_string());
         }
         return {};
     }
@@ -441,17 +443,17 @@ namespace domain::containers::freebsd
             logger->info("SHUTTING DOWN JAIL ID {} ALIAS {}", jail_id, details.identifier);
             jail_remove(jail_id);
         }
+        logger->info("proceeding to unmount file-systems");
+        if (auto error = unmount_file_systems(); error)
+        {
+            on_operation_failure(error);
+        }
         if (file_descriptor > 0 && process_identifier > 0)
         {
             logger->info("closing file descriptor ");
             close(file_descriptor);
             logger->info("waiting for the end of process");
             waitpid(process_identifier, nullptr, 0);
-        }
-
-        if (auto error = unmount_file_systems(); error)
-        {
-            on_operation_failure(error);
         }
         listener.container_stopped(details.identifier, network);
     }

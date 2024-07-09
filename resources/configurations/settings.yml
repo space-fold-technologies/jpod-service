@@ -11,4 +11,4 @@ networking:
     ip-v4-cidr: '172.23.0.1/16'
     ip-v6-cidr: 'fd12:3456:789a:1::/64'
     bridge: jc0
-domain-socket: '/home/william/Projects/updates/unix.socket.jpod'
+domain-socket: '/home/william/voltron/coms/unix.socket.jpod'
