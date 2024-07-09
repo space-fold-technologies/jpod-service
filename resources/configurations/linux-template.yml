@@ -28,8 +28,8 @@ parameters:
     allow.mount.tmpfs: ' '
     allow.mount.nullfs: ' '
     allow.raw_sockets: ' '
+    allow.chflags: ' '
     devfs_ruleset: 4
-    allow.sysvipc: 1
     sysvmsg: 'new'
     sysvsem: 'new'
     sysvshm: 'new'

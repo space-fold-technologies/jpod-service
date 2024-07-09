@@ -80,10 +80,18 @@ namespace domain::containers::freebsd
         }
     }
 
+    inline auto has_user(const std::string& username) -> bool
+    {
+        spdlog::get("jpod")->info("checking for user: {}", username);
+        return getpwnam(username.c_str()) != nullptr;
+    }
+
     inline auto fetch_user_details(const std::string &username) -> tl::expected<user_details, std::error_code>
     {
+        auto logger = spdlog::get("jpod");
         user_details details{};
         details.not_root = username.find_first_of("root") == std::string::npos;
+        logger->info("resolving for user: {}", username);
         errno = 0;
         if (details.pwd = username.empty() ? getpwuid(getuid()) : getpwnam(username.c_str()); details.pwd == nullptr)
         {

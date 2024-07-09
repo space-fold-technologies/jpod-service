@@ -30,6 +30,7 @@ parameters:
     allow.mount.procfs: ' '
     allow.mount.tmpfs: ' '
     allow.mount.nullfs: ' '
+    allow.chflags: ' '
     allow.raw_sockets: ' '
     devfs_ruleset: 4
     securelevel: 3

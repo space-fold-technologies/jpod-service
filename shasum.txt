@@ -1,0 +1,44 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/sha.h>
+
+void add_hash_to_accumulator(const char* hex_hash, unsigned char* accumulator) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    int i;
+
+    // Convert hex hash to binary
+    for (i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        sscanf(hex_hash + 2 * i, "%2hhx", &hash[i]);
+    }
+
+    // Add hash to accumulator
+    for (i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        accumulator[i] += hash[i];
+    }
+}
+
+int main() {
+    const char* hash_list[] = {
+        "6da032d0f859191f3ec46a89860694c61e65460d54f2f6760b033fa416b73866",
+        // Add more hashes here...
+    };
+
+    unsigned char accumulator[SHA256_DIGEST_LENGTH] = {0};
+    int i;
+
+    for (i = 0; i < sizeof(hash_list) / sizeof(hash_list[0]); ++i) {
+        add_hash_to_accumulator(hash_list[i], accumulator);
+    }
+
+    // Convert accumulator to hexadecimal string
+    char sum_hex[65];
+    for (i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        sprintf(sum_hex + 2 * i, "%02x", accumulator[i]);
+    }
+    sum_hex[64] = '\0';
+
+    printf("Sum of SHA-256 hashes: %s\n", sum_hex);
+
+    return 0;
+}

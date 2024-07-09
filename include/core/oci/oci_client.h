@@ -116,6 +116,7 @@ namespace core::oci
         void add_configuration(const std::string &digest, const std::vector<uint8_t> &data, image_progress_callback callback);
         void fetch_layers(std::string digest);
         void resolve_layer();
+        static std::string lower_case(const std::string& in);
         
     private:
         asio::io_context &context;

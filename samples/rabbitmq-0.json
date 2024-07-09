@@ -1,0 +1,225 @@
+{
+    "architecture": "amd64",
+    "config": {
+        "ExposedPorts": {
+            "15671/tcp": {},
+            "15672/tcp": {},
+            "15691/tcp": {},
+            "15692/tcp": {},
+            "25672/tcp": {},
+            "4369/tcp": {},
+            "5671/tcp": {},
+            "5672/tcp": {}
+        },
+        "Env": [
+            "PATH=/opt/rabbitmq/sbin:/opt/erlang/bin:/opt/openssl/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "ERLANG_INSTALL_PATH_PREFIX=/opt/erlang",
+            "OPENSSL_INSTALL_PATH_PREFIX=/opt/openssl",
+            "RABBITMQ_DATA_DIR=/var/lib/rabbitmq",
+            "RABBITMQ_VERSION=3.13.4",
+            "RABBITMQ_PGP_KEY_ID=0x0A9AF2115F4687BD29803A206B73A36E6026DFCA",
+            "RABBITMQ_HOME=/opt/rabbitmq",
+            "HOME=/var/lib/rabbitmq",
+            "LANG=C.UTF-8",
+            "LANGUAGE=C.UTF-8",
+            "LC_ALL=C.UTF-8"
+        ],
+        "Entrypoint": [
+            "docker-entrypoint.sh"
+        ],
+        "Cmd": [
+            "rabbitmq-server"
+        ],
+        "Volumes": {
+            "/var/lib/rabbitmq": {}
+        },
+        "Labels": {
+            "org.opencontainers.image.ref.name": "ubuntu",
+            "org.opencontainers.image.version": "22.04"
+        },
+        "ArgsEscaped": true
+    },
+    "created": "2024-02-22T21:58:15Z",
+    "history": [
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "/bin/sh -c #(nop)  ARG RELEASE",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "/bin/sh -c #(nop)  ARG LAUNCHPAD_BUILD_ARCH",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "/bin/sh -c #(nop)  LABEL org.opencontainers.image.ref.name=ubuntu",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "/bin/sh -c #(nop)  LABEL org.opencontainers.image.version=22.04",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "/bin/sh -c #(nop) ADD file:d5da92199726e42da09a6f75a778befb607fe3f79e4afaf7ef5188329b26b386 in / "
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "/bin/sh -c #(nop)  CMD [\"/bin/bash\"]",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV ERLANG_INSTALL_PATH_PREFIX=/opt/erlang",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV OPENSSL_INSTALL_PATH_PREFIX=/opt/openssl",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "COPY /opt/erlang /opt/erlang # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "COPY /opt/openssl /opt/openssl # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV PATH=/opt/erlang/bin:/opt/openssl/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV RABBITMQ_DATA_DIR=/var/lib/rabbitmq",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "RUN /bin/sh -c set -eux; \tln -vsf /etc/ssl/certs /etc/ssl/private \"$OPENSSL_INSTALL_PATH_PREFIX/etc/ssl\"; \t\tldconfig; \tsed -i.ORIG -e \"/\\.include.*fips/ s!.*!.include $OPENSSL_INSTALL_PATH_PREFIX/etc/ssl/fipsmodule.cnf!\" \t\t-e '/# fips =/s/.*/fips = fips_sect/' \"$OPENSSL_INSTALL_PATH_PREFIX/etc/ssl/openssl.cnf\"; \tsed -i.ORIG -e '/^activate/s/^/#/' \"$OPENSSL_INSTALL_PATH_PREFIX/etc/ssl/fipsmodule.cnf\"; \t[ \"$(command -v openssl)\" = \"$OPENSSL_INSTALL_PATH_PREFIX/bin/openssl\" ]; \topenssl version; \topenssl version -d; \t\terl -noshell -eval 'ok = crypto:start(), ok = io:format(\"~p~n~n~p~n~n\", [crypto:supports(), ssl:versions()]), init:stop().'; \t\tgroupadd --gid 999 --system rabbitmq; \tuseradd --uid 999 --system --home-dir \"$RABBITMQ_DATA_DIR\" --gid rabbitmq rabbitmq; \tmkdir -p \"$RABBITMQ_DATA_DIR\" /etc/rabbitmq /etc/rabbitmq/conf.d /tmp/rabbitmq-ssl /var/log/rabbitmq; \tchown -fR rabbitmq:rabbitmq \"$RABBITMQ_DATA_DIR\" /etc/rabbitmq /etc/rabbitmq/conf.d /tmp/rabbitmq-ssl /var/log/rabbitmq; \tchmod 1777 \"$RABBITMQ_DATA_DIR\" /etc/rabbitmq /etc/rabbitmq/conf.d /tmp/rabbitmq-ssl /var/log/rabbitmq; \tln -sf \"$RABBITMQ_DATA_DIR/.erlang.cookie\" /root/.erlang.cookie # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV RABBITMQ_VERSION=3.13.4",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV RABBITMQ_PGP_KEY_ID=0x0A9AF2115F4687BD29803A206B73A36E6026DFCA",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV RABBITMQ_HOME=/opt/rabbitmq",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV PATH=/opt/rabbitmq/sbin:/opt/erlang/bin:/opt/openssl/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "RUN /bin/sh -c set -eux; \texport DEBIAN_FRONTEND=noninteractive; \tapt-get update; \tapt-get install --yes --no-install-recommends \t\tca-certificates \t\tgosu \t\ttzdata \t; \tgosu nobody true; \t\tsavedAptMark=\"$(apt-mark showmanual)\"; \tapt-get install --yes --no-install-recommends \t\tgnupg \t\twget \t\txz-utils \t; \trm -rf /var/lib/apt/lists/*; \t\tRABBITMQ_SOURCE_URL=\"https://github.com/rabbitmq/rabbitmq-server/releases/download/v$RABBITMQ_VERSION/rabbitmq-server-generic-unix-latest-toolchain-$RABBITMQ_VERSION.tar.xz\"; \tRABBITMQ_PATH=\"/usr/local/src/rabbitmq-$RABBITMQ_VERSION\"; \t\twget --progress dot:giga --output-document \"$RABBITMQ_PATH.tar.xz.asc\" \"$RABBITMQ_SOURCE_URL.asc\"; \twget --progress dot:giga --output-document \"$RABBITMQ_PATH.tar.xz\" \"$RABBITMQ_SOURCE_URL\"; \t\texport GNUPGHOME=\"$(mktemp -d)\"; \tgpg --batch --keyserver hkps://keys.openpgp.org --recv-keys \"$RABBITMQ_PGP_KEY_ID\"; \tgpg --batch --verify \"$RABBITMQ_PATH.tar.xz.asc\" \"$RABBITMQ_PATH.tar.xz\"; \tgpgconf --kill all; \trm -rf \"$GNUPGHOME\"; \t\tmkdir -p \"$RABBITMQ_HOME\"; \ttar --extract --file \"$RABBITMQ_PATH.tar.xz\" --directory \"$RABBITMQ_HOME\" --strip-components 1; \trm -rf \"$RABBITMQ_PATH\"*; \tgrep -qE '^SYS_PREFIX=\\$\\{RABBITMQ_HOME\\}$' \"$RABBITMQ_HOME/sbin/rabbitmq-defaults\"; \tsed -i 's/^SYS_PREFIX=.*$/SYS_PREFIX=/' \"$RABBITMQ_HOME/sbin/rabbitmq-defaults\"; \tgrep -qE '^SYS_PREFIX=$' \"$RABBITMQ_HOME/sbin/rabbitmq-defaults\"; \tchown -R rabbitmq:rabbitmq \"$RABBITMQ_HOME\"; \t\tapt-mark auto '.*' \u003e /dev/null; \tapt-mark manual $savedAptMark; \tapt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \t\t[ ! -e \"$RABBITMQ_DATA_DIR/.erlang.cookie\" ]; \tgosu rabbitmq rabbitmqctl help; \tgosu rabbitmq rabbitmqctl list_ciphers; \tgosu rabbitmq rabbitmq-plugins list; \trm \"$RABBITMQ_DATA_DIR/.erlang.cookie\" # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "RUN /bin/sh -c gosu rabbitmq rabbitmq-plugins enable --offline rabbitmq_prometheus # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "RUN /bin/sh -c ln -sf /opt/rabbitmq/plugins /plugins # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV HOME=/var/lib/rabbitmq",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "VOLUME [/var/lib/rabbitmq]",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENV LANG=C.UTF-8 LANGUAGE=C.UTF-8 LC_ALL=C.UTF-8",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "COPY --chown=rabbitmq:rabbitmq 10-defaults.conf 20-management_agent.disable_metrics_collector.conf /etc/rabbitmq/conf.d/ # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "COPY docker-entrypoint.sh /usr/local/bin/ # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "ENTRYPOINT [\"docker-entrypoint.sh\"]",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "EXPOSE map[15691/tcp:{} 15692/tcp:{} 25672/tcp:{} 4369/tcp:{} 5671/tcp:{} 5672/tcp:{}]",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "CMD [\"rabbitmq-server\"]",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "RUN /bin/sh -c set eux; \trabbitmq-plugins enable --offline rabbitmq_management; \trm -f /etc/rabbitmq/conf.d/20-management_agent.disable_metrics_collector.conf; \tcp /plugins/rabbitmq_management-*/priv/www/cli/rabbitmqadmin /usr/local/bin/rabbitmqadmin; \t[ -s /usr/local/bin/rabbitmqadmin ]; \tchmod +x /usr/local/bin/rabbitmqadmin; \tapt-get update; \tapt-get install -y --no-install-recommends python3; \trm -rf /var/lib/apt/lists/*; \trabbitmqadmin --version # buildkit",
+            "comment": "buildkit.dockerfile.v0"
+        },
+        {
+            "created": "2024-02-22T21:58:15Z",
+            "created_by": "EXPOSE map[15671/tcp:{} 15672/tcp:{}]",
+            "comment": "buildkit.dockerfile.v0",
+            "empty_layer": true
+        }
+    ],
+    "os": "linux",
+    "rootfs": {
+        "type": "layers",
+        "diff_ids": [
+            "sha256:931b7ff0cb6f494b27d31a4cbec3efe62ac54676add9c7469560302f1541ecaf",
+            "sha256:cd4fbfd3c53e940ab3f2463e54809caa11f678ec64328f899f167d40f99abd9e",
+            "sha256:da9a3d42a381b3676e469dafc1cebf07bf664ed31bd4cb3f40183d470366c3c0",
+            "sha256:21536237596659f3949ac0f0f6943aef6f914b76e91b488a6cc7d40cccb79d0a",
+            "sha256:5c439a68367aa46b84373d6ffb24c62dabb06b8e9ef4c36099dea7c837930339",
+            "sha256:0cc260f1fef89ba7ff97ae6e69b7b1a27270d6521333e602150fa4c73cd7e79e",
+            "sha256:8db0d8d92f3d7efeec9536deb2bdb2b15d9a58cb1d08468a60f94ad0b4497f16",
+            "sha256:899fcb0c3b04620f395e3a02f160a4e994f5069182755fcd474f1819b05dca0a",
+            "sha256:10d13bd32e4d353c47b7e6ad5a411fc83ba72be41bb63ece2388e4ecebbe9f02",
+            "sha256:d9e5a97ffccdcd91eeb1567d807f541c88f751a4e9d4c87dc0e171cf03e4ba3f"
+        ]
+    }
+}

@@ -26,7 +26,6 @@ namespace domain::containers
         std::string identifier;
         std::string username;
         std::string group;
-        std::string home;
         std::string workdir;
         std::string hostname;
         std::map<std::string, std::string> parameters;

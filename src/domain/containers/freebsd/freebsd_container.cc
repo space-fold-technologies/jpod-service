@@ -180,16 +180,15 @@ namespace domain::containers::freebsd
         }
         else if (pid == 0)
         {
-            // setsid();
-            if (auto result = fetch_user_details(details.username); !result)
+            if (auto result = (has_user(details.username) ? fetch_user_details(details.username) : fetch_user_details("")); !result)
             {
-                logger->error("insecure mode in effect error: {}", result.error().message());
+                logger->error("failed to find matching user details for : {}\n{}", details.username, result.error().message());
                 listener.container_failed(details.identifier, result.error());
                 _exit(-1);
             }
             else if (int jail_id = jail_getid(details.identifier.c_str()); jail_id > 0)
             {
-                if (jail_attach(jail_id) == -1 || chdir("/") == -1)
+                if (jail_attach(jail_id) == -1 || chdir(details.workdir.c_str()) == -1)
                 {
                     listener.container_failed(details.identifier, std::error_code(errno, std::system_category()));
                     _exit(-errno);

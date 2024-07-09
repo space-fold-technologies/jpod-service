@@ -10,6 +10,7 @@ namespace domain::containers
         std::string name;
         std::string os;
         std::string image_identifier;
+        std::string repository;
         std::map<std::string, std::string> port_map;
         std::map<std::string, std::string> env_vars;
         std::map<std::string, std::string> volumes;

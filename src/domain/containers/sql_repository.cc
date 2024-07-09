@@ -76,6 +76,7 @@ namespace domain::containers
                         "c.identifier, "
                         "c.name, "
                         "i.identifier AS image_identifier, "
+                        "i.repository, "
                         "c.internals "
                         "FROM container_tb AS c "
                         "INNER JOIN image_tb AS i ON i.id = c.image_id "
@@ -93,6 +94,7 @@ namespace domain::containers
             details.identifier = result.fetch<std::string>("identifier");
             details.name = result.fetch<std::string>("name");
             details.image_identifier = result.fetch<std::string>("image_identifier");
+            details.repository = result.fetch<std::string>("repository");
             container_internals internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             fill_container_details(details, internals);
             return details;
@@ -105,6 +107,7 @@ namespace domain::containers
                         "c.identifier, "
                         "c.name, "
                         "i.identifier AS image_identifier, "
+                        "i.repository, "
                         "c.internals "
                         "FROM container_tb AS c "
                         "INNER JOIN image_tb AS i ON i.id = c.image_id "
@@ -124,6 +127,7 @@ namespace domain::containers
             details.identifier = result.fetch<std::string>("identifier");
             details.name = result.fetch<std::string>("name");
             details.image_identifier = result.fetch<std::string>("image_identifier");
+            details.repository = result.fetch<std::string>("repository");
             container_internals internals = unpack_container_internals(result.fetch<std::vector<uint8_t>>("internals"));
             fill_container_details(details, internals);
             return details;

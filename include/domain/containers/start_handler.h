@@ -30,7 +30,6 @@ namespace domain::containers
     struct startup_state
     {
         std::string term;
-        std::string user;
         std::string image_identifier;
         std::string os;
         std::string configuration;
@@ -61,7 +60,6 @@ namespace domain::containers
 
     private:
         static startup_result initialize(const std::string &term,
-                                         const std::string &user,
                                          const fs::path &containers_folder,
                                          const fs::path &images_folder,
                                          std::shared_ptr<container_repository> store,
@@ -70,6 +68,7 @@ namespace domain::containers
         static startup_result prepare_container(startup_state state);
         static startup_result prepare_volumes(startup_state state);
         static startup_result setup_command(startup_state state);
+        static std::string resolve_username(const std::string& repository);
         static tl::expected<std::string, std::error_code> start_container(startup_state state);
 
     private:

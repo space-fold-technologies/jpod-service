@@ -36,7 +36,7 @@ namespace domain::containers
     void start_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_start_order(payload);
-        auto result = initialize(order.name, order.user, containers_folder, images_folder, repository, runtime_ptr)
+        auto result = initialize(order.name, containers_folder, images_folder, repository, runtime_ptr)
                           .and_then(fetch_details)
                           .and_then(prepare_container)
                           .and_then(prepare_volumes)
@@ -57,7 +57,6 @@ namespace domain::containers
         logger->debug("stopping start handler");
     }
     startup_result start_handler::initialize(const std::string &term,
-                                             const std::string &user,
                                              const fs::path &containers_folder,
                                              const fs::path &images_folder,
                                              std::shared_ptr<container_repository> store,
@@ -65,7 +64,6 @@ namespace domain::containers
     {
         startup_state state{};
         state.term = term;
-        state.user = user;
         state.containers_folder = containers_folder;
         state.images_folder = images_folder;
         state.runtime_ptr = runtime_ptr;
@@ -83,6 +81,7 @@ namespace domain::containers
         {
             state.image_identifier = result->image_identifier;
             state.details = {};
+            state.details.username = std::string("william");
             state.details.hostname = result->name;
             state.details.identifier = result->identifier;
             state.details.container_folder = state.containers_folder / fs::path(result->identifier);
@@ -90,6 +89,7 @@ namespace domain::containers
             state.os = result->os;
             state.env_vars.insert(result->env_vars.begin(), result->env_vars.end());
             state.port_map.insert(result->port_map.begin(), result->port_map.end());
+            state.env_vars.try_emplace("HOSTNAME", state.details.hostname);
             return state;
         }
     }
@@ -117,6 +117,12 @@ namespace domain::containers
         for (auto &part : payload["config"]["Cmd"])
         {
             state.command.push_back(part.template get<std::string>());
+        }
+
+        state.details.workdir = payload["config"].contains("WorkDir") ? payload["config"]["WorkDir"].template get<std::string>() : "/";
+        if(payload["config"].contains("User"))
+        {
+            state.details.username = payload["config"]["User"].template get<std::string>();
         }
         return state;
     }
@@ -156,6 +162,14 @@ namespace domain::containers
         }
         return state;
     }
+    std::string start_handler::resolve_username(const std::string& repository)
+    {
+        if(auto pos = repository.find_last_of("/"); pos != std::string::npos)
+        {
+            return repository.substr(pos + 1);
+        }
+        return repository;
+    }
     tl::expected<std::string, std::error_code> start_handler::start_container(startup_state state)
     {
         auto fs = cmrc::resources::get_filesystem();
@@ -174,7 +188,6 @@ namespace domain::containers
                 std::nullopt,
                 node["options"].as<std::string>()});
         }
-        state.details.username = state.user;
         state.details.group = std::string("jpod");
         state.details.port_map.merge(state.port_map);
         state.details.env_vars.merge(state.env_vars);

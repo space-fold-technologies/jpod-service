@@ -5,13 +5,16 @@
 #include <domain/images/helpers.h>
 #include <core/archives/helper.h>
 #include <core/archives/errors.h>
+#include <core/utilities/defer.h>
 #include <range/v3/view/split.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 #include <fmt/format.h>
 #include <sole.hpp>
 #include <fstream>
 
+using namespace core::utilities;
 using json = nlohmann::json;
 using namespace ranges;
 
@@ -113,6 +116,7 @@ namespace domain::containers
     }
     creation_result creation_handler::extract_layers(creation_state state)
     {
+        auto logger = spdlog::get("jpod");
         fs::path image_folder = state.image_folder / fs::path("sha256") / fs::path(state.image_identifier);
         if (auto out = core::archives::initialize_writer(); !out)
         {
@@ -120,6 +124,12 @@ namespace domain::containers
         }
         else
         {
+            locale_t archive_locale;
+            locale_t previous_locale;
+            archive_locale = newlocale(LC_CTYPE_MASK, "", (locale_t)0);
+            previous_locale = uselocale(archive_locale);
+            defer restore_locale([&previous_locale]()
+                                 { uselocale(previous_locale); });
             for (auto const &entry : fs::directory_iterator(image_folder))
             {
                 if (entry.is_regular_file() && (extensions.find(entry.path().extension()) != extensions.end()))

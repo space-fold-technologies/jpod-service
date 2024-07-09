@@ -1,6 +1,8 @@
 #include <core/archives/helper.h>
 #include <core/archives/errors.h>
 #include <spdlog/spdlog.h>
+#include <locale.h>
+
 namespace core::archives
 {
     constexpr std::size_t BUFFER_SIZE = 10240;
@@ -13,8 +15,8 @@ namespace core::archives
                 archive_read_close(instance);
                 archive_read_free(instance);
             }};
-        archive_read_support_filter_all(arch.get());
         archive_read_support_format_tar(arch.get());
+        archive_read_support_filter_all(arch.get());
         if (auto ec = archive_read_open_filename(arch.get(), archive_path.c_str(), BUFFER_SIZE); ec != ARCHIVE_OK)
         {
             return tl::make_unexpected(make_compression_error_code(ec));
@@ -63,6 +65,7 @@ namespace core::archives
     {
         archive_entry *entry;
         auto logger = spdlog::get("jpod");
+        auto result_code = ARCHIVE_OK;
         while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
         {
             const char *entry_name = archive_entry_pathname(entry);
@@ -70,6 +73,7 @@ namespace core::archives
             archive_entry_set_pathname(entry, full_path.generic_string().c_str());
             if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
             {
+
                 std::string err(archive_error_string(out.get()));
                 if (err.find("Hard-link") != std::string::npos)
                 {
@@ -92,7 +96,7 @@ namespace core::archives
             {
                 return error;
             }
-        }
+        };
         return {};
     }
 }
