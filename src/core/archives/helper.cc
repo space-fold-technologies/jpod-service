@@ -78,9 +78,9 @@ namespace core::archives
                 if (err.find("Hard-link") != std::string::npos)
                 {
                     const char *hard_link = archive_entry_hardlink(entry);
-                    logger->warn("HARDLINK FOUND: {}", hard_link);
+                    logger->debug("HARDLINK FOUND: {}", hard_link);
                     auto link = destination / fs::path(std::string(hard_link));
-                    logger->warn("HARDLINK SHIFT >> {}", link.string());
+                    logger->debug("HARDLINK SHIFT >> {}", link.string());
                     archive_entry_set_hardlink(entry, link.c_str());
                     if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
                     {
