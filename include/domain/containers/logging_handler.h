@@ -36,6 +36,7 @@ namespace domain::containers
         std::shared_ptr<runtime> runtime_ptr;
         std::shared_ptr<container> container_ptr;
         std::shared_ptr<spdlog::logger> logger;
+        std::weak_ptr<logging_handler> reference;
     };
 }
 

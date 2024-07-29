@@ -21,6 +21,7 @@ namespace domain::containers
     void logging_handler::on_order_received(const std::vector<uint8_t> &payload)
     {
         auto order = unpack_container_log_order(payload);
+        logger->info("got logging order");
         if (auto result = repository->first_identifier_match(order.name); !result.has_value())
         {
             send_error(fmt::format("failed to find a container matching: {}", order.name));
@@ -31,7 +32,9 @@ namespace domain::containers
         }
         else
         {
-            container_ptr->register_listener(weak_from_this());
+            logger->info("container found, registering listener");
+            reference = weak_from_this();
+            container_ptr->register_listener(reference);
         }
     }
     void logging_handler::on_operation_initialization()
