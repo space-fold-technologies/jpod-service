@@ -16,17 +16,21 @@ namespace core::oci
 {
     layer_result initialize(const fs::path &root_path, const fs::path &target_folder, const fs::path &layer_archive)
     {
-        std::error_code error;
+        std::error_code error{};
         if (!fs::exists(root_path, error))
         {
             return !error ? tl::make_unexpected(error) : tl::make_unexpected(make_layer_error_code(layer_error_codes::no_file_or_directory_found));
         }
         // create the directories if not present
-        if (!fs::exists(target_folder) && fs::create_directories(target_folder, error); error)
+        if (!fs::exists(target_folder))
         {
-            return tl::make_unexpected(error);
+            fs::create_directories(target_folder, error);
         }
-        else if (!fs::exists(layer_archive.parent_path()) && fs::create_directories(layer_archive.parent_path(), error); error)
+        if (!fs::exists(layer_archive.parent_path()))
+        {
+            fs::create_directories(layer_archive.parent_path(), error);
+        }
+        if(error)
         {
             return tl::make_unexpected(error);
         }

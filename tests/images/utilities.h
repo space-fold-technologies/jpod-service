@@ -11,6 +11,10 @@
 #include <domain/images/mappings.h>
 #include <domain/images/instructions/errors.h>
 #include <domain/images/instructions/directory_resolver.h>
+#include <core/http/file_transfer_payloads.h>
+#include <core/http/request.h>
+#include <core/http/response.h>
+
 
 namespace fs = std::filesystem;
 
@@ -63,15 +67,15 @@ namespace domain::images::instructions
             fs::remove_all(name);
         }
     }
-    inline auto no_image_found = [](const request &req, response_callback callback)
+    inline auto no_image_found = [](const core::http::request &req, response_callback callback)
     {
         callback(make_error_code(error_code::no_matching_image_found), response{});
     };
-    inline auto no_registry_access = [](const request &req, response_callback callback)
+    inline auto no_registry_access = [](const core::http::request &req, response_callback callback)
     {
         callback(make_error_code(error_code::no_registry_access), response{});
     };
-    inline auto access_permitted = [](const request &req, response_callback callback) { // have to come up with the content to pack as binary in the response
+    inline auto access_permitted = [](const core::http::request &req, response_callback callback) { // have to come up with the content to pack as binary in the response
         domain::images::image_meta meta{};
         meta.host = "zepkun";
         meta.identifier = "71dbec89-cad4-4f60-a73f-9be9a7ba6aca";
@@ -82,7 +86,7 @@ namespace domain::images::instructions
         meta.version = "1.2.0";
         meta.size = std::size_t(1024);
         meta.mount_points.push_back(domain::images::mount_point_details{"linprocfs", "/dev/shm", "mode=263", 0});
-        response resp{};
+        core::http::response resp{};
         msgpack::sbuffer buffer;
         msgpack::pack(buffer, meta);
         resp.data = std::vector<uint8_t>(buffer.size());

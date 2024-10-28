@@ -640,15 +640,15 @@ namespace core::oci
         details.headers.emplace("Content-Length", "0");
         details.headers.emplace("Authorization", fmt::format("Bearer {}", order.token));
         details.path = fmt::format("{}/{}/blobs/uploads/", order.registry, order.repository);
-        auto response_callback = [cb = move(callback), digest = order.digest](const std::error_code &error, const http::response &response)
+        auto response_callback = [&callback, digest = order.digest](const std::error_code &error, const http::response &response)
         {
             if (error)
             {
-                cb(error, "", "");
+                callback(error, "", "");
             }
             else
             {
-                cb({}, digest, response.location());
+                callback({}, digest, response.location());
             }
         };
         client->post(details, response_callback);

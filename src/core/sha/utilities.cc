@@ -1,7 +1,9 @@
 #include <core/sha/utilities.h>
 #include <openssl/evp.h>
 #include <fstream>
+#include <sstream>
 #include <memory>
+#include <array>
 
 namespace core::sha
 {

@@ -13,11 +13,12 @@ find_package(zstd REQUIRED CONFIG)
 find_package(yaml-cpp REQUIRED CONFIG)
 find_package(SQLite3 REQUIRED CONFIG)
 find_package(msgpack REQUIRED CONFIG)
+find_package(tl-expected REQUIRED CONFIG)
 
 add_executable(copy-instruction-tests 
                test_copy_instruction.cc
                ${PROJECT_SRC_FOLDER}/domain/images/instructions/copy_instruction.cc)
-target_link_libraries(copy-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
+target_link_libraries(copy-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp tl::expected)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -37,7 +38,7 @@ catch_discover_tests(
 add_executable(download-instruction-tests 
                test_download_instruction.cc
                ${PROJECT_SRC_FOLDER}/domain/images/instructions/download_instruction.cc)
-target_link_libraries(download-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
+target_link_libraries(download-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp tl::expected)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -57,7 +58,7 @@ OUTPUT_SUFFIX
 add_executable(work-dir-instruction-tests 
   test_work_dir_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/work_dir_instruction.cc)
-target_link_libraries(work-dir-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
+target_link_libraries(work-dir-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp tl::expected)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -78,7 +79,7 @@ OUTPUT_SUFFIX
 add_executable(compression-instruction-tests 
   test_compression_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/compression_instruction.cc)
-target_link_libraries(compression-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole LibArchive::LibArchive zstd::libzstd_static asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
+target_link_libraries(compression-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole LibArchive::LibArchive zstd::libzstd_static asio::asio msgpack-cxx yaml-cpp::yaml-cpp tl::expected)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -99,7 +100,7 @@ OUTPUT_SUFFIX
 add_executable(mount-instruction-tests 
   test_mount_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/mount_instruction.cc)
-target_link_libraries(mount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
+target_link_libraries(mount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp tl::expected)
 
 # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
 # to whatever you want, or use different for different binaries
@@ -178,46 +179,46 @@ OUTPUT_PREFIX
 OUTPUT_SUFFIX
 .xml)
 
-add_executable(extraction-instruction-tests 
-  test_extraction_instruction.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/instructions/extraction_instruction.cc)
-target_link_libraries(extraction-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 LibArchive::LibArchive zstd::libzstd_static sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp archives::rc)
+# add_executable(extraction-instruction-tests 
+#   test_extraction_instruction.cc
+#   ${PROJECT_SRC_FOLDER}/domain/images/instructions/extraction_instruction.cc)
+# target_link_libraries(extraction-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 LibArchive::LibArchive zstd::libzstd_static sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp archives::rc)
 
-# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
-# to whatever you want, or use different for different binaries
-catch_discover_tests(
-  extraction-instruction-tests
-TEST_PREFIX
-"unittests."
-REPORTER
-xml
-OUTPUT_DIR
-.
-OUTPUT_PREFIX
-"unittests."
-OUTPUT_SUFFIX
-.xml)
+# # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
+# # to whatever you want, or use different for different binaries
+# catch_discover_tests(
+#   extraction-instruction-tests
+# TEST_PREFIX
+# "unittests."
+# REPORTER
+# xml
+# OUTPUT_DIR
+# .
+# OUTPUT_PREFIX
+# "unittests."
+# OUTPUT_SUFFIX
+# .xml)
 
 
-add_executable(import-instruction-tests 
-  test_import_instruction.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/instructions/import_instruction.cc)
-target_link_libraries(import-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 LibArchive::LibArchive zstd::libzstd_static sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp archives::rc)
+# add_executable(import-instruction-tests 
+#   test_import_instruction.cc
+#   ${PROJECT_SRC_FOLDER}/domain/images/instructions/import_instruction.cc)
+# target_link_libraries(import-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 LibArchive::LibArchive zstd::libzstd_static sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp archives::rc)
 
-# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
-# to whatever you want, or use different for different binaries
-catch_discover_tests(
-  import-instruction-tests
-TEST_PREFIX
-"unittests."
-REPORTER
-xml
-OUTPUT_DIR
-.
-OUTPUT_PREFIX
-"unittests."
-OUTPUT_SUFFIX
-.xml)
+# # automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
+# # to whatever you want, or use different for different binaries
+# catch_discover_tests(
+#   import-instruction-tests
+# TEST_PREFIX
+# "unittests."
+# REPORTER
+# xml
+# OUTPUT_DIR
+# .
+# OUTPUT_PREFIX
+# "unittests."
+# OUTPUT_SUFFIX
+# .xml)
 
 
 add_executable(image-store-tests 

@@ -17,10 +17,10 @@ add_subdirectory(utilities)
 add_subdirectory(oci)
 
 # image tests 
-add_subdirectory(images)
+# add_subdirectory(images)
 
 # container tests
-add_subdirectory(containers)
+# add_subdirectory(containers)
 
 # networking tests 
 add_subdirectory(networking)

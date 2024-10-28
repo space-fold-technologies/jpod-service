@@ -2,9 +2,11 @@
 #define __DAEMON_CORE_OCI_LAYER_COMPOSER__
 
 #include <tl/expected.hpp>
+#include <unordered_map>
 #include <system_error>
 #include <filesystem>
 #include <cstdint>
+#include <vector>
 #include <string>
 #include <map>
 
