@@ -12,6 +12,10 @@ include(Catch)
 add_library(catch_main OBJECT catch_main.cc)
 target_link_libraries(catch_main PUBLIC spdlog::spdlog Catch2::Catch2)
 
+add_subdirectory(utilities)
+
+add_subdirectory(oci)
+
 # image tests 
 add_subdirectory(images)
 
@@ -28,4 +32,8 @@ cmrc_add_resource_library(
     ALIAS archives::rc
     PREFIX archives 
     resources/dummy.tar.gz
+    resources/root.tar.gz
+    resources/root-with-documentation.tar.gz
+    resources/root-documented-multi-folder.tar.gz
+    resources/root-documented-nested-folder.tar.gz
 )

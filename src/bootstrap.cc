@@ -33,6 +33,7 @@
 
 // networking
 #include <domain/networking/details.h>
+#include <domain/networking/network_handler.h>
 #include <domain/networking/network_service.h>
 #include <domain/networking/sql_repository.h>
 

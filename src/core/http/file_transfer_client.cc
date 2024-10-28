@@ -92,6 +92,7 @@ namespace core::http
                         _upload = std::make_unique<file_upload>();
                         _upload->file_name = request.file_name;
                         _upload->uri = std::move(url);
+                        _upload->method = std::move(request.method);
                         _upload->callback = std::move(cb);
                         _upload->path = request.file_path;
                         _upload->headers = std::move(request.headers);
@@ -404,7 +405,14 @@ namespace core::http
         {
             _upload->file_descriptor = fd;
             _upload->file_stream = std::make_unique<asio::posix::stream_descriptor>(context, fd);
-            register_file_details();
+            if(_upload->method == "PUT")
+            {
+                register_file_details();
+            } 
+            else 
+            {
+                read_file_chunk();
+            }
         }
     }
     void file_transfer_client::register_file_details()
@@ -434,7 +442,7 @@ namespace core::http
                 }
                 else if (bytes_transferred > 0)
                 {
-                    send_file_chunk(bytes_transferred);
+                    send_file_chunk(bytes_transferred, _upload->method);
                 }
                 else
                 {
@@ -446,7 +454,7 @@ namespace core::http
                 }
             });
     }
-    void file_transfer_client::send_file_chunk(std::size_t bytes_to_transfer)
+    void file_transfer_client::send_file_chunk(std::size_t bytes_to_transfer, const std::string& method="PUT")
     {
         // auto status = _upload->status;
         // std::size_t start = status.end + 1;
@@ -455,7 +463,7 @@ namespace core::http
         headers.try_emplace("Content-Range", fmt::format("{}={}-{}", _upload->status.unit, _upload->status.start, _upload->status.end));
         headers.try_emplace("Content-Length", fmt::format("{}", _upload->status.total));
         std::vector<uint8_t> payload;
-        if (auto error = compose_request(payload, _upload->uri, headers, "PUT"); error)
+        if (auto error = compose_request(payload, _upload->uri, headers, method); error)
         {
             on_upload_failure(error);
         }

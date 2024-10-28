@@ -20,6 +20,9 @@ add_executable(jcd
                 # core::oci
                 core/oci/oci_client.cc
                 core/oci/layer_download_task.cc
+                core/oci/upload_task.cc
+                core/oci/layer_composer.cc
+                core/oci/manifest_composer.cc
                 # core::http
                 core/http/secure_session.cc
                 core/http/insecure_session.cc
@@ -41,6 +44,8 @@ add_executable(jcd
                 core/sql/transaction.cc 
                 # core::archives
                 core/archives/helper.cc
+                # core::sha
+                core/sha/utilities.cc
                 # domain::images
                 domain/images/list_handler.cc
                 domain/images/build_handler.cc

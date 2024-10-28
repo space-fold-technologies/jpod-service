@@ -54,7 +54,7 @@ namespace core::http
         void open_file();
         void register_file_details();
         void read_file_chunk();
-        void send_file_chunk(std::size_t bytes_to_transfer);
+        void send_file_chunk(std::size_t bytes_to_transfer, const std::string& method);
         void fetch_file_details();
         void write_request(const std::vector<uint8_t> &content, const internal::uri &url);
         std::error_code compose_request(

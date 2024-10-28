@@ -2,8 +2,9 @@
 #define __DAEMON_DOMAIN_NETWORKING_REPOSITORY__
 
 #include <system_error>
-#include <string>
 #include <optional>
+#include <vector>
+#include <string>
 
 namespace domain::networking
 {

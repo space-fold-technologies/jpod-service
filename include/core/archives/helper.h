@@ -14,8 +14,11 @@ namespace core::archives
 
     tl::expected<archive_ptr, std::error_code> initialize_reader(const fs::path& archive_path);
     tl::expected<archive_ptr, std::error_code> initialize_writer();
+    tl::expected<archive_ptr, std::error_code> archive_writer(const fs::path& archive_path);
+    std::error_code add_header(const fs::path& file, archive_entry *entry, archive_ptr &in);
+    std::error_code add_entry(const fs::path& file, archive_ptr &in);
     std::error_code copy_entry(archive_ptr &in, archive_ptr &out);
-    std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out, fs::path& destination);
+    std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out, const fs::path& destination);
 }
 
 #endif //__DAEMON_CORE_ARCHIVES_HELPER__

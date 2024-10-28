@@ -1,8 +1,9 @@
 #ifndef __DAEMON_DOMAIN_NETWORKING_NETWORK_SERVICE__
 #define __DAEMON_DOMAIN_NETWORKING_NETWORK_SERVICE__
 
-#include <memory>
 #include <system_error>
+#include <functional>
+#include <memory>
 #include <map>
 
 namespace domain::networking

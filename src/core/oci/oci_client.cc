@@ -1,5 +1,8 @@
 #include <core/oci/oci_client.h>
 #include <core/oci/layer_download_task.h>
+#include <core/oci/upload_task.h>
+#include <range/v3/view/split.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <core/oci/payloads.h>
 #include <core/http/async_client.h>
 #include <core/http/response.h>
@@ -9,14 +12,12 @@
 #include <asio/deadline_timer.hpp>
 #include <core/utilities/defer.h>
 #include <nlohmann/json.hpp>
+#include <openssl/buffer.h>
+#include <spdlog/spdlog.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
-#include <openssl/buffer.h>
 #include <fmt/format.h>
 #include <fstream>
-#include <spdlog/spdlog.h>
-#include <range/v3/view/split.hpp>
-#include <range/v3/range/conversion.hpp>
 
 using namespace core::http;
 using namespace core::utilities;
@@ -28,6 +29,7 @@ namespace core::oci
                                                                                    provider(provider),
                                                                                    client(std::make_unique<core::http::async_client>(provider)),
                                                                                    download_tasks{},
+                                                                                   upload_tasks{},
                                                                                    logger(spdlog::get("jpod"))
     {
     }
@@ -99,7 +101,76 @@ namespace core::oci
             fetch_manifest(request, std::move(callback));
         }
     }
+    void oci_client::upload_image(const image_upload_order &order, upload_callback callback)
+    {
 
+        if (auto session = sessions.find(order.registry); session == sessions.end())
+        {
+            // fail here
+            logger->info("no matching registry found");
+            // callback(std::make_error_code(std::errc::no_such_file_or_directory), {}, {});
+            callback({}, std::make_error_code(std::errc::no_such_file_or_directory));
+        }
+        else
+        {
+            std::map<std::string, std::shared_ptr<upload_task>> tasks{};
+            uint16_t index = 0;
+            auto token = session->second->token;
+            for (const auto &[digest, path] : order.layers)
+            {
+                blob_target target{};
+                target.digest = digest;
+                target.registry = order.registry;
+                target.repository = order.repository;
+                target.token = token;
+                target.image_identifier = order.image_identifier;
+                blob_targets.at(order.image_identifier).push_back(target);
+                upload_details details{};
+                details.digest = digest;
+                details.index = index;
+                details.registry = order.registry;
+                details.repository = order.repository;
+                details.token = token;
+                details.file_path = path;
+                details.provider = provider;
+                tasks.try_emplace(digest, std::make_shared<upload_task>(context, details, *this));
+                upload_sequence[order.image_identifier].push_back(digest);
+                index++;
+            }
+            // config is also regarded as a blob, so it should be packages the same way
+            blob_target target{};
+            target.digest = order.config_digest;
+            target.registry = order.registry;
+            target.repository = order.repository;
+            target.token = token;
+            target.image_identifier = order.image_identifier;
+            blob_targets.at(order.image_identifier).push_back(target);
+            upload_details details{};
+            details.digest = order.config_digest;
+            details.index = index++;
+            details.registry = order.registry;
+            details.repository = order.repository;
+            details.token = token;
+            details.file_path = order.config_location;
+            details.provider = provider;
+            tasks.try_emplace(order.config_digest, std::make_shared<upload_task>(context, details, *this));
+            upload_sequence[order.image_identifier].push_back(order.config_digest);
+            upload_tasks.try_emplace(order.image_identifier, std::move(tasks));
+            upload_operation operation{};
+            operation.callback = std::move(callback);
+            operation.manifest_digest = order.manifest_digest;
+            operation.manifest_path = order.manifest_location;
+            operation.registry = order.registry;
+            operation.repository = order.repository;
+            upload_operations.try_emplace(order.image_identifier, operation);
+            fetch_upload_location(order.image_identifier);
+        }
+
+        // go through each entry and fetch the blob size
+        // register the blob and use the callback to register upload tasks
+        // when the last task has been resolve, initiate the chunked upload of the layers
+        // each call to register a layer should be able to trigger the next registration or fail all at oncew
+    }
     void oci_client::on_download_started(const std::string &image_digest, const std::string &layer_digest)
     {
         logger->trace("started download IMAGE: {} LAYER: {}", image_digest, layer_digest);
@@ -188,6 +259,58 @@ namespace core::oci
         {
             download_tasks.erase(download_tasks.find(image_digest));
         }
+    }
+
+    void oci_client::on_upload_started(const std::string &image_identifier, const std::string &digest)
+    {
+        logger->info("upload started for blob: {}", digest);
+        progress_details details{};
+        details.hash = digest;
+        details.percentage = 0;
+        details.complete = false;
+        upload_operations[image_identifier].callback(details, {});
+        // might consider starting another operation in parallel
+    }
+    void oci_client::on_upload_complete(const std::string &image_identifier, const std::string &digest, const std::string& location)
+    {
+        logger->info("upload complete for blob: {} to location: {}", digest, location);
+        // place some progress tracking here to send and mark upload for blob below
+        // check if there is another blob in the queue
+        if (upload_sequence.find(image_identifier) != upload_sequence.end())
+        {
+            progress_details details{};
+            details.hash = digest;
+            details.percentage = 100;
+            details.complete = false;
+            upload_operations[image_identifier].callback(details, {});
+            upload_sequence[image_identifier].pop_front();
+            if (!upload_sequence[image_identifier].empty())
+            {
+                auto target = upload_sequence[image_identifier].front();
+                auto task = upload_tasks[image_identifier][target];
+                task->start();
+            }
+            else
+            {
+                upload_manifest(image_identifier);
+                upload_tasks.erase(upload_tasks.find(image_identifier));
+            }
+        }
+    }
+    void oci_client::on_upload_update(const std::string &image_identifier, std::string_view digest, uint16_t current, uint16_t total)
+    {
+        progress_details details{};
+        details.hash = digest;
+        details.percentage = (current * 100) / total;
+        details.complete = false;
+        upload_operations[image_identifier].callback(details, {});
+    }
+    void oci_client::on_upload_failure(const std::string &image_identifier, const std::string &digest, const std::error_code &error)
+    {
+        logger->error("failed to upload blob with digest: {}", digest);
+        upload_tasks.erase(upload_tasks.find(image_identifier));
+        upload_operations[image_identifier].callback({}, error);
+        upload_operations.erase(upload_operations.find(image_identifier));
     }
 
     void oci_client::fetch_manifest(const manifest_request &request, image_progress_callback callback)
@@ -469,6 +592,110 @@ namespace core::oci
                 auto current_tasks = download_tasks.at(target.first);
                 auto task = current_tasks.at(target.second);
                 task->start();
+            }
+        }
+    }
+    void oci_client::fetch_upload_location(std::string_view image_identifier)
+    {
+        if (!blob_targets[image_identifier].empty())
+        {
+            // register the blob and fetch the location
+            auto target = blob_targets[image_identifier].front();
+            blob_upload_order order{};
+            order.digest = target.digest;
+            order.image_identifier = target.image_identifier;
+            order.registry = target.registry;
+            order.repository = target.repository;
+            order.token = target.token;
+            auto callback = [this, image_identifier](const std::error_code &err, const std::string &digest, const std::string &location)
+            {
+                if (err)
+                {
+                    upload_operations[image_identifier].callback({}, err);
+                }
+                else
+                {
+                    upload_tasks[image_identifier][digest]->set_location(location);
+                    blob_targets[image_identifier].pop_front();
+                    fetch_upload_location(image_identifier);
+                }
+            };
+            register_blob(order, callback);
+        }
+        else
+        {
+            if (!upload_sequence.empty())
+            {
+                auto target = upload_sequence[std::string(image_identifier)].front();
+                auto task = upload_tasks[image_identifier][target];
+                task->start();
+            }
+        }
+    }
+
+    void oci_client::register_blob(const blob_upload_order &order, registration_callback callback)
+    {
+
+        http::request_details details{};
+        details.headers.emplace("Content-Length", "0");
+        details.headers.emplace("Authorization", fmt::format("Bearer {}", order.token));
+        details.path = fmt::format("{}/{}/blobs/uploads/", order.registry, order.repository);
+        auto response_callback = [cb = move(callback), digest = order.digest](const std::error_code &error, const http::response &response)
+        {
+            if (error)
+            {
+                cb(error, "", "");
+            }
+            else
+            {
+                cb({}, digest, response.location());
+            }
+        };
+        client->post(details, response_callback);
+    }
+
+    void oci_client::upload_manifest(std::string image_identifier)
+    {
+        auto operation = upload_operations[image_identifier];
+        if (auto position = sessions.find(operation.registry); position != sessions.end())
+        {
+            auto token = position->second->token;
+            // some http magic voodoo here to make the bad things go away
+            http::request_details details{};
+            details.headers.emplace("Authorization", fmt::format("Bearer {}", token));
+            details.headers.emplace("Content-Type", "application/vnd.oci.image.manifest.v1+json");
+            details.path = fmt::format("{}/{}/manifests/{}", operation.registry, operation.repository, operation.tag);
+            std::ifstream file(operation.manifest_path, std::ios::binary);
+            if (!file.is_open() || file.bad())
+            {
+                operation.callback({}, std::error_code{errno, std::system_category()});
+            }
+            else
+            {
+                file.seekg(0, std::ios::end);
+                std::size_t file_size = file.tellg();
+                file.seekg(0, std::ios::beg);
+                details.content.reserve(file_size);
+                file.read(reinterpret_cast<char *>(&details.content[0]), file_size);
+                file.close();
+                details.headers.emplace("Content-Length", fmt::format("{}", file_size));
+                auto response_callback = [this, image_identifier](const std::error_code &error, const http::response &response)
+                {
+                    if (error)
+                    {
+                        upload_operations[image_identifier].callback({}, error);
+                    }
+                    else
+                    {
+                        progress_details details{};
+                        details.complete = true;
+                        details.percentage = 100;
+                        details.location = response.location();
+                        upload_operations[image_identifier].callback(details, {});
+                    }
+                    upload_operations.erase(upload_operations.find(image_identifier));
+                };
+                client->put(details, response_callback);
             }
         }
     }

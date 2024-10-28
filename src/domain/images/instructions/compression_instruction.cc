@@ -57,7 +57,7 @@ namespace domain::images::instructions
                 if (entry.is_regular_file())
                 {
                     std::vector<char> buffer(8096);
-                    std::ifstream file(entry, std::ios::binary);
+                    std::ifstream file(entry.path(), std::ios::binary);
                     if (!file.is_open())
                     {
                         listener.on_instruction_complete(identifier, std::make_error_code(std::errc::io_error));
