@@ -87,6 +87,12 @@ namespace domain::containers
             logger->error("client connection: {}", error.message());
         }
     }
+    void shell_handler::on_terminal_closed()
+    {
+        std::string message = fmt::format("interactive shell session ended");
+        send_close(std::vector<uint8_t>(message.begin(), message.end()));
+        logger->info("terminal session ended");
+    }
     shell_handler::~shell_handler()
     {
         if (terminal)

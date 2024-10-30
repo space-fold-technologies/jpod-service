@@ -133,9 +133,6 @@ namespace domain::containers::freebsd
 
     void freebsd_terminal::start()
     {
-
-        asio::post([this]()
-                   { process_wait(process_identifier); });
         asio::post([this]()
                    { this->in->async_wait(
                          asio::posix::stream_descriptor::wait_read,
@@ -171,7 +168,14 @@ namespace domain::containers::freebsd
             {
                 if (err)
                 {
-                    listener.on_terminal_error(err);
+                    if(err == asio::error::eof)
+                    {
+                        listener.on_terminal_closed();
+                    } 
+                    else 
+                    {
+                        listener.on_terminal_error(err);
+                    }
                 }
             });
     }
@@ -224,7 +228,14 @@ namespace domain::containers::freebsd
                 }
                 else
                 {
-                    listener.on_terminal_error(error);
+                    if(error == asio::error::eof)
+                    {
+                        listener.on_terminal_closed();
+                    }
+                    else 
+                    {
+                        listener.on_terminal_error(error);
+                    }
                 }
             });
     }
