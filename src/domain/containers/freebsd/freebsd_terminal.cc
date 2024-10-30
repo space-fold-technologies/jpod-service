@@ -2,14 +2,15 @@
 #include <domain/containers/freebsd/freebsd_utils.h>
 #include <domain/containers/terminal_listener.h>
 #include <asio/io_context.hpp>
+#include <spdlog/spdlog.h>
+#include <asio/write.hpp>
 #include <asio/post.hpp>
 #include <asio/read.hpp>
-#include <asio/write.hpp>
-#include <libutil.h>
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <sys/jail.h>
-#include <spdlog/spdlog.h>
+#include <libutil.h>
+
 
 namespace domain::containers::freebsd
 {
@@ -20,7 +21,6 @@ namespace domain::containers::freebsd
                                                                       listener(listener),
                                                                       file_descriptor(-1),
                                                                       process_identifier(-1),
-                                                                      buffer(WRITE_BUFFER_SIZE),
                                                                       in(nullptr),
                                                                       out(nullptr),
                                                                       logger(spdlog::get("jpod")) {}
@@ -218,7 +218,7 @@ namespace domain::containers::freebsd
                 {
                     if (bytes_transferred > 0)
                     {
-                        listener.on_terminal_data_received(buffer);
+                        listener.on_terminal_data_received(std::vector<uint8_t>(buffer.begin(), buffer.begin() + bytes_transferred));
                     }
                     wait_to_read_from_shell();
                 }
@@ -239,7 +239,6 @@ namespace domain::containers::freebsd
     freebsd_terminal::~freebsd_terminal()
     {
         clean();
-        buffer.clear();
         in.reset();
         out.reset();
     }
