@@ -5,6 +5,7 @@
 #include <domain/containers/terminal_details.h>
 #include <asio/posix/stream_descriptor.hpp>
 #include <string>
+#include <array>
 namespace asio
 {
     class io_context;
@@ -48,7 +49,7 @@ namespace domain::containers::freebsd
         terminal_listener &listener;
         int file_descriptor;
         pid_t process_identifier;
-        std::vector<uint8_t> buffer;
+        std::array<uint8_t, 1024> buffer;
         std::unique_ptr<asio::posix::stream_descriptor> in;
         std::unique_ptr<asio::posix::stream_descriptor> out;
         std::shared_ptr<spdlog::logger> logger;

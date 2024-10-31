@@ -62,6 +62,7 @@ bootstrap::bootstrap(asio::io_context &context, setting_properties settings) : c
                                                                                network_service(nullptr),
                                                                                containers_folder(settings.containers_folder),
                                                                                images_folder(settings.images_folder),
+                                                                               volumes_folder(settings.volumes_folder),
                                                                                default_network_entry{"default", settings.bridge, settings.ip_v4_cidr, "local", "bridge"},
                                                                                logger(spdlog::get("jpod"))
 {
@@ -156,7 +157,7 @@ void bootstrap::setup_handlers()
       request_operation::build,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<creation_handler>(conn, containers_folder, images_folder, container_repository);
+        return std::make_shared<creation_handler>(conn, containers_folder, images_folder,volumes_folder, container_repository);
       });
   registry->add_handler(
       operation_target::container,

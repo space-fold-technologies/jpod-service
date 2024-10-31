@@ -9,7 +9,9 @@
 using namespace core::connections;
 namespace core::commands
 {
-    command_handler::command_handler(core::connections::connection &connection) : connection(connection), logger(spdlog::get("jpod"))
+    command_handler::command_handler(core::connections::connection &connection) :
+    connection(connection), 
+    logger(spdlog::get("jpod"))
     {
     }
 

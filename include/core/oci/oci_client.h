@@ -179,6 +179,7 @@ namespace core::oci
         void fetch_upload_location(std::string_view image_identifier);
         void register_blob(const blob_upload_order &order, registration_callback callback);
         void upload_manifest(std::string image_identifier);
+        static std::string lower_case(const std::string& in);
 
     private:
         asio::io_context &context;

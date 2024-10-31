@@ -42,6 +42,7 @@ namespace domain::containers
         std::shared_ptr<runtime> runtime_ptr;
         std::shared_ptr<container_repository> store;
         operation_details details;
+        std::shared_ptr<spdlog::logger> logger;
     };
     using startup_result = tl::expected<startup_state, std::error_code>;
     class start_handler : public core::commands::command_handler
@@ -58,14 +59,16 @@ namespace domain::containers
         void on_connection_closed(const std::error_code &error) override;
 
     private:
-        static startup_result initialize(const std::string& term,
+        static startup_result initialize(const std::string &term,
                                          const fs::path &containers_folder,
                                          const fs::path &images_folder,
                                          std::shared_ptr<container_repository> store,
                                          std::shared_ptr<runtime> runtime_ptr);
         static startup_result fetch_details(startup_state state);
         static startup_result prepare_container(startup_state state);
+        static startup_result prepare_volumes(startup_state state);
         static startup_result setup_command(startup_state state);
+        static std::string resolve_username(const std::string& repository);
         static tl::expected<std::string, std::error_code> start_container(startup_state state);
 
     private:
