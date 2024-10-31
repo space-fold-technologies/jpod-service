@@ -2,11 +2,13 @@
 #define __DAEMON_DOMAIN_CONTAINERS_REPOSITORY__
 
 #include <domain/containers/details.h>
-#include <optional>
+#include <tl/expected.hpp>
 #include <system_error>
+#include <optional>
 
 namespace domain::containers
 {
+    using volumes = std::vector<volume_entry>;
     class container_repository
     {
     public:
@@ -21,6 +23,8 @@ namespace domain::containers
         virtual bool exists(const std::string &query) = 0;
         virtual std::error_code register_status(const std::string &identifier, const std::string &status) = 0;
         virtual std::error_code remove(const std::string &query) = 0;
+        virtual std::error_code add_entry(const volume_details &entry) = 0;
+        virtual tl::expected<volumes, std::error_code> fetch_volumes(const std::string &identifier) = 0;
     };
 }
 #endif // __DAEMON_DOMAIN_CONTAINERS_REPOSITORY__

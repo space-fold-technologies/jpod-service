@@ -4,32 +4,34 @@ environment:
 mount_points:
     -
         filesystem: 'devfs'
-        flags: 0
         folder: 'dev'
         options: 'rw'
     -
         filesystem: 'linprocfs'
-        flags: 0
         folder: 'proc'
         options: 'rw'
     -
         filesystem: 'linsysfs'
-        flags: 0
         folder: 'sys'
         options: 'rw'
     -
         filesystem: 'tmpfs'
-        flags: 0
         folder: 'dev/shm'
         options: 'rw,mode=1777'
 parameters:
+    linux: ' '
     allow.mount: ' '
     allow.mount.devfs: ' '
     allow.mount.linprocfs: ' '
     allow.mount.linsysfs: ' '
     allow.mount.procfs: ' '
     allow.mount.tmpfs: ' '
+    allow.mount.nullfs: ' '
     allow.raw_sockets: ' '
+    allow.chflags: ' '
     devfs_ruleset: 4
+    sysvmsg: 'new'
+    sysvsem: 'new'
+    sysvshm: 'new'
     securelevel: 3
     persist: ' '

@@ -6,7 +6,6 @@
 #include <domain/networking/errors.h>
 #include <domain/networking/payloads.h>
 #include <range/v3/view/split.hpp>
-// #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <fmt/format.h>
@@ -34,7 +33,7 @@ namespace domain::networking
             }
         }
         // now go ahead and add the needed network provider
-        networks.emplace(entry.name, std::move(std::make_shared<address_provider>(entry.subnet, "")));
+        networks.try_emplace(entry.name, std::move(std::make_shared<address_provider>(entry.subnet, "")));
         auto network = networks.at(entry.name);
         if (network->initialize(error); error)
         {

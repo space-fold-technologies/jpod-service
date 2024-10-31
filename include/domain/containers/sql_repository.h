@@ -26,6 +26,8 @@ namespace domain::containers
         bool exists(const std::string &query) override;
         std::error_code register_status(const std::string &identifier, const std::string &status) override;
         std::error_code remove(const std::string &query) override;
+        std::error_code add_entry(const volume_details &entry) override;
+        tl::expected<volumes, std::error_code> fetch_volumes(const std::string &identifier) override;
 
     private:
         std::vector<container_summary_entry> fetch_match_without_query(const std::string &status);

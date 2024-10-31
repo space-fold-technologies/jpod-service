@@ -38,7 +38,7 @@ namespace domain::containers
     }
     void stop_handler::on_connection_closed(const std::error_code &error)
     {
-        logger->info("stopping stop handler");
+        logger->debug("stopping stop handler");
     }
     stop_handler::~stop_handler()
     {

@@ -31,6 +31,7 @@ cmrc_add_resource_library(
     resources/migrations/initial-tables.sql
     resources/migrations/local-registry.sql
     resources/migrations/network-tables.sql
+    resources/migrations/volume-table.sql
     resources/configurations/settings.yml
     resources/configurations/freebsd-template.yml
     resources/configurations/linux-template.yml

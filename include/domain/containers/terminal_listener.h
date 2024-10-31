@@ -11,6 +11,7 @@ namespace domain::containers
     {
     public:
         virtual void on_terminal_data_received(const std::vector<uint8_t> &content) = 0;
+        virtual void on_terminal_closed() = 0;
         virtual void on_terminal_error(const std::error_code &err) = 0;
     };
 }

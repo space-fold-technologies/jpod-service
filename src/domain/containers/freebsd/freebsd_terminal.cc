@@ -2,14 +2,15 @@
 #include <domain/containers/freebsd/freebsd_utils.h>
 #include <domain/containers/terminal_listener.h>
 #include <asio/io_context.hpp>
+#include <spdlog/spdlog.h>
+#include <asio/write.hpp>
 #include <asio/post.hpp>
 #include <asio/read.hpp>
-#include <asio/write.hpp>
-#include <libutil.h>
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <sys/jail.h>
-#include <spdlog/spdlog.h>
+#include <libutil.h>
+
 
 namespace domain::containers::freebsd
 {
@@ -20,7 +21,6 @@ namespace domain::containers::freebsd
                                                                       listener(listener),
                                                                       file_descriptor(-1),
                                                                       process_identifier(-1),
-                                                                      buffer(WRITE_BUFFER_SIZE),
                                                                       in(nullptr),
                                                                       out(nullptr),
                                                                       logger(spdlog::get("jpod")) {}
@@ -37,8 +37,14 @@ namespace domain::containers::freebsd
         }
         else if (pid == 0)
         {
-            setsid();
-            if (int jail_id = jail_getid(properties.identifier.c_str()); jail_id > 0)
+            // setsid();
+            if (auto result = fetch_user_details(properties.user); !result)
+            {
+                logger->error("insecure mode in effect error: {}", result.error().message());
+                listener.on_terminal_error(result.error());
+                _exit(-1);
+            }
+            else if (int jail_id = jail_getid(properties.identifier.c_str()); jail_id > 0)
             {
                 if (jail_attach(jail_id) == -1 || chdir("/") == -1)
                 {
@@ -48,12 +54,7 @@ namespace domain::containers::freebsd
                 else
                 {
                     context.notify_fork(asio::io_context::fork_child);
-                    std::error_code error;
-                    if (auto results = fetch_user_details(properties.user, error); error)
-                    {
-                        logger->debug("insecure mode in effect error: {}", error.message());
-                    }
-                    else if (!setup_environment(*results))
+                    if (!setup_environment(result.value()))
                     {
                         logger->debug("was not able to set up secure mode");
                     }
@@ -124,7 +125,7 @@ namespace domain::containers::freebsd
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
-            return std::error_code{};
+            return {};
         }
         clean();
         return std::error_code(errno, std::system_category());
@@ -132,9 +133,6 @@ namespace domain::containers::freebsd
 
     void freebsd_terminal::start()
     {
-
-        asio::post([this]()
-                   { process_wait(process_identifier); });
         asio::post([this]()
                    { this->in->async_wait(
                          asio::posix::stream_descriptor::wait_read,
@@ -170,7 +168,14 @@ namespace domain::containers::freebsd
             {
                 if (err)
                 {
-                    listener.on_terminal_error(err);
+                    if(err == asio::error::eof)
+                    {
+                        listener.on_terminal_closed();
+                    } 
+                    else 
+                    {
+                        listener.on_terminal_error(err);
+                    }
                 }
             });
     }
@@ -195,7 +200,7 @@ namespace domain::containers::freebsd
     {
         this->in->async_wait(
             asio::posix::stream_descriptor::wait_read,
-            [this](const std::error_code &error)
+            [this](std::error_code error)
             {
                 if (!error)
                 {
@@ -217,18 +222,20 @@ namespace domain::containers::freebsd
                 {
                     if (bytes_transferred > 0)
                     {
-                        this->listener.on_terminal_data_received(buffer);
-                        this->in->async_wait(
-                            asio::posix::stream_descriptor::wait_read,
-                            [this](const std::error_code &err)
-                            {
-                                this->wait_to_read_from_shell();
-                            });
+                        listener.on_terminal_data_received(std::vector<uint8_t>(buffer.begin(), buffer.begin() + bytes_transferred));
                     }
+                    wait_to_read_from_shell();
                 }
                 else
                 {
-                    this->listener.on_terminal_error(error);
+                    if(error == asio::error::eof)
+                    {
+                        listener.on_terminal_closed();
+                    }
+                    else 
+                    {
+                        listener.on_terminal_error(error);
+                    }
                 }
             });
     }
@@ -243,7 +250,6 @@ namespace domain::containers::freebsd
     freebsd_terminal::~freebsd_terminal()
     {
         clean();
-        buffer.clear();
         in.reset();
         out.reset();
     }

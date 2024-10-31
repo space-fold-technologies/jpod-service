@@ -12,6 +12,7 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
+#include <algorithm>
 #include <fmt/format.h>
 #include <fstream>
 #include <spdlog/spdlog.h>
@@ -234,9 +235,9 @@ namespace core::oci
                             {
                                 auto architecture = entry["platform"]["architecture"].template get<std::string>();
                                 update.feed.append(fmt::format("ARCH: {}", architecture));
-                                auto operating_system = entry["platform"]["os"].template get<std::string>();
+                                auto operating_system = lower_case(entry["platform"]["os"].template get<std::string>());
                                 update.feed.append(fmt::format("OPERATING SYSTEM: {}", operating_system));
-                                if (entry["platform"].contains("variant"))
+                                if (entry["platform"].contains("variant") && !entry["platform"]["variant"].is_null())
                                 {
                                     architecture = fmt::format("{}:{}", architecture, entry["platform"]["variant"].template get<std::string>());
                                     update.feed.append(fmt::format("VARIATION OF ARCH: {}", architecture));
@@ -261,7 +262,6 @@ namespace core::oci
                                 }
                             }
                         }
-                        logger->error("not found");
                         // no matching image for your architecture
                         cb(std::make_error_code(std::errc::not_supported), {}, {});
                     }
@@ -277,7 +277,7 @@ namespace core::oci
                         details.properties = {};
                         details.properties.os = req.operating_system;
                         details.properties.digest = digest;
-                        details.properties.tag = req.readable_tag;
+                        details.properties.tag = !req.readable_tag.empty() ? req.readable_tag : req.tag;
                         details.properties.tag_reference = req.tag;
                         details.properties.registry = req.registry;
                         details.properties.repository = req.repository;
@@ -471,6 +471,14 @@ namespace core::oci
                 task->start();
             }
         }
+    }
+
+    std::string oci_client::lower_case(const std::string &in)
+    {
+        std::string out = in;
+        std::transform(in.begin(), in.end(), out.begin(), [](uint8_t c) -> uint8_t
+                       { return std::tolower(c); });
+        return out;
     }
 
     std::error_code oci_client::base64_encode(const std::string &input, std::string &output)

@@ -36,6 +36,21 @@ namespace domain::containers
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_term_order>();
     }
+
+    struct container_start_order
+    {
+        std::string name;
+        std::string user;
+        MSGPACK_DEFINE(name, user)
+    };
+
+    inline container_start_order unpack_container_start_order(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_start_order>();
+    }
+
     struct container_remove_order
     {
         std::string term;
@@ -69,6 +84,21 @@ namespace domain::containers
         msgpack::object_handle result;
         msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
         return result.get().as<container_shell_order>();
+    }
+
+    struct container_log_order
+    {
+        std::string name;
+        bool follow;
+        uint16_t tail;
+        bool timestamps;
+        MSGPACK_DEFINE(name, follow, tail, timestamps)
+    };
+    inline container_log_order unpack_container_log_order(const std::vector<uint8_t> &content)
+    {
+        msgpack::object_handle result;
+        msgpack::unpack(result, reinterpret_cast<const char *>(content.data()), content.size());
+        return result.get().as<container_log_order>();
     }
 
     enum class filter_mode

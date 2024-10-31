@@ -29,21 +29,18 @@ namespace domain::containers
         }
         auto key = std::string(details.identifier);
 #if defined(__FreeBSD__) // this is probably not going to be that bad right ?
-        containers.emplace(key, std::make_shared<freebsd::freebsd_container>(context, std::move(details), *this));
+        containers.try_emplace(key, std::make_shared<freebsd::freebsd_container>(context, std::move(details), *this));
 #endif
-        containers.at(key)->initialize(); // might have to use something specific to asio like asio::post
+        auto container = containers.at(key);
+        monitors.try_emplace(key, container_monitor_provider());
+        container->register_listener(monitors.at(key));
+        container->initialize(); // might have to use something specific to asio like asio::post
     }
     void runtime::container_initialized(const std::string &identifier, const std::string &network)
     {
-        if (monitors.find(identifier) == monitors.end())
-        {
-            monitors.emplace(identifier, container_monitor_provider());
-        }
         if (auto pos = containers.find(identifier); pos != containers.end())
-        {
+        {   
             auto container = pos->second;
-            auto monitor = monitors.at(identifier);
-            container->register_listener(monitor);
             // now go ahead and assign a network address to the container
             if (auto error = container_address_assigner(identifier, network); !error)
             {
@@ -69,7 +66,7 @@ namespace domain::containers
         repository->register_status(identifier, "shutdown");
         if(auto error = container_address_cleaner(identifier, network); error)
         {
-            logger->error("container-network: {}", error.message());
+            logger->error("container-network id[{}]: {}", identifier, error.message());
         }
     }
     void runtime::remove_container(const std::string &identifier)
