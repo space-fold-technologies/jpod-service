@@ -78,7 +78,7 @@ namespace domain::images::instructions
             }
             setenv("TERM", "xterm-256color", 1);
             setenv("SHELL", "/bin/sh", 1);
-            auto target_shell = getenv("SHELL");
+            auto *target_shell = getenv("SHELL");
             if (target_shell == NULL)
             {
 #if defined(__FreeBSD__)
