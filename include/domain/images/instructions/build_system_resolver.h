@@ -2,8 +2,9 @@
 #define __DAEMON_DOMAIN_IMAGES_INSTRUCTIONS_BUILD_SYSTEM_RESOLVER__
 
 #include <domain/images/instructions/directory_resolver.h>
-#include <map>
 #include <memory>
+#include <map>
+
 
 namespace spdlog
 {
@@ -29,16 +30,18 @@ namespace domain::images::instructions
         void extract_image(const std::string &identifier, const std::string &image_identifier, extraction_callback callback) override;
 
     private:
+        fs::path create_temporary_folder(const std::string& identifier, std::error_code &error);
         archive_ptr initialize_reader(const fs::path &image_fs_archive, std::error_code &error);
         archive_ptr initialize_writer();
         std::error_code copy_entry(struct archive* in, struct archive* out);
+        
 
     private:
         std::string local_directory;
         fs::path image_folder;
-        fs::path temporary_folder;
         const std::map<std::string, std::string> &stage_names;
         std::map<std::string, std::string> extensions;
+        std::map<std::string, fs::path> temporary_folders;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

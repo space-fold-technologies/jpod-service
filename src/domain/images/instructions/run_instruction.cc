@@ -1,4 +1,5 @@
 #include <domain/images/instructions/run_instruction.h>
+#include <domain/containers/freebsd/freebsd_utils.h>
 #include <domain/images/instructions/instruction_listener.h>
 #include <asio/io_context.hpp>
 #include <asio/read.hpp>
@@ -45,17 +46,22 @@ namespace domain::images::instructions
     }
     void run_instruction::execute()
     {
-        asio::post([this]()
-                   { this->process_wait(); });
-        asio::post([this]()
-                   { this->in->async_wait(
+        if(auto error = initialize(); error)
+        {
+            listener.on_instruction_complete(this->identifier, error);
+        } else {
+            asio::post([this]()
+                   { 
+                    in->async_wait(
                          asio::posix::stream_descriptor::wait_read,
                          [this](const std::error_code &err)
                          {
-                             this->read_from_shell();
-                         }); });
+                            read_from_shell();
+                         }); 
+                    });
+        }
     }
-    void run_instruction::initialize()
+    std::error_code run_instruction::initialize()
     {
         disable_stdio_inheritance();
         winsize size = {24, 80, 0, 0};
@@ -64,17 +70,26 @@ namespace domain::images::instructions
         auto pid = forkpty(&fd, NULL, NULL, &size);
         if (pid < 0)
         {
-            listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-            return;
+            return std::error_code(errno, std::system_category());
         }
         else if (pid == 0)
         {
-            setsid();
+            //setsid();
             context.notify_fork(asio::io_context::fork_child);
-            if (chdir(current_directory.c_str()) == -1 || chroot(".") == -1)
+            if (auto result = containers::freebsd::fetch_user_details("root"); !result)
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                logger->error("insecure mode in effect error: {}", result.error().message());
+                _exit(errno);
+            } 
+            else if (!containers::freebsd::setup_environment(result.value()))
+            {
+                        logger->error("was not able to set up secure mode");
+                        _exit(errno);
+            }
+            else if (chdir(current_directory.generic_string().c_str()) == -1 || chroot(".") == -1)
+            {
+                perror("execlp failed");
+                _exit(-errno);
             }
             setenv("TERM", "xterm-256color", 1);
             setenv("SHELL", "/bin/sh", 1);
@@ -85,13 +100,15 @@ namespace domain::images::instructions
                 target_shell = _PATH_BSHELL; // need to find a better way to manage the default shell
 #endif
             }
-            std::string argument = fmt::format("\"{}\"", order);
-            if (auto err = execlp(target_shell, target_shell, "-c", argument.c_str(), NULL); err < 0)
+            // std::string argument = fmt::format("\"{}\"", order);
+            if (auto err = execlp(target_shell, target_shell, "-c", order.c_str(), NULL); err < 0)
             {
+                _exit(errno);
                 listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
             }
             else
             {
+                _exit(0);
                 listener.on_instruction_complete(this->identifier, {});
             }
         }
@@ -101,35 +118,26 @@ namespace domain::images::instructions
         {
             if (int ret = fcntl(fd, F_SETFD, flags | O_NONBLOCK); ret == -1)
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                clean();
+                return std::error_code(errno, std::system_category());
             }
             if (!close_on_exec(fd))
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                clean();
             }
             if (!setup_pipe(fd))
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                clean();
+                return std::error_code(errno, std::system_category());
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
-            listener.on_instruction_initialized(this->identifier, this->name);
+            return {};
         }
-        listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
+        clean();
+        return std::error_code(errno, std::system_category());
     }
-    void run_instruction::process_wait()
-    {
-        pid_t pid;
-        int stat;
-        do
-        {
-            pid = waitpid(process_identifier, &stat, 0);
-        } while (pid != process_identifier && errno == EINTR);
-    }
-
+    
     bool run_instruction::setup_pipe(int fd)
     {
         if (auto fd_in_dup = ::dup(fd); fd_in_dup > 0)
@@ -150,19 +158,28 @@ namespace domain::images::instructions
             {
                 if (!err)
                 {
-                    this->listener.on_instruction_data_received(this->identifier, buffer);
+                    this->listener.on_instruction_data_received(this->identifier, std::vector<uint8_t>(buffer.begin(), buffer.begin() + bytes_transferred));
                     this->in->async_wait(
                         asio::posix::stream_descriptor::wait_read,
                         [this](const std::error_code &err)
                         {
-                            this->read_from_shell();
+                            if(!err)
+                            {
+                                read_from_shell();
+                            } else 
+                            {
+                                listener.on_instruction_complete(identifier, err);
+                            }
+                            
                         });
                 }
                 else
                 {
                     if (err != asio::error::eof)
                     {
-                        this->listener.on_instruction_complete(this->identifier, err);
+                        listener.on_instruction_complete(identifier, err);
+                    } else {
+                        listener.on_instruction_complete(identifier, {});
                     }
                 }
             });
@@ -203,7 +220,16 @@ namespace domain::images::instructions
                 break;
         }
     }
+    void run_instruction::clean()
+    {
+        if (file_descriptor > 0 && process_identifier > 0)
+        {
+            close(file_descriptor);
+            waitpid(process_identifier, nullptr, 0);
+        }
+    }
     run_instruction::~run_instruction()
     {
+        logger->info("COP RUN COOKED");
     }
 }

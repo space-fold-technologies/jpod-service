@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <memory>
 #include <map>
-#include <deque>
+
 
 namespace spdlog
 {
@@ -37,7 +37,7 @@ namespace domain::images
     class image_repository;
     class build_order;
     using oci_client_provider = std::function<std::unique_ptr<core::oci::oci_client>()>;
-    using task = std::shared_ptr<instruction>;
+    using task = std::unique_ptr<instruction>;
 
     class build_handler : public core::commands::command_handler, public instruction_listener
     {
@@ -56,18 +56,18 @@ namespace domain::images
 
     private:
         void setup_stages(const build_order &order);
-        void resolve_stage_name(const std::string &identifer, const std::string &order);
+        void resolve_stage_name(const std::string &identifer, int index, const std::string &order);
         void run_stages();
         void run_stage(const std::string &identifier);
-        task create_download_instruction(const std::string &stage_identifier, const std::string &order);
-        task create_mount_instruction(const std::string &stage_identifier, const std::string &order);
-        task create_copy_instruction(const std::string &stage_identifier, const std::string &order);
-        task create_work_dir_instruction(const std::string &stage_identifier, const std::string &order);
-        task create_run_instruction(const std::string &stage_identifier, const std::string &order);
-        task create_unmount_instruction(const std::string &stage_identifier, const std::string &order);
-        task create_archive_instruction(const std::string &stage_identifier);
-        task create_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order);
-        task create_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers);
+        void add_download_instruction(const std::string &stage_identifier, const std::string &order);
+        void add_mount_instruction(const std::string &stage_identifier, const std::string &order);
+        void add_copy_instruction(const std::string &stage_identifier, const std::string &order);
+        void add_work_dir_instruction(const std::string &stage_identifier, const std::string &order);
+        void add_run_instruction(const std::string &stage_identifier, const std::string &order);
+        void add_unmount_instruction(const std::string &stage_identifier, const std::string &order);
+        void add_archive_instruction(const std::string &stage_identifier);
+        void add_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order);
+        void add_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers);
 
     private:
         asio::io_context &context;

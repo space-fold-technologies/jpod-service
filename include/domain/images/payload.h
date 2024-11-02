@@ -32,15 +32,12 @@ namespace domain::images
     struct stage
     {
         std::string name;
-        std::string tag;
-        std::map<std::string, std::string> labels;
-        std::map<std::string, step_type> steps;
-
-        MSGPACK_DEFINE(name, tag, labels, steps)
+        std::vector<std::pair<std::string, step_type>> steps;
+        MSGPACK_DEFINE(name, steps)
 
         bool operator==(const stage rhs)
         {
-            return (this->name == rhs.name && this->tag == rhs.tag && this->labels == rhs.labels && this->steps == rhs.steps);
+            return (this->name == rhs.name && this->steps == rhs.steps);
         }
     };
 
@@ -48,6 +45,7 @@ namespace domain::images
     {
         std::string name;
         std::string tag;
+        std::map<std::string, std::string> labels;
         std::string current_directory;
         std::vector<stage> stages;
         std::string entry_point;

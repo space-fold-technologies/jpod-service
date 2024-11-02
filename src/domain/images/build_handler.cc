@@ -54,104 +54,106 @@ namespace domain::images
     }
     void build_handler::setup_stages(const build_order &order)
     {
-        // TODO: from here unpack all the stages into instructions
-        ranges::for_each(
-            order.stages,
-            [this, &order](const stage &stage)
+        for(const auto& stage: order.stages)
+        {
+            auto stage_identifier = sole::uuid4().str();
+            std::error_code error{};
+            if(auto path = resolver->destination_path(stage_identifier, error); !error)
             {
-                auto stage_identifier = sole::uuid4().str();
-                current_stage_work_directories.emplace(stage_identifier, fs::path("/"));
-                std::deque<task> instructions;
-                std::string parent_image_order;
-                ranges::for_each(
-                    stage.steps,
-                    [this, &instructions, &stage_identifier, &parent_image_order](const std::pair<std::string, step_type> &step)
+                current_stage_work_directories.emplace(stage_identifier, path);
+            }
+            
+            std::deque<task> instructions;
+            std::string parent_image_order;
+            int index = 0;
+            for(const auto &[step, type]: stage.steps)
                     {
-                        switch (step.second)
-                        {
-                        case step_type::from:
-                            instructions.push_back(create_download_instruction(stage_identifier, step.first));
-                            instructions.push_back(create_mount_instruction(stage_identifier, step.first));
-                            parent_image_order = step.first;
-                            break;
+                        switch (type)
+                            {
+                            case step_type::from:
+                                add_download_instruction(stage_identifier, step);
+                                add_mount_instruction(stage_identifier, step);
+                                parent_image_order = step;
+                                break;
 
-                        case step_type::copy:
-                            instructions.push_back(create_copy_instruction(stage_identifier, step.first));
-                            break;
+                            case step_type::copy:
+                                add_copy_instruction(stage_identifier, step);
+                                break;
 
-                        case step_type::work_dir:
-                            instructions.push_back(create_work_dir_instruction(stage_identifier, step.first));
-                            break;
-                        case step_type::run:
-                            instructions.push_back(create_run_instruction(stage_identifier, step.first));
-                            break;
-                        default:
-                            break;
-                        }
-                    });
-                resolve_stage_name(stage_identifier, parent_image_order);
-                instructions.push_back(create_unmount_instruction(stage_identifier, parent_image_order));
-                auto last_stage = order.stages[order.stages.size() - 1];
-                if (last_stage == stage)
-                {
-                    instructions.push_back(create_archive_instruction(stage_identifier));
-                    std::vector<std::string> identifiers;
-                    for (const auto &stage : stages)
-                    {
-                        identifiers.push_back(stage.first);
+                            case step_type::work_dir:
+                                add_work_dir_instruction(stage_identifier, step);
+                                break;
+                            case step_type::run:
+                                add_run_instruction(stage_identifier, step);
+                                break;
+                            default:
+                                break;
+                            }
                     }
-                    identifiers.push_back(stage_identifier);
-                    //instructions.push_back(create_registration_instruction(stage_identifier, order, parent_image_order));
-                    instructions.push_back(create_cleanup_instruction(stage_identifier, std::move(identifiers)));
-                }
-                this->stages.try_emplace(std::move(stage_identifier), std::move(instructions));
-            });
+                    if(parent_image_order.empty())
+                    {
+                        parent_image_order = fmt::format("{}", stages.size() - 1);
+                    }
+                    resolve_stage_name(stage_identifier, index, parent_image_order);
+                    add_unmount_instruction(stage_identifier, parent_image_order);
+                    auto last_stage = order.stages[order.stages.size() - 1];
+                    if (last_stage == stage)
+                    {
+                        add_archive_instruction(stage_identifier);
+                        std::vector<std::string> identifiers;
+                        for (const auto &stage : stages)
+                        {
+                            identifiers.push_back(stage.first);
+                        }
+                        identifiers.push_back(stage_identifier);
+                        //instructions.push_back(create_registration_instruction(stage_identifier, order, parent_image_order));
+                        add_cleanup_instruction(stage_identifier, std::move(identifiers));
+                    }
+                    this->stages.try_emplace(std::move(stage_identifier), std::move(instructions));
+                    index++;
+        }
     }
-    void build_handler::resolve_stage_name(const std::string &identifer, const std::string &order)
+    void build_handler::resolve_stage_name(const std::string &identifer, int index, const std::string &order)
     {
         // // check to see if there is an image alias
         if (auto position = order.find_last_of(" AS "); position != std::string::npos)
         {
-            stage_names.emplace(order.substr(position + 1), identifer);
+            stage_names.try_emplace(order.substr(position + 1), identifer);
+        } else {
+            stage_names.try_emplace(fmt::format("{}", index), identifer);
         }
-        stage_names.emplace(fmt::format("{}", stages.size() - 1), identifer);
     }
     void build_handler::run_stage(const std::string &identifier)
     {
-        if (auto position = stages.find(identifier); position != stages.end())
-        {
-            auto batch = position->second;
-            auto instruction = batch.front();
-            instruction->execute();
-        }
+        stages[identifier].front()->execute();
     }
-    task build_handler::create_download_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_download_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<download_instruction>(stage_identifier, order, provider, *repository.get(), *resolver.get(), *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<download_instruction>(stage_identifier, order, provider, *repository.get(), *resolver.get(), *this)));
     }
-    task build_handler::create_mount_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_mount_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<mount_instruction>(stage_identifier, order, *repository.get(), *resolver.get(), *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<mount_instruction>(stage_identifier, order, *repository.get(), *resolver.get(), *this)));
     }
-    task build_handler::create_copy_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_copy_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<copy_instruction>(stage_identifier, order, *resolver.get(), *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<copy_instruction>(stage_identifier, order, *resolver.get(), *this)));
     }
-    task build_handler::create_work_dir_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_work_dir_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<work_dir_instruction>(stage_identifier, order, current_stage_work_directories[stage_identifier], *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<work_dir_instruction>(stage_identifier, order, current_stage_work_directories[stage_identifier], *this)));
     }
-    task build_handler::create_run_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_run_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<run_instruction>(stage_identifier, order, context, current_stage_work_directories[stage_identifier], *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<run_instruction>(stage_identifier, order, context, current_stage_work_directories[stage_identifier], *this)));
     }
-    task build_handler::create_unmount_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_unmount_instruction(const std::string &stage_identifier, const std::string &order)
     {
-        return std::make_shared<unmount_instruction>(stage_identifier, order, *repository.get(), *resolver.get(), *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<unmount_instruction>(stage_identifier, order, *repository.get(), *resolver.get(), *this)));
     }
-    task build_handler::create_archive_instruction(const std::string &stage_identifier)
+    void build_handler::add_archive_instruction(const std::string &stage_identifier)
     {
-        return std::make_shared<compression_instruction>(stage_identifier, *resolver.get(), *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<compression_instruction>(stage_identifier, *resolver.get(), *this)));
     }
     // task build_handler::create_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order)
     // {
@@ -161,9 +163,9 @@ namespace domain::images
     //     properties.parent_image_order = parent_order;
     //     return std::make_shared<registration_instruction>(stage_identifier, std::move(properties), *repository.get(), *this);
     // }
-    task build_handler::create_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers)
+    void build_handler::add_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers)
     {
-        return std::make_shared<cleanup_instruction>(stage_identifier, stage_identifiers, *resolver.get(), *this);
+         stages[stage_identifier].push_back(std::move(std::make_unique<cleanup_instruction>(stage_identifier, stage_identifiers, *resolver.get(), *this)));
     }
     void build_handler::on_connection_closed(const std::error_code &error)
     {
@@ -182,6 +184,11 @@ namespace domain::images
                     logger->info("error initializing work dir: {}", error.message());
                 }
             }
+        } else if(current_stage_work_directories.find(id) == current_stage_work_directories.end()) {
+            if(auto path = resolver->destination_path(id, error); !error)
+            {
+                current_stage_work_directories.try_emplace(id, path);
+            }
         }
     }
     void build_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
@@ -194,17 +201,18 @@ namespace domain::images
         {
             send_error(err);
         }
-        else if (auto position = stages.find(id); position != stages.end())
+        else 
         {
-            auto batch = position->second;
-            batch.pop_front();
-            if (!batch.empty())
+            
+            stages[id].pop_front();            
+            if (!stages[id].empty())
             {
                 run_stage(id);
             }
             else
             {
-                stages.erase(position);
+                stages.erase(stages.find(id));
+                run_stages();
             }
         }
     }

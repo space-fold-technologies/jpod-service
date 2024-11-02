@@ -14,6 +14,7 @@ namespace domain::images::instructions
         const std::map<std::string, std::string> &stage_names) : local_directory(local_directory),
                                                                  stage_names(stage_names),
                                                                  extensions{{"tar", "tar archives"}, {"tar.gz", "gzip archives"}, {"tar.xz", "lzma archives"}},
+                                                                 temporary_folders{},
                                                                  logger(spdlog::get("jpod"))
     {
     }
@@ -23,34 +24,28 @@ namespace domain::images::instructions
     }
     fs::path build_system_resolver::stage_path(const std::string &label, std::error_code &error)
     {
-        if (auto position = stage_names.find(label); position != stage_names.end())
+        // need to re-work this call, it's goofy
+        std::string identifier;
+        if(auto position = stage_names.find(label); position == stage_names.end())
         {
-            fs::path output_folder = temporary_folder / fs::path(position->second);
-            if (fs::is_directory(output_folder) && fs::exists(output_folder))
-            {
-                return output_folder;
-            }
-            else if (!fs::create_directories(output_folder.parent_path(), error))
-            {
-                logger->error("FS GEN {STAGE-PATH-QUERY} ERR : {}", error.message());
-            }
-            return output_folder;
+            // fail with error
+        } else {
+            identifier = position->second;
         }
-        return fs::path("");
+
+        if(temporary_folders.find(identifier) == temporary_folders.end())
+        {
+                return create_temporary_folder(identifier, error);
+        }
+        return temporary_folders[identifier];
     }
     fs::path build_system_resolver::destination_path(const std::string &identifier, std::error_code &error)
     {
-        // this is a temporary folder you will need to create
-        fs::path output_folder = temporary_folder / fs::path(identifier);
-        if (fs::is_directory(output_folder) && fs::exists(output_folder))
+        if(temporary_folders.find(identifier) == temporary_folders.end())
         {
-            return output_folder;
+            return create_temporary_folder(identifier, error);
         }
-        else if (!fs::create_directories(output_folder.parent_path(), error))
-        {
-            logger->error("FS GEN {STAGE-PATH} ERR : {}", error.message());
-        }
-        return output_folder;
+        return temporary_folders[identifier];
     }
     fs::path build_system_resolver::image_path()
     {
@@ -70,7 +65,7 @@ namespace domain::images::instructions
     {
         // An Image is Composed of Layers, so extraction would imply opening up the layers into a target directory
 
-        fs::path output_folder = temporary_folder / fs::path(identifier);
+        fs::path output_folder = temporary_folders[identifier];
         for (const auto &entry : fs::directory_iterator(image_folder / fs::path(image_identifier)))
         {
             if (fs::is_regular_file(entry) && extensions.find(entry.path().extension()) != extensions.end())
@@ -128,6 +123,17 @@ namespace domain::images::instructions
             return make_compression_error_code(ec);
         }
         return {};
+    }
+
+    fs::path build_system_resolver::create_temporary_folder(const std::string& identifier, std::error_code& error)
+    {
+        fs::path output_folder = fs::temp_directory_path() / identifier;
+        fs::create_directories(output_folder, error);
+        if(!error)
+        {
+            temporary_folders.emplace(identifier, output_folder);
+        }
+        return output_folder;
     }
 
     archive_ptr build_system_resolver::initialize_reader(const fs::path &image_fs_archive, std::error_code &error)

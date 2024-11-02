@@ -38,13 +38,12 @@ namespace domain::images::instructions
         void execute() override;
 
     private:
-        void initialize();
+        std::error_code initialize();
         void disable_stdio_inheritance();
         bool close_on_exec(int fd);
         void clean();
         void read_from_shell();
         bool setup_pipe(int fd);
-        void process_wait();
 
     private:
         std::string identifier;
