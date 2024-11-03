@@ -11,7 +11,6 @@
 #include <domain/images/instructions/build_system_resolver.h>
 #include <domain/images/repository.h>
 #include <domain/images/payload.h>
-#include <range/v3/algorithm/for_each.hpp>
 #include <asio/io_context.hpp>
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
@@ -66,13 +65,13 @@ namespace domain::images
             std::deque<task> instructions;
             std::string parent_image_order;
             int index = 0;
+            add_mount_instruction(stage_identifier);
             for(const auto &[step, type]: stage.steps)
-                    {
+            {
                         switch (type)
                             {
                             case step_type::from:
                                 add_download_instruction(stage_identifier, step);
-                                add_mount_instruction(stage_identifier, step);
                                 parent_image_order = step;
                                 break;
 
@@ -95,7 +94,7 @@ namespace domain::images
                         parent_image_order = fmt::format("{}", stages.size() - 1);
                     }
                     resolve_stage_name(stage_identifier, index, parent_image_order);
-                    add_unmount_instruction(stage_identifier, parent_image_order);
+                    add_unmount_instruction(stage_identifier);
                     auto last_stage = order.stages[order.stages.size() - 1];
                     if (last_stage == stage)
                     {
@@ -131,9 +130,9 @@ namespace domain::images
     {
          stages[stage_identifier].push_back(std::move(std::make_unique<download_instruction>(stage_identifier, order, provider, *repository.get(), *resolver.get(), *this)));
     }
-    void build_handler::add_mount_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_mount_instruction(const std::string &stage_identifier)
     {
-         stages[stage_identifier].push_back(std::move(std::make_unique<mount_instruction>(stage_identifier, order, *repository.get(), *resolver.get(), *this)));
+         stages[stage_identifier].push_back(std::move(std::make_unique<mount_instruction>(stage_identifier, *resolver.get(), *this)));
     }
     void build_handler::add_copy_instruction(const std::string &stage_identifier, const std::string &order)
     {
@@ -147,9 +146,9 @@ namespace domain::images
     {
          stages[stage_identifier].push_back(std::move(std::make_unique<run_instruction>(stage_identifier, order, context, current_stage_work_directories[stage_identifier], *this)));
     }
-    void build_handler::add_unmount_instruction(const std::string &stage_identifier, const std::string &order)
+    void build_handler::add_unmount_instruction(const std::string &stage_identifier)
     {
-         stages[stage_identifier].push_back(std::move(std::make_unique<unmount_instruction>(stage_identifier, order, *repository.get(), *resolver.get(), *this)));
+         stages[stage_identifier].push_back(std::move(std::make_unique<unmount_instruction>(stage_identifier, *resolver.get(), *this)));
     }
     void build_handler::add_archive_instruction(const std::string &stage_identifier)
     {

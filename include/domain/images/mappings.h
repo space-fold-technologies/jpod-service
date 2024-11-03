@@ -32,11 +32,11 @@ namespace domain::images
 
     struct mount_point
     {
-        std::string filesystem;
-        std::string folder;
-        std::string options;
-        uint64_t flags;
-        MSGPACK_DEFINE(filesystem, folder, options, flags)
+        std::string type;
+        std::string source;
+        std::string destination;
+        int flags;
+        MSGPACK_DEFINE(type, source, destination, flags)
     };
 
     struct image_summary_entry

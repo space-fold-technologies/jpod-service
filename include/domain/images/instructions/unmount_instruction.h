@@ -13,10 +13,6 @@ namespace spdlog
     class logger;
 };
 
-namespace domain::images
-{
-    class image_repository;
-}
 namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
@@ -28,8 +24,6 @@ namespace domain::images::instructions
     public:
         explicit unmount_instruction(
             const std::string &identifier,
-            const std::string &order,
-            image_repository &repository,
             directory_resolver &resolver,
             instruction_listener &listener);
         virtual ~unmount_instruction();
@@ -40,8 +34,6 @@ namespace domain::images::instructions
 
     private:
         std::string identifier;
-        std::string order;
-        image_repository &repository;
         directory_resolver &resolver;
         std::shared_ptr<spdlog::logger> logger;
     };

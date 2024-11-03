@@ -1,74 +1,66 @@
 #include <domain/images/instructions/mount_instruction.h>
 #include <domain/images/instructions/instruction_listener.h>
-#include <domain/images/instructions/errors.h>
 #include <domain/images/instructions/directory_resolver.h>
-#include <domain/images/mappings.h>
-#include <domain/images/helpers.h>
-#include <domain/images/repository.h>
-#include <range/v3/algorithm/for_each.hpp>
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
-#include <sys/mount.h>
-#include <sys/uio.h>
 #include <sys/param.h>
+#include <sys/mount.h>
 #include <filesystem>
+#include <sys/uio.h>
+
+
 
 namespace fs = std::filesystem;
 namespace domain::images::instructions
 {
+
     mount_instruction::mount_instruction(
         const std::string &identifier,
-        const std::string &order,
-        image_repository &repository,
         directory_resolver &resolver,
         instruction_listener &listener) : instruction("MOUNT", listener),
                                           identifier(identifier),
-                                          order(order),
-                                          repository(repository),
                                           resolver(resolver),
                                           logger(spdlog::get("jpod"))
     {
     }
     void mount_instruction::execute()
     {
-        // std::error_code error;
-        // if (auto result = resolve_tagged_image_details(order); !result.has_value())
-        // {
-        //     listener.on_instruction_complete(identifier, make_error_code(error_code::invalid_order_issued));
-        // }
-        // else if (auto mount_points = repository.fetch_image_mount_points(result->registry, result->repository, result->tag); mount_points.empty())
-        // {
-        //     listener.on_instruction_complete(identifier, make_error_code(error_code::no_mount_points_present));
-        // }
-        // else if (auto entries = resolve_mountpoint_folders(mount_points, error); error)
-        // {
-        //     listener.on_instruction_complete(identifier, error);
-        // }
-        // else
-        // {
-        //     listener.on_instruction_initialized(identifier, name);
-        //     if (mount_filesystems(entries, error); error)
-        //     {
-        //         listener.on_instruction_complete(identifier, error);
-        //     }
-        //     else
-        //     {
-        //         listener.on_instruction_complete(identifier, {});
-        //     }
-        // }
+        std::error_code error{};
+        std::vector<mount_point> mount_points;
+        int flags = 0;
+        flags |= MNT_EMPTYDIR;
+        flags &= ~(-(-MNT_RDONLY));
+        mount_points.push_back(mount_point{"devfs", "devfs", "dev", flags});
+        if (auto entries = resolve_mountpoint_folders(mount_points, error); error)
+        {
+            listener.on_instruction_complete(identifier, error);
+        }
+        else
+        {
+            listener.on_instruction_initialized(identifier, name);
+            if (mount_filesystems(entries, error); error)
+            {
+                listener.on_instruction_complete(identifier, error);
+            }
+            else
+            {
+                logger->info("mounting complete");
+                listener.on_instruction_complete(identifier, {});
+            }
+        }
     }
-    std::vector<mount_point_entry> mount_instruction::resolve_mountpoint_folders(const std::vector<mount_point> &mount_points, std::error_code &error)
+    std::vector<mount_point_entry> mount_instruction::resolve_mountpoint_folders(const std::vector<mount_point> &entries, std::error_code &error)
     {
-        std::vector<mount_point_entry> entries;
+        std::vector<mount_point_entry> mount_points;
         if (auto parent_path = resolver.destination_path(identifier, error); error)
         {
             listener.on_instruction_complete(identifier, error);
         }
         else
         {
-            for (const auto &mount_point : mount_points)
+            for (const auto &entry : entries)
             {
-                auto folder_path = parent_path / fs::path(mount_point.folder);
+                auto folder_path = parent_path / fs::path(entry.destination);
                 if (!fs::exists(folder_path, error))
                 {
                     if (error)
@@ -83,12 +75,11 @@ namespace domain::images::instructions
                         }
                     }
                 }
-                entries.push_back(mount_point_entry{mount_point.filesystem, folder_path, mount_point.options, mount_point.flags});
+                mount_points.push_back(mount_point_entry{entry.type, entry.source, folder_path, entry.flags});
             }
-            return entries;
         }
 
-        return entries;
+        return mount_points;
     }
 #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
     bool mount_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
@@ -96,30 +87,20 @@ namespace domain::images::instructions
         for (const auto &entry : entries)
         {
             std::vector<iovec> mount_order_parts;
-            add_mount_point_entry(mount_order_parts, "fstype", entry.filesystem);
-            add_mount_point_entry(mount_order_parts, "fspath", entry.folder.generic_string());
-            add_mount_point_entry(mount_order_parts, "from", entry.filesystem);
-            if (auto position = entry.options.find("rw"); position != std::string::npos)
+            add_mount_point_entry(mount_order_parts, "fstype", entry.type);
+            add_mount_point_entry(mount_order_parts, "fspath", entry.destination.generic_string());
+            if (entry.type == "nullfs") 
             {
-                add_mount_point_entry(mount_order_parts, "rw", fmt::format("{}", 1));
-            }
-            if (auto position = entry.options.find("="); position != std::string::npos)
-            {
-                if (std::stoi(entry.options.substr(position + 1)) == 1777)
-                {
-                    auto permissions = fs::perms::all | fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all;
-                    if (fs::permissions(entry.folder, permissions, fs::perm_options::add, error); error)
-                    {
-                        continue;
-                    }
-                }
+                add_mount_point_entry(mount_order_parts, "target", entry.source);
             }
             if (!error)
             {
-                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags) == -1)
+                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags | MNT_IGNORE) == -1)
                 {
                     logger->error("mounting failed: {}", errno);
                     error = std::error_code(errno, std::system_category());
+                } else {
+                    logger->info("mounted fspath: {}", entry.destination.generic_string());
                 }
             }
             for (auto &entry : mount_order_parts)

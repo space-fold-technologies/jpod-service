@@ -46,13 +46,15 @@ namespace domain::images::instructions
             const auto options = fs::copy_options::update_existing 
                                 | fs::copy_options::copy_symlinks
                                 | fs::copy_options::recursive;
-            std::string message = fmt::format("COPY {}", order);
+            std::string message = fmt::format("COPY {}\n", order);
             listener.on_instruction_data_received(identifier, std::vector<uint8_t>(message.begin(), message.end()));                    
             fs::copy(origin, destination, options, err);
             if(err == std::errc::file_exists)
             {
                 err.clear();
             }
+            message = fmt::format("COPY {} COMPLETE\n", order);
+            listener.on_instruction_data_received(identifier, std::vector<uint8_t>(message.begin(), message.end()));  
             listener.on_instruction_complete(identifier, err);
         }
     }
@@ -118,6 +120,5 @@ namespace domain::images::instructions
     }
     copy_instruction::~copy_instruction()
     {
-        logger->error("COPY INS COOKED");
     }
 }
