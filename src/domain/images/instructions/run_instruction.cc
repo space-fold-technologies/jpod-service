@@ -9,6 +9,8 @@
 #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/param.h>
+#include <sys/mount.h>
 #include <termios.h>
 #include <libutil.h>
 #include <sys/wait.h>
@@ -46,7 +48,20 @@ namespace domain::images::instructions
     }
     void run_instruction::execute()
     {
-        if(auto error = initialize(); error)
+        std::error_code error{};
+        std::vector<mount_point> mount_points;
+        int flags = 0;
+        flags |= MNT_EMPTYDIR;
+        flags &= ~(-(-MNT_RDONLY));
+        mount_points.push_back(mount_point{"devfs", "devfs", "dev", flags});
+        if (auto entries = resolve_mountpoint_folders(mount_points, error); error)
+        {
+            listener.on_instruction_complete(identifier, error);
+        }
+        else if (mount_filesystems(entries, error); error)
+        {
+            listener.on_instruction_complete(identifier, error);
+        } else if(auto error = initialize(); error)
         {
             listener.on_instruction_complete(this->identifier, error);
         } else {
@@ -220,6 +235,117 @@ namespace domain::images::instructions
                 break;
         }
     }
+    std::vector<mount_point_entry> run_instruction::resolve_mountpoint_folders(const std::vector<mount_point> &entries, std::error_code &error)
+    {
+        std::vector<mount_point_entry> mount_points;
+        for (const auto &entry : entries)
+        {
+                auto folder_path = current_directory / fs::path(entry.destination);
+                if (!fs::exists(folder_path, error))
+                {
+                    if (error)
+                    {
+                        break;
+                    }
+                    else if (!fs::create_directories(folder_path, error))
+                    {
+                        if (error)
+                        {
+                            break;
+                        }
+                    }
+                }
+                mount_points.push_back(mount_point_entry{entry.type, entry.source, folder_path, entry.flags});
+        }
+
+        return mount_points;
+    }
+    #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
+    bool run_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
+    {
+        for (const auto &entry : entries)
+        {
+            std::vector<iovec> mount_order_parts;
+            add_mount_point_entry(mount_order_parts, "fstype", entry.type);
+            add_mount_point_entry(mount_order_parts, "fspath", entry.destination.generic_string());
+            if (entry.type == "nullfs") 
+            {
+                add_mount_point_entry(mount_order_parts, "target", entry.source);
+            }
+            if (!error)
+            {
+                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags | MNT_IGNORE) == -1)
+                {
+                    logger->error("mounting failed: {}", errno);
+                    error = std::error_code(errno, std::system_category());
+                } else {
+                    logger->info("mounted fspath: {}", entry.destination.generic_string());
+                }
+            }
+            for (auto &entry : mount_order_parts)
+            {
+                free(entry.iov_base);
+            }
+            if (error)
+            {
+                break;
+            }
+        }
+        return !error;
+    }
+
+    void run_instruction::add_mount_point_entry(std::vector<iovec> &entries, const std::string &key, const std::string &value)
+    {
+        iovec key_entry{};
+        key_entry.iov_base = strdup(key.c_str());
+        key_entry.iov_len = key.length() + 1;
+        entries.push_back(key_entry);
+        iovec value_entry{};
+        value_entry.iov_base = strdup(value.c_str());
+        value_entry.iov_len = value.length() + 1;
+        entries.push_back(value_entry);
+    }
+
+#elif defined(__sun__) && defined(__SVR4)
+    // put Solaris / illumos specific mount point operations here
+    bool run_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
+    {
+        std::error_code error;
+        return !error;
+    }
+#else
+    bool run_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
+    {
+        logger->info("this is a dummy method <this is not the target operating system>");
+        for (const auto &entry : entries)
+        {
+            logger->info("unsupported os mount attempt: {}", entry.folder.generic_string());
+        }
+        return true;
+    }
+#endif
+std::error_code run_instruction::unmount_filesystems(const std::vector<mount_point> &mount_points, fs::path &directory)
+    {
+        for (const auto &mount_point : mount_points)
+        {
+            fs::path folder_path = directory / fs::path(mount_point.destination);
+
+#if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
+            if (auto err = unmount(folder_path.generic_string().c_str(), mount_point.flags); err != 0)
+            {
+                return std::error_code(err, std::system_category());
+            }
+#elif defined(__sun__) && defined(__SVR4)
+            if (auto err = umount2(folder_path.generic_string().c_str(), mount_point.flags); err != 0)
+            {
+                return std::error_code(err, std::system_category());
+            }
+#else
+            logger->info("not the target operating system");
+#endif
+        }
+        return {};
+    }
     void run_instruction::clean()
     {
         if (file_descriptor > 0 && process_identifier > 0)
@@ -227,9 +353,22 @@ namespace domain::images::instructions
             close(file_descriptor);
             waitpid(process_identifier, nullptr, 0);
         }
+
+        std::vector<mount_point> mount_points;
+        int flags = 0;
+        flags |= MNT_EMPTYDIR;
+        flags &= ~(-(-MNT_RDONLY));
+        mount_points.push_back(mount_point{"devfs", "devfs", "dev", flags});
+        if (auto error = unmount_filesystems(mount_points, current_directory); error)
+        {
+                logger->error("failed to unmount file system :{}", error.message());
+        }
+        else
+        {
+                logger->info("finished unmount ops");
+        }
     }
     run_instruction::~run_instruction()
     {
-        logger->info("COP RUN COOKED");
     }
 }

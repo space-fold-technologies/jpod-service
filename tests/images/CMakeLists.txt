@@ -96,48 +96,6 @@ OUTPUT_PREFIX
 OUTPUT_SUFFIX
 .xml)
 
-
-add_executable(mount-instruction-tests 
-  test_mount_instruction.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/instructions/mount_instruction.cc)
-target_link_libraries(mount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp tl::expected)
-
-# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
-# to whatever you want, or use different for different binaries
-catch_discover_tests(
-  mount-instruction-tests
-TEST_PREFIX
-"unittests."
-REPORTER
-xml
-OUTPUT_DIR
-.
-OUTPUT_PREFIX
-"unittests."
-OUTPUT_SUFFIX
-.xml)
-
-
-add_executable(unmount-instruction-tests 
-  test_unmount_instruction.cc
-  ${PROJECT_SRC_FOLDER}/domain/images/instructions/unmount_instruction.cc)
-target_link_libraries(unmount-instruction-tests PRIVATE catch_main fakeit::fakeit range-v3::range-v3 sole::sole asio::asio msgpack-cxx yaml-cpp::yaml-cpp)
-
-# automatically discover tests that are defined in catch based test files you can modify the unittests. Set TEST_PREFIX
-# to whatever you want, or use different for different binaries
-catch_discover_tests(
-  unmount-instruction-tests
-TEST_PREFIX
-"unittests."
-REPORTER
-xml
-OUTPUT_DIR
-.
-OUTPUT_PREFIX
-"unittests."
-OUTPUT_SUFFIX
-.xml)
-
 add_executable(registration-instruction-tests 
   test_registration_instruction.cc
   ${PROJECT_SRC_FOLDER}/domain/images/instructions/registration_instruction.cc)

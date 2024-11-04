@@ -57,8 +57,6 @@ add_executable(jcd
                 domain/images/instructions/work_dir_instruction.cc
                 domain/images/instructions/run_instruction.cc
                 domain/images/instructions/compression_instruction.cc
-                domain/images/instructions/mount_instruction.cc
-                domain/images/instructions/unmount_instruction.cc
                 domain/images/instructions/registration_instruction.cc
                 domain/images/instructions/cleanup_instruction.cc
                 domain/images/instructions/build_system_resolver.cc
