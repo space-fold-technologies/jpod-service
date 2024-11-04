@@ -23,6 +23,7 @@ namespace domain::images::instructions
         copy_instruction(
             const std::string &identifier,
             const std::string &order,
+            fs::path local_folder,
             directory_resolver &resolver,
             instruction_listener &listener);
         virtual ~copy_instruction();
@@ -36,6 +37,7 @@ namespace domain::images::instructions
     private:
         std::string identifier;
         std::string order;
+        fs::path local_folder;
         directory_resolver &resolver;
         fs::path origin;
         fs::path destination;

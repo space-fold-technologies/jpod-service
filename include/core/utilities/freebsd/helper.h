@@ -1,28 +1,27 @@
-#ifndef __DAEMON_DOMAIN_CONTAINERS_FREEBSD_INTERNAL_UTILS__
-#define __DAEMON_DOMAIN_CONTAINERS_FREEBSD_INTERNAL_UTILS__
+#ifndef __DAEMON_CORE_UTILITIES_FREEBSD__
+#define __DAEMON_CORE_UTILITIES_FREEBSD__
 
-#include <domain/containers/freebsd/freebsd_errors.h>
-#include <range/v3/view/split.hpp>
+#include <core/utilities/freebsd/errors.h>
 #include <range/v3/to_container.hpp>
+#include <range/v3/view/split.hpp>
 #include <tl/expected.hpp>
 #include <spdlog/spdlog.h>
-#include <sys/mount.h>
 #include <login_cap.h>
+#include <sys/mount.h>
+#include <sys/wait.h>
 #include <filesystem>
-#include <grp.h>
-#include <pwd.h>
-#include <paths.h>
-#include <jail.h>
+#include <algorithm>
 #include <sys/uio.h>
 #include <fcntl.h>
-#include <sys/wait.h>
+#include <paths.h>
 #include <vector>
-#include <algorithm>
 #include <cctype>
+#include <jail.h>
+#include <grp.h>
+#include <pwd.h>
 
 namespace fs = std::filesystem;
-
-namespace domain::containers::freebsd
+namespace core::utilities::freebsd
 {
     struct user_details
     {
@@ -326,7 +325,5 @@ namespace domain::containers::freebsd
             pid = waitpid(process_identifier, &stat, 0);
         } while (pid != process_identifier && errno == EINTR);
     }
-
 }
-
-#endif // __DAEMON_DOMAIN_CONTAINERS_FREEBSD_INTERNAL_UTILS__
+#endif // __DAEMON_CORE_UTILITIES_FREEBSD__

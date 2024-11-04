@@ -13,10 +13,12 @@ namespace domain::images::instructions
     copy_instruction::copy_instruction(
         const std::string &identifier,
         const std::string &order,
+        fs::path local_folder,
         directory_resolver &resolver,
         instruction_listener &listener) : instruction("COPY", listener),
                                           identifier(identifier),
                                           order(order),
+                                          local_folder(std::move(local_folder)),
                                           resolver(resolver),
                                           logger(spdlog::get("jpod"))
     {
@@ -79,7 +81,6 @@ namespace domain::images::instructions
     std::error_code copy_instruction::setup_local_copy_origin(const std::string &order)
     {
         std::error_code err;
-        auto local_folder = resolver.local_folder();
         if (origin = sanitize_route(local_folder, order, err); err || !fs::exists(origin))
         {
             return err ? err : make_error_code(error_code::invalid_origin);

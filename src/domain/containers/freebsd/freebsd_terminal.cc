@@ -1,6 +1,6 @@
 #include <domain/containers/freebsd/freebsd_terminal.h>
-#include <domain/containers/freebsd/freebsd_utils.h>
 #include <domain/containers/terminal_listener.h>
+#include <core/utilities/freebsd/helper.h>
 #include <asio/io_context.hpp>
 #include <spdlog/spdlog.h>
 #include <asio/write.hpp>
@@ -11,6 +11,7 @@
 #include <sys/jail.h>
 #include <libutil.h>
 
+using namespace core::utilities::freebsd;
 
 namespace domain::containers::freebsd
 {

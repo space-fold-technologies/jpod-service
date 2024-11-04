@@ -135,7 +135,7 @@ void bootstrap::setup_handlers()
       request_operation::build,
       [this](connection &conn) -> std::shared_ptr<command_handler>
       {
-        return std::make_shared<build_handler>(conn, image_repository, std::bind(&bootstrap::oci_client_provider, this), context);
+        return std::make_shared<build_handler>(conn, image_repository, std::bind(&bootstrap::oci_client_provider, this), images_folder, context);
       });
   registry->add_handler(
       operation_target::image,

@@ -1,6 +1,6 @@
-#include <domain/images/instructions/run_instruction.h>
-#include <domain/containers/freebsd/freebsd_utils.h>
 #include <domain/images/instructions/instruction_listener.h>
+#include <domain/images/instructions/run_instruction.h>
+#include <core/utilities/freebsd/helper.h>
 #include <asio/io_context.hpp>
 #include <asio/read.hpp>
 #include <asio/post.hpp>
@@ -91,12 +91,12 @@ namespace domain::images::instructions
         {
             //setsid();
             context.notify_fork(asio::io_context::fork_child);
-            if (auto result = containers::freebsd::fetch_user_details("root"); !result)
+            if (auto result = core::utilities::freebsd::fetch_user_details("root"); !result)
             {
                 logger->error("insecure mode in effect error: {}", result.error().message());
                 _exit(errno);
             } 
-            else if (!containers::freebsd::setup_environment(result.value()))
+            else if (!core::utilities::freebsd::setup_environment(result.value()))
             {
                         logger->error("was not able to set up secure mode");
                         _exit(errno);

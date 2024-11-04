@@ -1,5 +1,5 @@
 #include <domain/containers/freebsd/freebsd_container.h>
-#include <domain/containers/freebsd/freebsd_utils.h>
+#include <core/utilities/freebsd/helper.h>
 #include <core/utilities/defer.h>
 #include <asio/io_context.hpp>
 #include <asio/post.hpp>
@@ -9,8 +9,6 @@
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <sys/jail.h>
-#include <sys/mount.h>
-#include <jail.h>
 #include <termios.h>
 #include <spdlog/spdlog.h>
 #include <range/v3/view/split.hpp>
@@ -19,6 +17,8 @@
 
 using namespace ranges;
 using namespace core::utilities;
+using namespace core::utilities::freebsd;
+
 namespace domain::containers::freebsd
 {
     freebsd_container::freebsd_container(

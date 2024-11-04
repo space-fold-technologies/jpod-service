@@ -25,6 +25,7 @@ namespace domain::images::instructions
         oci_client_provider provider,
         image_repository &repository,
         directory_resolver &resolver,
+        const fs::path& image_folder,
         instruction_listener &listener) : instruction("FROM", listener),
                                           identifier(identifier),
                                           order(order),
@@ -32,6 +33,7 @@ namespace domain::images::instructions
                                           client(nullptr),
                                           repository(repository),
                                           resolver(resolver),
+                                          image_folder(image_folder),
                                           layer_progress{},
                                           logger(spdlog::get("jpod"))
     {
@@ -52,24 +54,8 @@ namespace domain::images::instructions
             else if (auto image_identifier = repository.fetch_image_identifier(result->registry, result->repository, result->tag); image_identifier.has_value())
             {
                 listener.on_instruction_initialized(identifier, name);
-                resolver.extract_image(
-                    identifier,
-                    *image_identifier,
-                    [this](std::error_code error, progress_frame &progress)
-                    {
-                        if (!error)
-                        {
-                            listener.on_instruction_data_received(identifier, pack_progress_frame(progress));
-                            if (static_cast<int>(progress.percentage) == 100)
-                            {
-                                listener.on_instruction_complete(identifier, {});
-                            }
-                        }
-                        else
-                        {
-                            listener.on_instruction_complete(identifier, error);
-                        }
-                    });
+                auto error = resolver.extract_image(identifier, *image_identifier);
+                listener.on_instruction_complete(identifier, error);
             }
         }
         else if (auto registry = result->registry == "local" ? repository.fetch_registry_by_name("local") : repository.fetch_registry_by_path(result->registry); registry.has_value())
@@ -98,7 +84,7 @@ namespace domain::images::instructions
             order.repository = repository;
             order.tag = tag;
             order.operating_system = tag.find("freebsd") != std::string::npos ? "freebsd" : "linux";
-            order.destination = resolver.image_path();
+            order.destination = image_folder;
             client = provider();
             client->fetch_image(order, std::bind(&download_instruction::on_image_download, this, _1, _2, _3));
         }
@@ -142,24 +128,8 @@ namespace domain::images::instructions
                     }
                     else
                     {
-                        resolver.extract_image(
-                            identifier,
-                            image_identifier,
-                            [this](std::error_code error, progress_frame &progress)
-                            {
-                                if (!error)
-                                {
-                                    listener.on_instruction_data_received(identifier, pack_progress_frame(progress));
-                                    if (static_cast<int>(progress.percentage) == 100)
-                                    {
-                                        listener.on_instruction_complete(identifier, {});
-                                    }
-                                }
-                                else
-                                {
-                                    listener.on_instruction_complete(identifier, error);
-                                }
-                            });
+                        error = resolver.extract_image(identifier,image_identifier);
+                        listener.on_instruction_complete(identifier, error);    
                     }
                 }
             }

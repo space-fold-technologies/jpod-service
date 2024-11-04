@@ -59,7 +59,6 @@ add_executable(jcd
                 domain/images/instructions/compression_instruction.cc
                 domain/images/instructions/registration_instruction.cc
                 domain/images/instructions/cleanup_instruction.cc
-                domain/images/instructions/build_system_resolver.cc
                 domain/images/sql_repository.cc
                 #domain::containers
                 domain/containers/runtime.cc 
