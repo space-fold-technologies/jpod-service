@@ -5,7 +5,9 @@
 #include <unordered_map>
 #include <system_error>
 #include <filesystem>
+#include <optional>
 #include <cstdint>
+#include <memory>
 #include <vector>
 #include <string>
 #include <map>
@@ -38,7 +40,7 @@ namespace core::oci
 
     struct layer_state
     {
-        fs::path root_path;
+        std::optional<fs::path> root_path;
         fs::path target_path;
         fs::path layer_archive;
         std::unordered_map<std::string, entry> changes;
@@ -83,11 +85,13 @@ namespace core::oci
     };
 
     using layer_result = tl::expected<layer_state, std::error_code>;
+    using layer_result_ptr = tl::expected<std::unique_ptr<layer_state>, std::error_code>;
     using layer_report = tl::expected<layer_details, std::error_code>;
     using configuration_report = tl::expected<fs::path, std::error_code>;
     using manifest_report = tl::expected<fs::path, std::error_code>;
     using hash_report = tl::expected<std::string, std::error_code>;
     [[nodiscard]] layer_result initialize(const fs::path &root_path, const fs::path &target_folder, const fs::path &layer_archive);
+    [[nodiscard]] layer_result initialize(const fs::path &target_folder, fs::path layer_archive);
     [[nodiscard]] layer_result copy_root(layer_state state);
     [[nodiscard]] layer_result snapshot_target(layer_state state);
     [[nodiscard]] layer_result diff_to_target(layer_state state);

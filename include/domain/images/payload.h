@@ -35,7 +35,7 @@ namespace domain::images
         std::vector<std::pair<std::string, step_type>> steps;
         MSGPACK_DEFINE(name, steps)
 
-        bool operator==(const stage rhs)
+        bool operator==(const stage& rhs)
         {
             return (this->name == rhs.name && this->steps == rhs.steps);
         }

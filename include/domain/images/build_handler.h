@@ -5,6 +5,7 @@
 #include <domain/images/instructions/directory_resolver.h>
 #include <domain/images/instructions/instruction.h>
 #include <core/commands/command_handler.h>
+#include <core/oci/layer_composer.h>
 #include <functional>
 #include <filesystem>
 #include <memory>
@@ -72,9 +73,7 @@ namespace domain::images
         void add_copy_instruction(const std::string &stage_identifier, const std::string &order, const std::string & local_folder);
         void add_work_dir_instruction(const std::string &stage_identifier, const std::string &order);
         void add_run_instruction(const std::string &stage_identifier, const std::string &order);
-        void add_archive_instruction(const std::string &stage_identifier);
         void add_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order);
-        void add_cleanup_instruction(const std::string &stage_identifier, std::vector<std::string> stage_identifiers);
         fs::path create_temporary_folder(const std::string& identifier, std::error_code &error);
 
     private:
@@ -87,7 +86,9 @@ namespace domain::images
         std::map<std::string, std::string> stage_names;
         std::map<std::string, std::string> extensions;
         std::map<std::string, fs::path> temporary_folders;
+        std::deque<core::oci::layer_result> layer_states;
         std::shared_ptr<image_repository> repository;
+        std::string last_stage_identifier;
         std::shared_ptr<spdlog::logger> logger;
     };
 }

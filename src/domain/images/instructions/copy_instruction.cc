@@ -48,7 +48,13 @@ namespace domain::images::instructions
             const auto options = fs::copy_options::update_existing 
                                 | fs::copy_options::copy_symlinks
                                 | fs::copy_options::recursive;
+            // const auto options = fs::copy_options::recursive 
+            //                | fs::copy_options::copy_symlinks
+            //                | fs::copy_options::create_hard_links
+            //                | fs::copy_options::update_existing;
+
             std::string message = fmt::format("COPY {}\n", order);
+
             listener.on_instruction_data_received(identifier, std::vector<uint8_t>(message.begin(), message.end()));                    
             fs::copy(origin, destination, options, err);
             if(err == std::errc::file_exists)

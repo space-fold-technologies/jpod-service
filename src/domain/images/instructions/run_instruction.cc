@@ -353,7 +353,9 @@ std::error_code run_instruction::unmount_filesystems(const std::vector<mount_poi
             close(file_descriptor);
             waitpid(process_identifier, nullptr, 0);
         }
-
+    }
+    run_instruction::~run_instruction()
+    {
         std::vector<mount_point> mount_points;
         int flags = 0;
         flags |= MNT_EMPTYDIR;
@@ -367,8 +369,5 @@ std::error_code run_instruction::unmount_filesystems(const std::vector<mount_poi
         {
                 logger->info("finished unmount ops");
         }
-    }
-    run_instruction::~run_instruction()
-    {
     }
 }

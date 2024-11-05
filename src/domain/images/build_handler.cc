@@ -2,15 +2,13 @@
 #include <core/archives/errors.h>
 #include <core/archives/helper.h>
 #include <domain/images/build_handler.h>
-#include <domain/images/instructions/cleanup_instruction.h>
-#include <domain/images/instructions/compression_instruction.h>
 #include <domain/images/instructions/copy_instruction.h>
 #include <domain/images/instructions/download_instruction.h>
 #include <domain/images/instructions/registration_instruction.h>
 #include <domain/images/instructions/run_instruction.h>
 #include <domain/images/instructions/work_dir_instruction.h>
-#include <domain/images/payload.h>
 #include <domain/images/repository.h>
+#include <domain/images/payload.h>
 #include <fmt/format.h>
 #include <sole.hpp>
 #include <spdlog/spdlog.h>
@@ -39,7 +37,8 @@ void build_handler::run_stages()
     run_stage(stage_identifier);
   } else {
     logger->info("finished building image");
-    send_success("image build complete");
+    std::string message("image built");
+    send_close(std::vector<uint8_t>(message.begin(), message.end()));
   }
 }
 void build_handler::setup_stages(const build_order &order)
@@ -47,10 +46,11 @@ void build_handler::setup_stages(const build_order &order)
   for (const auto &stage : order.stages) {
     auto stage_identifier = sole::uuid4().str();
     std::error_code error{};
-    if (auto path = destination_path(stage_identifier, error); !error) {
-      current_stage_work_directories.emplace(stage_identifier, path);
+    fs::path stage_folder;
+    if (stage_folder = destination_path(stage_identifier, error); !error) {
+      current_stage_work_directories.emplace(stage_identifier, stage_folder);
     }
-
+    
     std::deque<task> instructions;
     std::string parent_image_order;
     int index = 0;
@@ -74,19 +74,29 @@ void build_handler::setup_stages(const build_order &order)
       default:
         break;
       }
+      auto last_stage = order.stages[order.stages.size() - 1];
+      if(last_stage == stage)
+      {
+        auto layer_result = core::oci::initialize(
+          stage_folder, 
+          image_folder / fs::path(stage_identifier) / fs::path(fmt::format("layer-{}.tar.gz", index))
+        );
+        if(layer_result)
+        {
+         layer_states.push_back(layer_result);
+        }
+      }
     }
     if (parent_image_order.empty()) { parent_image_order = fmt::format("{}", stages.size() - 1); }
     resolve_stage_name(stage_identifier, index, parent_image_order);
     auto last_stage = order.stages[order.stages.size() - 1];
-    if (last_stage == stage) {
-      add_archive_instruction(stage_identifier);
-      std::vector<std::string> identifiers;
-      for (const auto &stage : stages) { identifiers.push_back(stage.first); }
-      identifiers.push_back(stage_identifier);
+    if (last_stage == stage) 
+    {
       // instructions.push_back(create_registration_instruction(stage_identifier, order, parent_image_order));
-      add_cleanup_instruction(stage_identifier, std::move(identifiers));
+      last_stage_identifier = stage_identifier;
     }
     this->stages.try_emplace(std::move(stage_identifier), std::move(instructions));
+    
     index++;
   }
 }
@@ -122,11 +132,6 @@ void build_handler::add_run_instruction(const std::string &stage_identifier, con
   stages[stage_identifier].push_back(std::move(std::make_unique<run_instruction>(
     stage_identifier, order, context, current_stage_work_directories[stage_identifier], *this)));
 }
-void build_handler::add_archive_instruction(const std::string &stage_identifier)
-{
-  stages[stage_identifier].push_back(
-    std::move(std::make_unique<compression_instruction>(stage_identifier, *this, *this)));
-}
 // task build_handler::create_registration_instruction(const std::string &stage_identifier, const build_order &order,
 // const std::string &parent_order)
 // {
@@ -137,13 +142,9 @@ void build_handler::add_archive_instruction(const std::string &stage_identifier)
 //     return std::make_shared<registration_instruction>(stage_identifier, std::move(properties), *repository.get(),
 //     *this);
 // }
-void build_handler::add_cleanup_instruction(const std::string &stage_identifier,
-  std::vector<std::string> stage_identifiers)
+void build_handler::on_connection_closed(const std::error_code &error) 
 {
-  stages[stage_identifier].push_back(
-    std::move(std::make_unique<cleanup_instruction>(stage_identifier, stage_identifiers, *this, *this)));
 }
-void build_handler::on_connection_closed(const std::error_code &error) {}
 void build_handler::on_instruction_initialized(std::string id, std::string name)
 {
   std::error_code error;
@@ -156,6 +157,12 @@ void build_handler::on_instruction_initialized(std::string id, std::string name)
   } else if (current_stage_work_directories.find(id) == current_stage_work_directories.end()) {
     if (auto path = destination_path(id, error); !error) { current_stage_work_directories.try_emplace(id, path); }
   }
+  if(last_stage_identifier == id)
+  {
+    layer_states
+    .front()
+    .and_then(core::oci::snapshot_target);
+  }
 }
 void build_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
 {
@@ -166,7 +173,17 @@ void build_handler::on_instruction_complete(std::string id, std::error_code err)
   if (err) {
     send_error(err);
   } else {
+    if(last_stage_identifier == id)
+    {
+      layer_states
+      .front()
+      .and_then(core::oci::diff_to_target)
+      .and_then(core::oci::package_layer);
 
+      layer_states
+      .pop_front();
+    }
+    
     stages[id].pop_front();
     if (!stages[id].empty()) {
       run_stage(id);
@@ -247,6 +264,22 @@ std::error_code build_handler::extract_image(const std::string &identifier, cons
 build_handler::~build_handler()
 {
   current_stage_work_directories.clear();
+  std::error_code error{};
+  for(const auto&[_, identifier]:stage_names)
+  {
+   if (auto directory = destination_path(identifier, error); error)
+   {
+      logger->error("clean out error: {}", error.message());
+   } 
+   else if (auto removed_total = fs::remove_all(directory, error); error)
+   {
+      logger->error("clean out error: {}", error.message());
+   } 
+   else 
+   {
+      logger->info("clean out: {}", removed_total);
+   }
+  }
   stage_names.clear();
 }
 }// namespace domain::images

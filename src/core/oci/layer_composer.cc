@@ -1,63 +1,61 @@
-#include <core/oci/layer_composer.h>
-#include <core/archives/helper.h>
-#include <core/archives/errors.h>
-#include <core/utilities/defer.h>
-#include <core/sha/utilities.h>
-#include <core/oci/errors.h>
-#include <nlohmann/json.hpp>
-#include <fmt/format.h>
-#include <fmt/chrono.h>
-#include <fstream>
 #include <chrono>
+#include <core/archives/errors.h>
+#include <core/archives/helper.h>
+#include <core/oci/errors.h>
+#include <core/oci/layer_composer.h>
+#include <core/sha/utilities.h>
+#include <core/utilities/defer.h>
+#include <fmt/chrono.h>
+#include <fmt/format.h>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-namespace core::oci
+namespace core::oci {
+layer_result initialize(const fs::path &root_path, const fs::path &target_folder, const fs::path &layer_archive)
 {
-    layer_result initialize(const fs::path &root_path, const fs::path &target_folder, const fs::path &layer_archive)
-    {
-        std::error_code error{};
-        if (!fs::exists(root_path, error))
-        {
-            return !error ? tl::make_unexpected(error) : tl::make_unexpected(make_layer_error_code(layer_error_codes::no_file_or_directory_found));
-        }
-        // create the directories if not present
-        if (!fs::exists(target_folder))
-        {
-            fs::create_directories(target_folder, error);
-        }
-        if (!fs::exists(layer_archive.parent_path()))
-        {
-            fs::create_directories(layer_archive.parent_path(), error);
-        }
-        if(error)
-        {
-            return tl::make_unexpected(error);
-        }
-        layer_state state{root_path, target_folder, layer_archive, {}};
-        return state;
+  std::error_code error{};
+  if (!fs::exists(root_path, error)) {
+    return !error ? tl::make_unexpected(error)
+                  : tl::make_unexpected(make_layer_error_code(layer_error_codes::no_file_or_directory_found));
+  }
+  // create the directories if not present
+  if (!fs::exists(target_folder)) { fs::create_directories(target_folder, error); }
+  if (!fs::exists(layer_archive.parent_path())) { fs::create_directories(layer_archive.parent_path(), error); }
+  if (error) { return tl::make_unexpected(error); }
+  layer_state state{ root_path, target_folder, layer_archive, {} };
+  return state;
+}
+layer_result initialize(const fs::path &target_folder, fs::path layer_archive)
+{
+  // create the directories if not present
+  std::error_code error{};
+  if (!fs::exists(target_folder)) { fs::create_directories(target_folder, error); }
+  if (!fs::exists(layer_archive.parent_path())) { fs::create_directories(layer_archive.parent_path(), error); }
+  if (error) { return tl::make_unexpected(error); }
+  layer_state state{std::nullopt, target_folder, std::move(layer_archive), {} };
+  return state;
+}
+layer_result copy_root(layer_state state)
+{
+  std::error_code error{};
+  if(!state.root_path)
+  {
+    return tl::make_unexpected(make_layer_error_code(layer_error_codes::no_file_or_directory_found));
+  }
+  if (fs::is_regular_file(state.root_path.value())) {
+    // assuming this is [tar, tar.gz, tar.xz]
+    if (auto reader = core::archives::initialize_reader(state.root_path.value()); !reader) {
+      return tl::make_unexpected(reader.error());
+    } else if (auto writer = core::archives::initialize_writer(); !writer) {
+      return tl::make_unexpected(writer.error());
+    } else if (error = core::archives::copy_to_destination(reader.value(), writer.value(), state.target_path); error) {
+      return tl::make_unexpected(error);
     }
-    layer_result copy_root(layer_state state)
-    {
-        std::error_code error{};
-        if (fs::is_regular_file(state.root_path))
-        {
-            // assuming this is [tar, tar.gz, tar.xz]
-            if (auto reader = core::archives::initialize_reader(state.root_path); !reader)
-            {
-                return tl::make_unexpected(reader.error());
-            }
-            else if (auto writer = core::archives::initialize_writer(); !writer)
-            {
-                return tl::make_unexpected(writer.error());
-            }
-            else if (error = core::archives::copy_to_destination(reader.value(), writer.value(), state.target_path); error)
-            {
-                return tl::make_unexpected(error);
-            }
-            return state;
-        }
-        // clang-format off
+    return state;
+  }
+  // clang-format off
         // copy over the content of the folder
         const auto options = fs::copy_options::recursive 
                            | fs::copy_options::copy_symlinks
@@ -65,7 +63,7 @@ namespace core::oci
                            | fs::copy_options::update_existing;
             // clang-format on                               
         
-        if(fs::copy(state.root_path, state.target_path, options, error); error)
+        if(fs::copy(state.root_path.value(), state.target_path, options, error); error)
         {
             return tl::make_unexpected(error);
         }
@@ -112,7 +110,11 @@ namespace core::oci
             {
                 entry e{};
                     e.path = file.path();
-                    e.stamp = fs::last_write_time(file);
+                    std::error_code error;
+                    if(e.stamp = fs::last_write_time(file, error); error)
+                    {
+                        fmt::println("crash of layer diff ::{}", error.message());
+                    }
                     e.type = change_type::added;
                     state.changes.try_emplace(file.path().string(), e);
             }
