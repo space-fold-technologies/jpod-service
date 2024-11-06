@@ -6,6 +6,7 @@
 #include <domain/images/instructions/download_instruction.h>
 #include <domain/images/instructions/registration_instruction.h>
 #include <domain/images/instructions/run_instruction.h>
+#include <domain/images/instructions/extraction_instruction.h>
 #include <domain/images/instructions/work_dir_instruction.h>
 #include <domain/images/repository.h>
 #include <domain/images/payload.h>
@@ -64,7 +65,9 @@ void build_handler::setup_stages(const build_order &order)
       case step_type::copy:
         add_copy_instruction(stage_identifier, step, order.current_directory);
         break;
-
+      case step_type::extract:
+        add_extraction_instruction(stage_identifier, step, order.current_directory);
+        break;
       case step_type::work_dir:
         add_work_dir_instruction(stage_identifier, step);
         break;
@@ -121,6 +124,11 @@ void build_handler::add_copy_instruction(const std::string &stage_identifier,
 {
   stages[stage_identifier].push_back(std::move(
     std::make_unique<copy_instruction>(stage_identifier, order, std::move(fs::path(local_folder)), *this, *this)));
+}
+void  build_handler::add_extraction_instruction(const std::string &stage_identifier, const std::string &order, const std::string & local_folder)
+{
+  stages[stage_identifier].push_back(std::move(
+    std::make_unique<extraction_instruction>(stage_identifier, order, std::move(fs::path(local_folder)), *this, *this)));
 }
 void build_handler::add_work_dir_instruction(const std::string &stage_identifier, const std::string &order)
 {

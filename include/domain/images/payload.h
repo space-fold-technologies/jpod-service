@@ -26,7 +26,9 @@ namespace domain::images
         from = 0,
         run = 1,
         work_dir = 2,
-        copy = 3
+        copy = 3,
+        extract = 4,
+        expose = 5
     };
 
     struct stage

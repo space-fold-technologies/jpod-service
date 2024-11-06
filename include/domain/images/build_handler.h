@@ -71,6 +71,7 @@ namespace domain::images
         void run_stage(const std::string &identifier);
         void add_download_instruction(const std::string &stage_identifier, const std::string &order);
         void add_copy_instruction(const std::string &stage_identifier, const std::string &order, const std::string & local_folder);
+        void add_extraction_instruction(const std::string &stage_identifier, const std::string &order, const std::string & local_folder);
         void add_work_dir_instruction(const std::string &stage_identifier, const std::string &order);
         void add_run_instruction(const std::string &stage_identifier, const std::string &order);
         void add_registration_instruction(const std::string &stage_identifier, const build_order &order, const std::string &parent_order);

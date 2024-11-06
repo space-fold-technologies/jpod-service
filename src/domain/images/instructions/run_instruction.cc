@@ -329,7 +329,7 @@ std::error_code run_instruction::unmount_filesystems(const std::vector<mount_poi
         for (const auto &mount_point : mount_points)
         {
             fs::path folder_path = directory / fs::path(mount_point.destination);
-
+            logger->warn("unmounting: {}", folder_path.generic_string());
 #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
             if (auto err = unmount(folder_path.generic_string().c_str(), mount_point.flags); err != 0)
             {
