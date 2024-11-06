@@ -51,6 +51,7 @@ namespace domain::images
         std::string current_directory;
         std::vector<stage> stages;
         std::string entry_point;
+        std::vector<std::string> ports;
 
         MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point)
     };

@@ -74,21 +74,10 @@ namespace core::oci
         std::string stop_signal;
     };
 
-    struct manifest_order
-    {
-        std::string os;
-        std::string version;
-        std::string arch;
-        std::string variant;
-        std::map<std::string, fs::path> layers;
-        fs::path destination;
-    };
-
     using layer_result = tl::expected<layer_state, std::error_code>;
     using layer_result_ptr = tl::expected<std::unique_ptr<layer_state>, std::error_code>;
     using layer_report = tl::expected<layer_details, std::error_code>;
     using configuration_report = tl::expected<fs::path, std::error_code>;
-    using manifest_report = tl::expected<fs::path, std::error_code>;
     using hash_report = tl::expected<std::string, std::error_code>;
     [[nodiscard]] layer_result initialize(const fs::path &root_path, const fs::path &target_folder, const fs::path &layer_archive);
     [[nodiscard]] layer_result initialize(const fs::path &target_folder, fs::path layer_archive);

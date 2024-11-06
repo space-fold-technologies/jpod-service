@@ -4,12 +4,12 @@
 #include <domain/images/build_handler.h>
 #include <domain/images/instructions/copy_instruction.h>
 #include <domain/images/instructions/download_instruction.h>
+#include <domain/images/instructions/extraction_instruction.h>
 #include <domain/images/instructions/registration_instruction.h>
 #include <domain/images/instructions/run_instruction.h>
-#include <domain/images/instructions/extraction_instruction.h>
 #include <domain/images/instructions/work_dir_instruction.h>
-#include <domain/images/repository.h>
 #include <domain/images/payload.h>
+#include <domain/images/repository.h>
 #include <fmt/format.h>
 #include <sole.hpp>
 #include <spdlog/spdlog.h>
@@ -51,7 +51,7 @@ void build_handler::setup_stages(const build_order &order)
     if (stage_folder = destination_path(stage_identifier, error); !error) {
       current_stage_work_directories.emplace(stage_identifier, stage_folder);
     }
-    
+
     std::deque<task> instructions;
     std::string parent_image_order;
     int index = 0;
@@ -78,28 +78,21 @@ void build_handler::setup_stages(const build_order &order)
         break;
       }
       auto last_stage = order.stages[order.stages.size() - 1];
-      if(last_stage == stage)
-      {
+      if (last_stage == stage) {
         auto layer_result = core::oci::initialize(
-          stage_folder, 
-          image_folder / fs::path(stage_identifier) / fs::path(fmt::format("layer-{}.tar.gz", index))
-        );
-        if(layer_result)
-        {
-         layer_states.push_back(layer_result);
-        }
+          stage_folder, image_folder / fs::path(stage_identifier) / fs::path(fmt::format("layer-{}.tar.gz", index)));
+        if (layer_result) { layer_states.push_back(layer_result); }
       }
     }
     if (parent_image_order.empty()) { parent_image_order = fmt::format("{}", stages.size() - 1); }
     resolve_stage_name(stage_identifier, index, parent_image_order);
     auto last_stage = order.stages[order.stages.size() - 1];
-    if (last_stage == stage) 
-    {
-      // instructions.push_back(create_registration_instruction(stage_identifier, order, parent_image_order));
+    if (last_stage == stage) {
+      add_registration_instruction(stage_identifier, order);
       last_stage_identifier = stage_identifier;
     }
-    this->stages.try_emplace(std::move(stage_identifier), std::move(instructions));
-    
+    stages.try_emplace(std::move(stage_identifier), std::move(instructions));
+
     index++;
   }
 }
@@ -125,10 +118,12 @@ void build_handler::add_copy_instruction(const std::string &stage_identifier,
   stages[stage_identifier].push_back(std::move(
     std::make_unique<copy_instruction>(stage_identifier, order, std::move(fs::path(local_folder)), *this, *this)));
 }
-void  build_handler::add_extraction_instruction(const std::string &stage_identifier, const std::string &order, const std::string & local_folder)
+void build_handler::add_extraction_instruction(const std::string &stage_identifier,
+  const std::string &order,
+  const std::string &local_folder)
 {
-  stages[stage_identifier].push_back(std::move(
-    std::make_unique<extraction_instruction>(stage_identifier, order, std::move(fs::path(local_folder)), *this, *this)));
+  stages[stage_identifier].push_back(std::move(std::make_unique<extraction_instruction>(
+    stage_identifier, order, std::move(fs::path(local_folder)), *this, *this)));
 }
 void build_handler::add_work_dir_instruction(const std::string &stage_identifier, const std::string &order)
 {
@@ -140,19 +135,18 @@ void build_handler::add_run_instruction(const std::string &stage_identifier, con
   stages[stage_identifier].push_back(std::move(std::make_unique<run_instruction>(
     stage_identifier, order, context, current_stage_work_directories[stage_identifier], *this)));
 }
-// task build_handler::create_registration_instruction(const std::string &stage_identifier, const build_order &order,
-// const std::string &parent_order)
-// {
-//     image_properties properties{};
-//     properties.name = order.name;
-//     properties.tag = order.tag;
-//     properties.parent_image_order = parent_order;
-//     return std::make_shared<registration_instruction>(stage_identifier, std::move(properties), *repository.get(),
-//     *this);
-// }
-void build_handler::on_connection_closed(const std::error_code &error) 
+void build_handler::add_registration_instruction(const std::string &stage_identifier, const build_order &order)
 {
+  instructions::image_properties properties{};
+  properties.name = order.name;
+  properties.tag = order.tag;
+  properties.labels = order.labels;
+  properties.entry_point = order.entry_point;
+  properties.ports = order.ports;
+  stages[stage_identifier].push_back(std::move(std::make_unique<registration_instruction>(
+    stage_identifier, std::move(properties), *repository.get(), image_folder, *this)));
 }
+void build_handler::on_connection_closed(const std::error_code &error) {}
 void build_handler::on_instruction_initialized(std::string id, std::string name)
 {
   std::error_code error;
@@ -165,12 +159,7 @@ void build_handler::on_instruction_initialized(std::string id, std::string name)
   } else if (current_stage_work_directories.find(id) == current_stage_work_directories.end()) {
     if (auto path = destination_path(id, error); !error) { current_stage_work_directories.try_emplace(id, path); }
   }
-  if(last_stage_identifier == id)
-  {
-    layer_states
-    .front()
-    .and_then(core::oci::snapshot_target);
-  }
+  if (last_stage_identifier == id) { layer_states.front().and_then(core::oci::snapshot_target); }
 }
 void build_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
 {
@@ -181,17 +170,12 @@ void build_handler::on_instruction_complete(std::string id, std::error_code err)
   if (err) {
     send_error(err);
   } else {
-    if(last_stage_identifier == id)
-    {
-      layer_states
-      .front()
-      .and_then(core::oci::diff_to_target)
-      .and_then(core::oci::package_layer);
+    if (last_stage_identifier == id) {
+      layer_states.front().and_then(core::oci::diff_to_target).and_then(core::oci::package_layer);
 
-      layer_states
-      .pop_front();
+      layer_states.pop_front();
     }
-    
+
     stages[id].pop_front();
     if (!stages[id].empty()) {
       run_stage(id);
@@ -273,20 +257,14 @@ build_handler::~build_handler()
 {
   current_stage_work_directories.clear();
   std::error_code error{};
-  for(const auto&[_, identifier]:stage_names)
-  {
-   if (auto directory = destination_path(identifier, error); error)
-   {
+  for (const auto &[_, identifier] : stage_names) {
+    if (auto directory = destination_path(identifier, error); error) {
       logger->error("clean out error: {}", error.message());
-   } 
-   else if (auto removed_total = fs::remove_all(directory, error); error)
-   {
+    } else if (auto removed_total = fs::remove_all(directory, error); error) {
       logger->error("clean out error: {}", error.message());
-   } 
-   else 
-   {
+    } else {
       logger->info("clean out: {}", removed_total);
-   }
+    }
   }
   stage_names.clear();
 }
