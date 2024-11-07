@@ -48,10 +48,12 @@ namespace domain::images
         std::string name;
         std::string tag;
         std::map<std::string, std::string> labels;
+        std::map<std::string, std::string> env_vars;
         std::string current_directory;
         std::vector<stage> stages;
         std::string entry_point;
-        std::vector<std::string> ports;
+        std::string command;
+        std::vector<uint16_t> ports;
 
         MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point)
     };

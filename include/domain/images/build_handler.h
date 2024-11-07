@@ -88,6 +88,7 @@ namespace domain::images
         std::map<std::string, std::string> extensions;
         std::map<std::string, fs::path> temporary_folders;
         std::deque<core::oci::layer_result> layer_states;
+        std::vector<core::oci::layer_details> layers;
         std::shared_ptr<image_repository> repository;
         std::string last_stage_identifier;
         std::shared_ptr<spdlog::logger> logger;

@@ -141,10 +141,11 @@ void build_handler::add_registration_instruction(const std::string &stage_identi
   properties.name = order.name;
   properties.tag = order.tag;
   properties.labels = order.labels;
+  properties.command = order.command;
   properties.entry_point = order.entry_point;
   properties.ports = order.ports;
   stages[stage_identifier].push_back(std::move(std::make_unique<registration_instruction>(
-    stage_identifier, std::move(properties), *repository.get(), image_folder, *this)));
+    stage_identifier, std::move(properties), *repository.get(), image_folder, layers,*this)));
 }
 void build_handler::on_connection_closed(const std::error_code &error) {}
 void build_handler::on_instruction_initialized(std::string id, std::string name)
@@ -171,8 +172,16 @@ void build_handler::on_instruction_complete(std::string id, std::error_code err)
     send_error(err);
   } else {
     if (last_stage_identifier == id) {
-      layer_states.front().and_then(core::oci::diff_to_target).and_then(core::oci::package_layer);
-
+      auto result = layer_states
+      .front()
+      .and_then(core::oci::diff_to_target)
+      .and_then(core::oci::package_layer);
+      if(result.has_value())
+      {
+        layers.push_back(result.value());
+      } else {
+        logger->error("failed to create layer: {}", result.error().message());
+      }
       layer_states.pop_front();
     }
 

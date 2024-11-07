@@ -30,11 +30,6 @@ namespace core::oci
         fs::path path;
     };
 
-    struct manifest_order
-    {
-
-    };
-    
     using manifest_result = tl::expected<manifest_report, std::error_code>;
     using registration_result = tl::expected<std::string, std::error_code>;
     [[nodiscard]] manifest_result create_image_manifest(const image_entry_details &details);
