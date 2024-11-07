@@ -34,14 +34,13 @@ layer_result initialize(const fs::path &target_folder, fs::path layer_archive)
   if (!fs::exists(target_folder)) { fs::create_directories(target_folder, error); }
   if (!fs::exists(layer_archive.parent_path())) { fs::create_directories(layer_archive.parent_path(), error); }
   if (error) { return tl::make_unexpected(error); }
-  layer_state state{std::nullopt, target_folder, std::move(layer_archive), {} };
+  layer_state state{ std::nullopt, target_folder, std::move(layer_archive), {} };
   return state;
 }
 layer_result copy_root(layer_state state)
 {
   std::error_code error{};
-  if(!state.root_path)
-  {
+  if (!state.root_path) {
     return tl::make_unexpected(make_layer_error_code(layer_error_codes::no_file_or_directory_found));
   }
   if (fs::is_regular_file(state.root_path.value())) {
@@ -95,7 +94,7 @@ layer_result copy_root(layer_state state)
                 details.type = change_type::deleted;
                 details.path = details.path.parent_path() / fs::path(fmt::format(".wh.{}",details.path.filename().string()));
                 std::ofstream ofs(details.path);
-                if(ofs.is_open())
+                if(ofs.is_open() || ofs.bad())
                 {
                     ofs.close();
                 }
@@ -108,27 +107,27 @@ layer_result copy_root(layer_state state)
         {
             if(!file.is_directory() && state.changes.find(file.path().string()) == state.changes.end())
             {
-                entry e{};
+                if(file.is_regular_file()) 
+                {
+                    entry e{};
                     e.path = file.path();
-                    std::error_code error;
-                    if(e.stamp = fs::last_write_time(file, error); error)
-                    {
-                        fmt::println("crash of layer diff ::{}", error.message());
-                    }
+                    e.stamp = fs::last_write_time(file);
                     e.type = change_type::added;
                     state.changes.try_emplace(file.path().string(), e);
+                }
             }
         }
         return state;
     }
     layer_report package_layer(layer_state state)
     {
-        if(auto writer = core::archives::archive_writer(state.layer_archive); !writer)
+        auto writer = core::archives::archive_writer(state.layer_archive); 
+        if(!writer)
         {
             return tl::make_unexpected(writer.error());
-        } else 
-        {
-         archive_entry *entry = archive_entry_new();
+        }
+        fmt::println("writer acquired");
+        archive_entry *entry = archive_entry_new();
          core::utilities::defer clean_entry([&entry](){ archive_entry_free(entry);});
          layer_details details{};
          std::vector<std::string> hashes;
@@ -147,6 +146,7 @@ layer_result copy_root(layer_state state)
                     archive_entry_set_pathname(entry, file_entry_path.c_str());
                     if(auto error = core::archives::add_entry(file_entry.path, writer.value()); error)
                     {
+                        fmt::println("archive entry addition failed: {}", error.message());
                         return tl::make_unexpected(error);
                     }
                 } 
@@ -154,6 +154,7 @@ layer_result copy_root(layer_state state)
                 archive_entry_clear(entry);
                 if(auto report = note_change(file_entry.path, file_entry.type); !report)
                 {
+                    fmt::println("note change failed: {}", report.error().message());
                     return tl::make_unexpected(report.error());
                 } else if(!report.value().empty()) {
                     hashes.push_back(report.value());
@@ -162,14 +163,15 @@ layer_result copy_root(layer_state state)
          }
          if(auto result = sha::compute_sha256_sum(hashes); !result)
          {
+            fmt::println("sha::256 sum computation failed: {}", result.error().message());
             return tl::make_unexpected(result.error());
          } else 
          {
             details.hash_sum = result.value();
+            fmt::println("computed layer hash sum value of :{}", details.hash_sum);
          }
          details.path = state.layer_archive;
          return details;
-        }
     }
     hash_report note_change(const fs::path& file_path, change_type change)
     {  

@@ -26,6 +26,7 @@
 #include <sys/wait.h>
 #endif
 #include <fmt/format.h>
+#include <thread>
 
 namespace domain::images::instructions
 {
@@ -74,18 +75,23 @@ namespace domain::images::instructions
                          {
                             read_from_shell();
                          }); 
-                    int status = 0;
-                    waitpid(process_identifier, &status, 0);
-                    if(WIFEXITED(status))
-                    {
-                     // child process exited
-                     int exit_status = WEXITSTATUS(status);
-                     listener.on_instruction_complete(this->identifier, std::error_code{exit_status, std::system_category()});
-                    } else {
-                        // things went south for the child process, very south
-                     listener.on_instruction_complete(this->identifier, std::error_code{status, std::system_category()});
-                    }
                     });
+            // asio::post([this](){
+            //     std::thread t([this](){
+            //         int status = 0;
+            //         waitpid(process_identifier, &status, 0);
+            //         if(WIFEXITED(status))
+            //         {
+            //          // child process exited
+            //          int exit_status = WEXITSTATUS(status);
+            //          listener.on_instruction_complete(this->identifier, std::error_code{exit_status, std::system_category()});
+            //         } else {
+            //             // things went south for the child process, very south
+            //          listener.on_instruction_complete(this->identifier, std::error_code{status, std::system_category()});
+            //         }
+            //     });
+            //     t.join();
+            // });
         }
     }
     std::error_code run_instruction::initialize()

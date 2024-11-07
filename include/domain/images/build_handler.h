@@ -61,7 +61,6 @@ namespace domain::images
         void on_instruction_complete(std::string id, std::error_code err) override;
         fs::path stage_path(const std::string &label, std::error_code &error) override;
         fs::path destination_path(const std::string &identifier, std::error_code &error) override;
-        fs::path generate_image_path(const std::string &identifier, std::error_code &error) override;
         std::error_code extract_image(const std::string &identifier, const std::string &image_identifier) override;
 
     private:

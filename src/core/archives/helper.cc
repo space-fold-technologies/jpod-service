@@ -153,43 +153,4 @@ namespace core::archives
         };
         return {};
     }
-    std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out,const fs::path &destination, copy_callback callback)
-    {
-        archive_entry *entry;
-        auto logger = spdlog::get("jpod");
-        auto result_code = ARCHIVE_OK;
-        while (archive_read_next_header(in.get(), &entry) == ARCHIVE_OK)
-        {
-            const char *entry_name = archive_entry_pathname(entry);
-            fs::path full_path = destination / fs::path(std::string(entry_name));
-            archive_entry_set_pathname(entry, full_path.generic_string().c_str());
-            if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
-            {
-
-                std::string err(archive_error_string(out.get()));
-                if (err.find("Hard-link") != std::string::npos)
-                {
-                    const char *hard_link = archive_entry_hardlink(entry);
-                    logger->debug("HARDLINK FOUND: {}", hard_link);
-                    auto link = destination / fs::path(std::string(hard_link));
-                    logger->debug("HARDLINK SHIFT >> {}", link.string());
-                    archive_entry_set_hardlink(entry, link.c_str());
-                    if (ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
-                    {
-                        return make_compression_error_code(ec);
-                    }
-                }
-                else
-                {
-                    return make_compression_error_code(ec);
-                }
-            }
-            if (auto error = copy_entry(in, out); error)
-            {
-                return error;
-            }
-            callback(std::string(entry_name));
-        };
-        return {};
-    }
 }

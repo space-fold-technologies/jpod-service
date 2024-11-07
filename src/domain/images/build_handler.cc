@@ -55,6 +55,7 @@ void build_handler::setup_stages(const build_order &order)
     std::deque<task> instructions;
     std::string parent_image_order;
     int index = 0;
+    int operation_count = 0;
     for (const auto &[step, type] : stage.steps) {
       switch (type) {
       case step_type::from:
@@ -80,9 +81,10 @@ void build_handler::setup_stages(const build_order &order)
       auto last_stage = order.stages[order.stages.size() - 1];
       if (last_stage == stage) {
         auto layer_result = core::oci::initialize(
-          stage_folder, image_folder / fs::path(stage_identifier) / fs::path(fmt::format("layer-{}.tar.gz", index)));
+          stage_folder, image_folder / fs::path(stage_identifier) / fs::path(fmt::format("layer-{}.tar.gz", operation_count)));
         if (layer_result) { layer_states.push_back(layer_result); }
       }
+      operation_count++;
     }
     if (parent_image_order.empty()) { parent_image_order = fmt::format("{}", stages.size() - 1); }
     resolve_stage_name(stage_identifier, index, parent_image_order);
@@ -92,7 +94,6 @@ void build_handler::setup_stages(const build_order &order)
       last_stage_identifier = stage_identifier;
     }
     stages.try_emplace(std::move(stage_identifier), std::move(instructions));
-
     index++;
   }
 }
@@ -215,15 +216,6 @@ fs::path build_handler::destination_path(const std::string &identifier, std::err
     return create_temporary_folder(identifier, error);
   }
   return temporary_folders[identifier];
-}
-fs::path build_handler::generate_image_path(const std::string &identifier, std::error_code &error)
-{
-  // generate a folder in a pre-fixed path that has the ${identifier} as the final folder
-  fs::path image_fs_archive = image_folder / fs::path(identifier) / fs::path("fs.tar.gz");
-  if (!fs::create_directories(image_fs_archive.parent_path(), error)) {
-    logger->error("build-handler : {}", error.message());
-  }
-  return image_fs_archive;
 }
 fs::path build_handler::create_temporary_folder(const std::string &identifier, std::error_code &error)
 {

@@ -34,14 +34,10 @@ void extraction_instruction::execute()
   } else if (auto writer = core::archives::initialize_writer(); !writer) {
     listener.on_instruction_complete(identifier, writer.error());
   } else {
+    listener.on_instruction_initialized(identifier, name);
     auto message = fmt::format("EXTRACTING: {} TO {}\n", parts.at(0), parts.at(1));
     listener.on_instruction_data_received(identifier, std::vector<uint8_t>(message.begin(), message.end()));
-    auto callback = [this](std::string_view extracted_filename) -> void 
-    {
-      auto message = fmt::format("EXTRACTED: {}\r\n", extracted_filename);
-      listener.on_instruction_data_received(identifier, std::vector<uint8_t>(message.begin(), message.end()));
-    };
-    if (auto error = core::archives::copy_to_destination(reader.value(), writer.value(), destination.value(), callback); error) {
+    if (auto error = core::archives::copy_to_destination(reader.value(), writer.value(), destination.value()); error) {
       listener.on_instruction_complete(identifier, error);
     } else {
       message = fmt::format("EXTRACTED: {} TO {}\n", parts.at(0), parts.at(1));
