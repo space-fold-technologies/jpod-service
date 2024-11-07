@@ -15,6 +15,7 @@
 #include <libutil.h>
 #include <sys/wait.h>
 #include <paths.h>
+#include <unistd.h>
 #elif defined(__sun__) && defined(__SVR4)
 // will look for the header locations in sun and illumos
 #include <sys/types.h>
@@ -73,6 +74,17 @@ namespace domain::images::instructions
                          {
                             read_from_shell();
                          }); 
+                    int status = 0;
+                    waitpid(process_identifier, &status, 0);
+                    if(WIFEXITED(status))
+                    {
+                     // child process exited
+                     int exit_status = WEXITSTATUS(status);
+                     listener.on_instruction_complete(this->identifier, std::error_code{exit_status, std::system_category()});
+                    } else {
+                        // things went south for the child process, very south
+                     listener.on_instruction_complete(this->identifier, std::error_code{status, std::system_category()});
+                    }
                     });
         }
     }
@@ -120,11 +132,8 @@ namespace domain::images::instructions
             {
                 _exit(errno);
                 listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-            }
-            else
-            {
+            } else {
                 _exit(0);
-                listener.on_instruction_complete(this->identifier, {});
             }
         }
 

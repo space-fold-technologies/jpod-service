@@ -55,7 +55,7 @@ namespace domain::images
         std::string command;
         std::vector<uint16_t> ports;
 
-        MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point)
+        MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point, command, ports)
     };
 
     inline build_order unpack_build_order(const std::vector<uint8_t> &content)
