@@ -11,6 +11,9 @@
 #include <domain/images/payload.h>
 #include <domain/images/repository.h>
 #include <fmt/format.h>
+
+#include <sys/stat.h>
+#include <unistd.h>
 #include <sole.hpp>
 #include <spdlog/spdlog.h>
 
@@ -266,6 +269,26 @@ std::error_code build_handler::extract_image(const std::string &identifier, cons
   }
   return {};
 }
+void build_handler::remove_stage(const fs::path& stage_path)
+{
+  std::error_code error{};
+  for(const auto& entry : fs::recursive_directory_iterator(stage_path))
+  {
+    if(!entry.is_regular_file()) {
+      continue;
+    }
+    if(auto err = chflags(entry.path().c_str(), 0) == -1) {
+      error = std::error_code{errno, std::system_category()};
+      logger->error("clean out err: {}", error.message());
+    }
+  }
+  if (auto removed_total = fs::remove_all(stage_path, error); error) {
+      logger->error("clean out error: {}", error.message());
+  } else {
+      logger->info("clean out: {}", removed_total);
+  }
+
+}
 build_handler::~build_handler()
 {
   current_stage_work_directories.clear();
@@ -273,10 +296,8 @@ build_handler::~build_handler()
   for (const auto &[_, identifier] : stage_names) {
     if (auto directory = destination_path(identifier, error); error) {
       logger->error("clean out error: {}", error.message());
-    } else if (auto removed_total = fs::remove_all(directory, error); error) {
-      logger->error("clean out error: {}", error.message());
-    } else {
-      logger->info("clean out: {}", removed_total);
+    } else  {
+      remove_stage(directory);
     }
   }
   stage_names.clear();

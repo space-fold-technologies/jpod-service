@@ -75,6 +75,7 @@ namespace domain::images
         void add_run_instruction(const std::string &stage_identifier, const std::string &order);
         void add_registration_instruction(const std::string &stage_identifier, const build_order &order);
         fs::path create_temporary_folder(const std::string& identifier, std::error_code &error);
+        void remove_stage(const fs::path& stage_path);
 
     private:
         asio::io_context &context;
