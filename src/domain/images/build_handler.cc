@@ -65,21 +65,24 @@ void build_handler::setup_stages(const build_order &order)
 
       case step_type::copy:
         add_copy_instruction(stage_identifier, step, order.current_directory);
+        operation_count++;
         break;
       case step_type::extract:
         add_extraction_instruction(stage_identifier, step, order.current_directory);
+        operation_count++;
         break;
       case step_type::work_dir:
         add_work_dir_instruction(stage_identifier, step);
         break;
       case step_type::run:
         add_run_instruction(stage_identifier, step);
+        operation_count++;
         break;
       default:
         break;
       }
       auto last_stage = order.stages[order.stages.size() - 1];
-      if (last_stage == stage) {
+      if (last_stage == stage && type != step_type::work_dir) {
         auto layer_result = core::oci::initialize(
           stage_folder, image_folder / fs::path(stage_identifier) / fs::path(fmt::format("layer-{}.tar.gz", operation_count)));
         if (layer_result) { layer_states.push_back(layer_result); }
@@ -139,6 +142,7 @@ void build_handler::add_run_instruction(const std::string &stage_identifier, con
 void build_handler::add_registration_instruction(const std::string &stage_identifier, const build_order &order)
 {
   instructions::image_properties properties{};
+  properties.identifier = stage_identifier;
   properties.name = order.name;
   properties.tag = order.tag;
   properties.labels = order.labels;
@@ -146,22 +150,28 @@ void build_handler::add_registration_instruction(const std::string &stage_identi
   properties.entry_point = order.entry_point;
   properties.ports = order.ports;
   stages[stage_identifier].push_back(std::move(std::make_unique<registration_instruction>(
-    stage_identifier, std::move(properties), *repository.get(), image_folder, layers,*this)));
+    std::move(properties), *repository.get(), image_folder, layers,*this)));
 }
-void build_handler::on_connection_closed(const std::error_code &error) {}
+void build_handler::on_connection_closed(const std::error_code &error) 
+{
+  logger->info("connection closed");
+}
 void build_handler::on_instruction_initialized(std::string id, std::string name)
 {
+  logger->info("INITIALIZING OP: {} ON STAGE: {}", name, id);
   std::error_code error;
-  if (name == "FROM") {
+  if (name == "FROM" || name == "EXTRACT") {
     if (auto position = current_stage_work_directories.find(id); position != current_stage_work_directories.end()) {
 
       position->second = destination_path(id, error);
       if (error) { logger->info("error initializing work dir: {}", error.message()); }
     }
-  } else if (current_stage_work_directories.find(id) == current_stage_work_directories.end()) {
-    if (auto path = destination_path(id, error); !error) { current_stage_work_directories.try_emplace(id, path); }
   }
-  if (last_stage_identifier == id) { layer_states.front().and_then(core::oci::snapshot_target); }
+  if (last_stage_identifier == id && !layer_states.empty()) { 
+    logger->info("proceeding to snapshot stage");
+    layer_states.front().and_then(core::oci::snapshot_target); 
+    logger->info("snapshot taken");
+  }
 }
 void build_handler::on_instruction_data_received(std::string id, const std::vector<uint8_t> &content)
 {
@@ -170,15 +180,17 @@ void build_handler::on_instruction_data_received(std::string id, const std::vect
 void build_handler::on_instruction_complete(std::string id, std::error_code err)
 {
   if (err) {
+    stages.clear();
     send_error(err);
   } else {
-    if (last_stage_identifier == id) {
+    if (last_stage_identifier == id && !layer_states.empty()) {
       auto result = layer_states
       .front()
       .and_then(core::oci::diff_to_target)
       .and_then(core::oci::package_layer);
       if(result.has_value())
       {
+        logger->info("packaged layer: {}", result->hash_sum);
         layers.push_back(result.value());
       } else {
         logger->error("failed to create layer: {}", result.error().message());

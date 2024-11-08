@@ -63,22 +63,32 @@ namespace domain::images::instructions
         else if (mount_filesystems(entries, error); error)
         {
             listener.on_instruction_complete(identifier, error);
-        } else if(auto error = initialize(); error)
+        } 
+        else if(auto code = initialize(); code < 0)
         {
-            listener.on_instruction_complete(this->identifier, error);
-        } else {
+            listener.on_instruction_complete(this->identifier, std::error_code{code, std::system_category()});
+        } 
+        else 
+        {
             asio::post([this]()
-                   { 
-                    in->async_wait(
-                         asio::posix::stream_descriptor::wait_read,
-                         [this](const std::error_code &err)
-                         {
+            { 
+                listener.on_instruction_initialized(identifier, name);
+                in->async_wait(
+                    asio::posix::stream_descriptor::wait_read,
+                    [this](const std::error_code &err)
+                    {
+                        if(err)
+                        {
+                            listener.on_instruction_complete(identifier, err);
+                        } 
+                        else {
                             read_from_shell();
-                         }); 
-                    });
-            // asio::post([this](){
-            //     std::thread t([this](){
-            //         int status = 0;
+                        }
+                    }); 
+            });
+            // asio::post([this]()
+            // {
+            //     int status = 0;
             //         waitpid(process_identifier, &status, 0);
             //         if(WIFEXITED(status))
             //         {
@@ -89,12 +99,10 @@ namespace domain::images::instructions
             //             // things went south for the child process, very south
             //          listener.on_instruction_complete(this->identifier, std::error_code{status, std::system_category()});
             //         }
-            //     });
-            //     t.join();
             // });
         }
     }
-    std::error_code run_instruction::initialize()
+    int run_instruction::initialize()
     {
         disable_stdio_inheritance();
         winsize size = {24, 80, 0, 0};
@@ -103,7 +111,7 @@ namespace domain::images::instructions
         auto pid = forkpty(&fd, NULL, NULL, &size);
         if (pid < 0)
         {
-            return std::error_code(errno, std::system_category());
+            return errno;
         }
         else if (pid == 0)
         {
@@ -112,34 +120,27 @@ namespace domain::images::instructions
             if (auto result = core::utilities::freebsd::fetch_user_details("root"); !result)
             {
                 logger->error("insecure mode in effect error: {}", result.error().message());
-                _exit(errno);
+                return errno;
             } 
             else if (!core::utilities::freebsd::setup_environment(result.value()))
             {
-                        logger->error("was not able to set up secure mode");
-                        _exit(errno);
+                logger->error("was not able to set up secure mode");
+                return errno;
             }
             else if (chdir(current_directory.generic_string().c_str()) == -1 || chroot(".") == -1)
             {
                 perror("execlp failed");
-                _exit(-errno);
+                return errno;
             }
             setenv("TERM", "xterm-256color", 1);
             setenv("SHELL", "/bin/sh", 1);
             auto *target_shell = getenv("SHELL");
-            if (target_shell == NULL)
-            {
-#if defined(__FreeBSD__)
-                target_shell = _PATH_BSHELL; // need to find a better way to manage the default shell
-#endif
-            }
             // std::string argument = fmt::format("\"{}\"", order);
             if (auto err = execlp(target_shell, target_shell, "-c", order.c_str(), NULL); err < 0)
             {
-                _exit(errno);
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
+                return errno;
             } else {
-                _exit(0);
+                return 0;
             }
         }
 
@@ -149,23 +150,24 @@ namespace domain::images::instructions
             if (int ret = fcntl(fd, F_SETFD, flags | O_NONBLOCK); ret == -1)
             {
                 clean();
-                return std::error_code(errno, std::system_category());
+                return errno;
             }
             if (!close_on_exec(fd))
             {
                 clean();
+                return errno;
             }
             if (!setup_pipe(fd))
             {
                 clean();
-                return std::error_code(errno, std::system_category());
+                return errno;
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
-            return {};
-        }
+            return 0;
+        } 
         clean();
-        return std::error_code(errno, std::system_category());
+        return errno;
     }
     
     bool run_instruction::setup_pipe(int fd)
@@ -180,6 +182,7 @@ namespace domain::images::instructions
         }
         return true;
     }
+    
     void run_instruction::read_from_shell()
     {
         in->async_read_some(
@@ -346,9 +349,12 @@ std::error_code run_instruction::unmount_filesystems(const std::vector<mount_poi
             fs::path folder_path = directory / fs::path(mount_point.destination);
             logger->warn("unmounting: {}", folder_path.generic_string());
 #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
-            if (auto err = unmount(folder_path.generic_string().c_str(), mount_point.flags); err != 0)
+            if (auto err = ::unmount(folder_path.generic_string().c_str(), mount_point.flags); err < 0)
             {
-                return std::error_code(err, std::system_category());
+                if(errno != EINVAL)
+                {
+                    return std::error_code(errno, std::system_category());
+                }
             }
 #elif defined(__sun__) && defined(__SVR4)
             if (auto err = umount2(folder_path.generic_string().c_str(), mount_point.flags); err != 0)
@@ -372,10 +378,7 @@ std::error_code run_instruction::unmount_filesystems(const std::vector<mount_poi
     run_instruction::~run_instruction()
     {
         std::vector<mount_point> mount_points;
-        int flags = 0;
-        flags |= MNT_EMPTYDIR;
-        flags &= ~(-(-MNT_RDONLY));
-        mount_points.push_back(mount_point{"devfs", "devfs", "dev", flags});
+        mount_points.push_back(mount_point{"devfs", "devfs", "dev", 0});
         if (auto error = unmount_filesystems(mount_points, current_directory); error)
         {
                 logger->error("failed to unmount file system :{}", error.message());

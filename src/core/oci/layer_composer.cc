@@ -72,7 +72,7 @@ layer_result copy_root(layer_state state)
     {
         for(const auto& file : fs::recursive_directory_iterator(state.target_path))
         {
-            if(!file.is_directory()) 
+            if(file.is_regular_file()) 
             {
                 entry e{};
                 e.path = file.path();

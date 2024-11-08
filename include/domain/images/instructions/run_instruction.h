@@ -46,7 +46,7 @@ namespace domain::images::instructions
         void execute() override;
 
     private:
-        std::error_code initialize();
+        int initialize();
         void disable_stdio_inheritance();
         bool close_on_exec(int fd);
         void clean();

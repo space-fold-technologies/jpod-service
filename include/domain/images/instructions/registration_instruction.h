@@ -21,6 +21,7 @@ namespace domain::images::instructions {
 class instruction_listener;
 struct image_properties
 {
+  std::string identifier;
   std::string name;
   std::string tag;
   std::string command;
@@ -32,7 +33,7 @@ struct image_properties
 class registration_instruction : public instruction
 {
 public:
-  explicit registration_instruction(const std::string &identifier,
+  explicit registration_instruction(
     image_properties properties,
     image_repository &repository,
     const fs::path &image_folder,
@@ -42,7 +43,6 @@ public:
   void execute() override;
 
 private:
-  const std::string &identifier;
   image_properties properties;
   image_repository &repository;
   const fs::path &image_folder;
