@@ -10,11 +10,13 @@ namespace domain::images::instructions
     enum class error_code
     {
         file_not_found,
+        archive_file_expected,
         no_work_directory,
         directory_not_found,
         invalid_origin,
         invalid_destination,
         invalid_copy_instruction,
+        invalid_extraction_instruction,
         no_registry_entries_found,
         no_matching_image_found,
         no_registry_access,
@@ -23,11 +25,13 @@ namespace domain::images::instructions
     };
     const inline std::map<error_code, std::string> error_map{
         {error_code::file_not_found, "file not found"},
+         {error_code::archive_file_expected, "archive file format expected"},
         {error_code::no_work_directory, "no work directory"},
         {error_code::directory_not_found, "directory not found"},
         {error_code::invalid_origin, "invalid origin"},
         {error_code::invalid_destination, "invalid destination"},
         {error_code::invalid_copy_instruction, "invalid copy instruction"},
+        {error_code::invalid_extraction_instruction, "invalid extraction instruction"},
         {error_code::no_registry_entries_found, "no registries found"},
         {error_code::no_matching_image_found, "no matching image found"},
         {error_code::no_registry_access, "not authorized to access registry"},

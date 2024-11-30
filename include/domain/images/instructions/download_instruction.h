@@ -46,6 +46,7 @@ namespace domain::images::instructions
             oci_client_provider provider,
             image_repository &repository,
             directory_resolver &resolver,
+            const fs::path& image_folder,
             instruction_listener &listener);
         virtual ~download_instruction();
         void execute() override;
@@ -62,6 +63,7 @@ namespace domain::images::instructions
         std::shared_ptr<oci_client> client;
         image_repository &repository;
         directory_resolver &resolver;
+        const fs::path& image_folder;
         fs::path image_archive;
         progress_frame frame;
         std::map<std::string, uint16_t> layer_progress;

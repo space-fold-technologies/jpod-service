@@ -1,5 +1,6 @@
 #include <core/sql/result_set.h>
 #include <core/sql/statement.h>
+#include <cstring>
 #include <sqlite3.h>
 
 namespace core::sql

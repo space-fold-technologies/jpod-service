@@ -47,6 +47,7 @@ namespace core::http
         internal::uri uri;
         upload_status status;
         std::size_t chunk_size;
+        std::string method;
         std::map<std::string, std::string> headers;
         int file_descriptor;
         std::unique_ptr<asio::posix::stream_descriptor> file_stream;
@@ -61,7 +62,7 @@ namespace core::http
     struct file_download
     {
         std::string name;
-        report_callback callback;
+        std::function<void(const std::error_code &, const download_status &)> callback;
         std::shared_ptr<download_destination> destination;
         internal::uri uri;
         std::map<std::string, std::string> headers;
@@ -90,6 +91,7 @@ namespace core::http
         std::map<std::string, std::string> headers;
         std::string file_name;
         fs::path file_path;
+        std::string method;
     };
 }
 #endif // __DAEMON_CORE_HTTP_FILE_TRANSFER_PAYLOADS__

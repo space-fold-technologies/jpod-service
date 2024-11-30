@@ -26,21 +26,19 @@ namespace domain::images
         from = 0,
         run = 1,
         work_dir = 2,
-        copy = 3
+        copy = 3,
+        extract = 4
     };
 
     struct stage
     {
         std::string name;
-        std::string tag;
-        std::map<std::string, std::string> labels;
-        std::map<std::string, step_type> steps;
+        std::vector<std::pair<std::string, step_type>> steps;
+        MSGPACK_DEFINE(name, steps)
 
-        MSGPACK_DEFINE(name, tag, labels, steps)
-
-        bool operator==(const stage rhs)
+        bool operator==(const stage& rhs)
         {
-            return (this->name == rhs.name && this->tag == rhs.tag && this->labels == rhs.labels && this->steps == rhs.steps);
+            return (this->name == rhs.name && this->steps == rhs.steps);
         }
     };
 
@@ -48,11 +46,15 @@ namespace domain::images
     {
         std::string name;
         std::string tag;
+        std::map<std::string, std::string> labels;
+        std::map<std::string, std::string> env_vars;
         std::string current_directory;
         std::vector<stage> stages;
         std::string entry_point;
+        std::string command;
+        std::vector<uint16_t> ports;
 
-        MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point)
+        MSGPACK_DEFINE(name, tag, current_directory, stages, entry_point, command, ports)
     };
 
     inline build_order unpack_build_order(const std::vector<uint8_t> &content)

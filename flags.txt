@@ -1,0 +1,50 @@
+#include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mount.h>
+#include <unistd.h>
+#include <dirent.h>
+
+void makeFolderDeletable(const std::string& folderPath) {
+    struct stat st;
+    if (stat(folderPath.c_str(), &st) == -1) {
+        perror("stat");
+        return;
+    }
+
+    if (S_ISDIR(st.st_mode)) {
+        DIR *dir;
+        struct dirent *entry;
+
+        if ((dir = opendir(folderPath.c_str())) == NULL) {
+            perror("opendir");
+            return;
+        }
+
+        while ((entry = readdir(dir)) != NULL) {
+            std::string entryPath = folderPath + "/" + entry->d_name;
+            if (entry->d_type == DT_DIR) {
+                if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+                    continue;
+                }
+                makeFolderDeletable(entryPath);  // Recursively call this function
+            }
+            // Clear the 'immutable' flag from files and folders
+            if (chflags(entryPath.c_str(), 0) == -1) {
+                perror("chflags");
+            }
+        }
+        closedir(dir);
+    }
+    // Clear the 'immutable' flag from the main folder
+    if (chflags(folderPath.c_str(), 0) == -1) {
+        perror("chflags");
+    }
+}
+
+int main() {
+    std::string folderPath = "/path/to/your/folder";
+    makeFolderDeletable(folderPath);
+
+    return 0;
+}

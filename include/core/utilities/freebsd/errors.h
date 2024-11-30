@@ -1,11 +1,11 @@
-#ifndef __DAEMON_DOMAIN_CONTAINERS_FREEBSD_ERRORS__
-#define __DAEMON_DOMAIN_CONTAINERS_FREEBSD_ERRORS__
+#ifndef __DAEMON_CORE_UTILITIES_FREEBSD_ERRORS__
+#define __DAEMON_CORE_UTILITIES_FREEBSD_ERRORS__
 
 #include <system_error>
 #include <string>
 #include <map>
 
-namespace domain::containers::freebsd
+namespace core::utilities::freebsd
 {
     enum class freebsd_error
     {
@@ -59,5 +59,4 @@ namespace domain::containers::freebsd
         return std::error_code{static_cast<int>(ec), __freebsd_failure_category()};
     };
 }
-
-#endif //__DAEMON_DOMAIN_CONTAINERS_FREEBSD_ERRORS__
+#endif // __DAEMON_CORE_UTILITIES_FREEBSD_ERRORS__

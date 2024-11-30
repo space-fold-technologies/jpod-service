@@ -7,6 +7,7 @@
 #include <asio/ip/network_v4.hpp>
 #include <asio/ip/network_v6.hpp>
 #include <domain/networking/details.h>
+#include <optional>
 #include <memory>
 #include <map>
 

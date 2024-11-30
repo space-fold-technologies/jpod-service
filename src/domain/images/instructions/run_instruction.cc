@@ -1,5 +1,6 @@
-#include <domain/images/instructions/run_instruction.h>
 #include <domain/images/instructions/instruction_listener.h>
+#include <domain/images/instructions/run_instruction.h>
+#include <core/utilities/freebsd/helper.h>
 #include <asio/io_context.hpp>
 #include <asio/read.hpp>
 #include <asio/post.hpp>
@@ -8,10 +9,13 @@
 #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/param.h>
+#include <sys/mount.h>
 #include <termios.h>
 #include <libutil.h>
 #include <sys/wait.h>
 #include <paths.h>
+#include <unistd.h>
 #elif defined(__sun__) && defined(__SVR4)
 // will look for the header locations in sun and illumos
 #include <sys/types.h>
@@ -22,6 +26,7 @@
 #include <sys/wait.h>
 #endif
 #include <fmt/format.h>
+#include <thread>
 
 namespace domain::images::instructions
 {
@@ -45,17 +50,59 @@ namespace domain::images::instructions
     }
     void run_instruction::execute()
     {
-        asio::post([this]()
-                   { this->process_wait(); });
-        asio::post([this]()
-                   { this->in->async_wait(
-                         asio::posix::stream_descriptor::wait_read,
-                         [this](const std::error_code &err)
-                         {
-                             this->read_from_shell();
-                         }); });
+        std::error_code error{};
+        std::vector<mount_point> mount_points;
+        int flags = 0;
+        flags |= MNT_EMPTYDIR;
+        flags &= ~(-(-MNT_RDONLY));
+        mount_points.push_back(mount_point{"devfs", "devfs", "dev", flags});
+        if (auto entries = resolve_mountpoint_folders(mount_points, error); error)
+        {
+            listener.on_instruction_complete(identifier, error);
+        }
+        else if (mount_filesystems(entries, error); error)
+        {
+            listener.on_instruction_complete(identifier, error);
+        } 
+        else if(auto code = initialize(); code < 0)
+        {
+            listener.on_instruction_complete(this->identifier, std::error_code{code, std::system_category()});
+        } 
+        else 
+        {
+            asio::post([this]()
+            { 
+                listener.on_instruction_initialized(identifier, name);
+                in->async_wait(
+                    asio::posix::stream_descriptor::wait_read,
+                    [this](const std::error_code &err)
+                    {
+                        if(err)
+                        {
+                            listener.on_instruction_complete(identifier, err);
+                        } 
+                        else {
+                            read_from_shell();
+                        }
+                    }); 
+            });
+            // asio::post([this]()
+            // {
+            //     int status = 0;
+            //         waitpid(process_identifier, &status, 0);
+            //         if(WIFEXITED(status))
+            //         {
+            //          // child process exited
+            //          int exit_status = WEXITSTATUS(status);
+            //          listener.on_instruction_complete(this->identifier, std::error_code{exit_status, std::system_category()});
+            //         } else {
+            //             // things went south for the child process, very south
+            //          listener.on_instruction_complete(this->identifier, std::error_code{status, std::system_category()});
+            //         }
+            // });
+        }
     }
-    void run_instruction::initialize()
+    int run_instruction::initialize()
     {
         disable_stdio_inheritance();
         winsize size = {24, 80, 0, 0};
@@ -64,35 +111,36 @@ namespace domain::images::instructions
         auto pid = forkpty(&fd, NULL, NULL, &size);
         if (pid < 0)
         {
-            listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-            return;
+            return errno;
         }
         else if (pid == 0)
         {
-            setsid();
+            //setsid();
             context.notify_fork(asio::io_context::fork_child);
-            if (chdir(current_directory.c_str()) == -1 || chroot(".") == -1)
+            if (auto result = core::utilities::freebsd::fetch_user_details("root"); !result)
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                logger->error("insecure mode in effect error: {}", result.error().message());
+                return errno;
+            } 
+            else if (!core::utilities::freebsd::setup_environment(result.value()))
+            {
+                logger->error("was not able to set up secure mode");
+                return errno;
+            }
+            else if (chdir(current_directory.generic_string().c_str()) == -1 || chroot(".") == -1)
+            {
+                perror("execlp failed");
+                return errno;
             }
             setenv("TERM", "xterm-256color", 1);
             setenv("SHELL", "/bin/sh", 1);
-            auto target_shell = getenv("SHELL");
-            if (target_shell == NULL)
+            auto *target_shell = getenv("SHELL");
+            // std::string argument = fmt::format("\"{}\"", order);
+            if (auto err = execlp(target_shell, target_shell, "-c", order.c_str(), NULL); err < 0)
             {
-#if defined(__FreeBSD__)
-                target_shell = _PATH_BSHELL; // need to find a better way to manage the default shell
-#endif
-            }
-            std::string argument = fmt::format("\"{}\"", order);
-            if (auto err = execlp(target_shell, target_shell, "-c", argument.c_str(), NULL); err < 0)
-            {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-            }
-            else
-            {
-                listener.on_instruction_complete(this->identifier, {});
+                return errno;
+            } else {
+                return 0;
             }
         }
 
@@ -101,35 +149,27 @@ namespace domain::images::instructions
         {
             if (int ret = fcntl(fd, F_SETFD, flags | O_NONBLOCK); ret == -1)
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                clean();
+                return errno;
             }
             if (!close_on_exec(fd))
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                clean();
+                return errno;
             }
             if (!setup_pipe(fd))
             {
-                listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
-                return;
+                clean();
+                return errno;
             }
             this->file_descriptor = fd;
             this->process_identifier = pid;
-            listener.on_instruction_initialized(this->identifier, this->name);
-        }
-        listener.on_instruction_complete(this->identifier, std::error_code(errno, std::system_category()));
+            return 0;
+        } 
+        clean();
+        return errno;
     }
-    void run_instruction::process_wait()
-    {
-        pid_t pid;
-        int stat;
-        do
-        {
-            pid = waitpid(process_identifier, &stat, 0);
-        } while (pid != process_identifier && errno == EINTR);
-    }
-
+    
     bool run_instruction::setup_pipe(int fd)
     {
         if (auto fd_in_dup = ::dup(fd); fd_in_dup > 0)
@@ -142,6 +182,7 @@ namespace domain::images::instructions
         }
         return true;
     }
+    
     void run_instruction::read_from_shell()
     {
         in->async_read_some(
@@ -150,19 +191,28 @@ namespace domain::images::instructions
             {
                 if (!err)
                 {
-                    this->listener.on_instruction_data_received(this->identifier, buffer);
+                    this->listener.on_instruction_data_received(this->identifier, std::vector<uint8_t>(buffer.begin(), buffer.begin() + bytes_transferred));
                     this->in->async_wait(
                         asio::posix::stream_descriptor::wait_read,
                         [this](const std::error_code &err)
                         {
-                            this->read_from_shell();
+                            if(!err)
+                            {
+                                read_from_shell();
+                            } else 
+                            {
+                                listener.on_instruction_complete(identifier, err);
+                            }
+                            
                         });
                 }
                 else
                 {
                     if (err != asio::error::eof)
                     {
-                        this->listener.on_instruction_complete(this->identifier, err);
+                        listener.on_instruction_complete(identifier, err);
+                    } else {
+                        listener.on_instruction_complete(identifier, {});
                     }
                 }
             });
@@ -203,7 +253,139 @@ namespace domain::images::instructions
                 break;
         }
     }
+    std::vector<mount_point_entry> run_instruction::resolve_mountpoint_folders(const std::vector<mount_point> &entries, std::error_code &error)
+    {
+        std::vector<mount_point_entry> mount_points;
+        for (const auto &entry : entries)
+        {
+                auto folder_path = current_directory / fs::path(entry.destination);
+                if (!fs::exists(folder_path, error))
+                {
+                    if (error)
+                    {
+                        break;
+                    }
+                    else if (!fs::create_directories(folder_path, error))
+                    {
+                        if (error)
+                        {
+                            break;
+                        }
+                    }
+                }
+                mount_points.push_back(mount_point_entry{entry.type, entry.source, folder_path, entry.flags});
+        }
+
+        return mount_points;
+    }
+    #if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
+    bool run_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
+    {
+        for (const auto &entry : entries)
+        {
+            std::vector<iovec> mount_order_parts;
+            add_mount_point_entry(mount_order_parts, "fstype", entry.type);
+            add_mount_point_entry(mount_order_parts, "fspath", entry.destination.generic_string());
+            if (entry.type == "nullfs") 
+            {
+                add_mount_point_entry(mount_order_parts, "target", entry.source);
+            }
+            if (!error)
+            {
+                if (nmount(&mount_order_parts[0], mount_order_parts.size(), entry.flags | MNT_IGNORE) == -1)
+                {
+                    logger->error("mounting failed: {}", errno);
+                    error = std::error_code(errno, std::system_category());
+                } else {
+                    logger->info("mounted fspath: {}", entry.destination.generic_string());
+                }
+            }
+            for (auto &entry : mount_order_parts)
+            {
+                free(entry.iov_base);
+            }
+            if (error)
+            {
+                break;
+            }
+        }
+        return !error;
+    }
+
+    void run_instruction::add_mount_point_entry(std::vector<iovec> &entries, const std::string &key, const std::string &value)
+    {
+        iovec key_entry{};
+        key_entry.iov_base = strdup(key.c_str());
+        key_entry.iov_len = key.length() + 1;
+        entries.push_back(key_entry);
+        iovec value_entry{};
+        value_entry.iov_base = strdup(value.c_str());
+        value_entry.iov_len = value.length() + 1;
+        entries.push_back(value_entry);
+    }
+
+#elif defined(__sun__) && defined(__SVR4)
+    // put Solaris / illumos specific mount point operations here
+    bool run_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
+    {
+        std::error_code error;
+        return !error;
+    }
+#else
+    bool run_instruction::mount_filesystems(const std::vector<mount_point_entry> &entries, std::error_code &error)
+    {
+        logger->info("this is a dummy method <this is not the target operating system>");
+        for (const auto &entry : entries)
+        {
+            logger->info("unsupported os mount attempt: {}", entry.folder.generic_string());
+        }
+        return true;
+    }
+#endif
+std::error_code run_instruction::unmount_filesystems(const std::vector<mount_point> &mount_points, fs::path &directory)
+    {
+        for (const auto &mount_point : mount_points)
+        {
+            fs::path folder_path = directory / fs::path(mount_point.destination);
+            logger->warn("unmounting: {}", folder_path.generic_string());
+#if defined(__FreeBSD__) || defined(BSD) && !defined(__APPLE__)
+            if (auto err = ::unmount(folder_path.generic_string().c_str(), mount_point.flags); err < 0)
+            {
+                if(errno != EINVAL)
+                {
+                    return std::error_code(errno, std::system_category());
+                }
+            }
+#elif defined(__sun__) && defined(__SVR4)
+            if (auto err = umount2(folder_path.generic_string().c_str(), mount_point.flags); err != 0)
+            {
+                return std::error_code(err, std::system_category());
+            }
+#else
+            logger->info("not the target operating system");
+#endif
+        }
+        return {};
+    }
+    void run_instruction::clean()
+    {
+        if (file_descriptor > 0 && process_identifier > 0)
+        {
+            close(file_descriptor);
+            waitpid(process_identifier, nullptr, 0);
+        }
+    }
     run_instruction::~run_instruction()
     {
+        std::vector<mount_point> mount_points;
+        mount_points.push_back(mount_point{"devfs", "devfs", "dev", 0});
+        if (auto error = unmount_filesystems(mount_points, current_directory); error)
+        {
+                logger->error("failed to unmount file system :{}", error.message());
+        }
+        else
+        {
+                logger->info("finished unmount ops");
+        }
     }
 }

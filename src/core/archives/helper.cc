@@ -1,6 +1,8 @@
 #include <core/archives/helper.h>
 #include <core/archives/errors.h>
 #include <spdlog/spdlog.h>
+#include <sys/stat.h>
+#include <fstream>
 #include <locale.h>
 
 namespace core::archives
@@ -41,14 +43,66 @@ namespace core::archives
         archive_write_disk_set_standard_lookup(arch.get());
         return arch;
     }
-
+    tl::expected<archive_ptr, std::error_code> archive_writer(const fs::path &archive_path)
+    {
+        archive_ptr arch = {
+            archive_write_new(),
+            [](archive *instance) -> void
+            {
+                archive_write_close(instance);
+                archive_write_free(instance);
+            }};
+        archive_write_add_filter_gzip(arch.get());
+        archive_write_set_format_pax_restricted(arch.get()); // Note 1
+        if (auto ec = archive_write_open_filename(arch.get(), archive_path.c_str()); ec != ARCHIVE_OK)
+        {
+            return tl::make_unexpected(make_compression_error_code(ec));
+        }
+        return arch;
+    }
+    std::error_code add_header(const fs::path &file, archive_entry *entry, archive_ptr &in)
+    {
+        if (fs::exists(file))
+        {
+            struct stat st;
+            stat(file.c_str(), &st);
+            archive_entry_copy_stat(entry, &st);
+            // archive_read_disk_*
+            if (auto ec = archive_write_header(in.get(), entry); ec != ARCHIVE_OK)
+            {
+                return make_compression_error_code(ec);
+            }
+        }
+        return {};
+    }
+    std::error_code add_entry(const fs::path &file, archive_ptr &in)
+    {
+        std::vector<char> buffer(8096);
+        std::ifstream file_handle(file, std::ios::binary);
+        if (!file_handle.is_open())
+        {
+            return std::make_error_code(std::errc::io_error);
+        }
+        std::size_t length = 0;
+        do
+        {
+            file_handle.read(buffer.data(), buffer.size());
+            length = file_handle.gcount();
+            if (length > 0)
+            {
+                archive_write_data(in.get(), buffer.data(), length);
+            }
+        } while (length > 0);
+        file_handle.close();
+        return {};
+    }
     std::error_code copy_entry(archive_ptr &in, archive_ptr &out)
     {
         int ec;
         const void *buffer;
         std::size_t size;
         la_int64_t offset;
-        while ((ec = archive_read_data_block(in.get(), &buffer, &size, &offset)) == ARCHIVE_OK)
+        while (archive_read_data_block(in.get(), &buffer, &size, &offset) == ARCHIVE_OK)
         {
             if (ec = archive_write_data_block(out.get(), buffer, size, offset); ec != ARCHIVE_OK)
             {
@@ -61,7 +115,7 @@ namespace core::archives
         }
         return {};
     }
-    std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out, fs::path &destination)
+    std::error_code copy_to_destination(archive_ptr &in, archive_ptr &out,const fs::path &destination)
     {
         archive_entry *entry;
         auto logger = spdlog::get("jpod");
@@ -82,7 +136,7 @@ namespace core::archives
                     auto link = destination / fs::path(std::string(hard_link));
                     logger->debug("HARDLINK SHIFT >> {}", link.string());
                     archive_entry_set_hardlink(entry, link.c_str());
-                    if (auto ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
+                    if (ec = archive_write_header(out.get(), entry); ec != ARCHIVE_OK)
                     {
                         return make_compression_error_code(ec);
                     }
